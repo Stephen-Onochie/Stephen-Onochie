@@ -1,5 +1,5 @@
 <h1 align="center">Hi 👋, I'm Stephen Onochie</h1>
-<h3 align="center">Just a passionate teenager learning to code!</h3>
+<h3 align="center">Just a curious teenager learning to code!</h3>
 
 - 🔭 I’m currently working on [StyleMate](https://github.com/Stephen-Onochie/StyleMate-Python)
 
