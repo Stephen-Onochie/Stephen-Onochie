@@ -9,7 +9,7 @@
 
 - 📫 How to reach me **stephenconochie@gmail.com**
 
-- ⚡ Fun fact **I inspire to run a Robotics company someday! 🤖**
+- ⚡ Fun fact: **I inspire to run a Robotics company someday! 🤖**
 
 <h3 align="left">Connect with me:</h3>
 <p align="left">
