@@ -1,7 +1,7 @@
 <h1 align="center">Hi 👋, I'm Stephen Onochie</h1>
 <h3 align="center">Just a passionate teenager learning to code!</h3>
 
-- 🔭 I’m currently working on [StyleMate](https://github.com/Stephen-Onochie/StyleMate-Python)
+- 🔭 I’m currently working on [My Portfolio Site](https://github.com/Stephen-Onochie/Stephen-Onochie.github.io)
 
 - 🌱 I’m currently learning **OpenCV (Python)**
 
