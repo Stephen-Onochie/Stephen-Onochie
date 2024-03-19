@@ -1,11 +1,11 @@
 <h1 align="center">Hi 👋, I'm Stephen Onochie</h1>
 <h3 align="center">Just a passionate teenager learning to code!</h3>
 
-- 🔭 I’m currently working on [My Portfolio Site](https://github.com/Stephen-Onochie/Stephen-Onochie.github.io)
+- 🔭 I’m currently working on the **[Raven Pioneer Drone](https://github.com/Stephen-Onochie/Raven-Pioneer-Drone)** 🐦‍⬛🟣
 
-- 🌱 I’m currently learning **OpenCV (Python)**
+- 🌱 I’m currently learning **ArduPilot & OpenCV (Python)**
 
-- 💬 Ask me about **JavaScript, Python**
+- 💬 Ask me about **Java, Python**
 
 - 📫 How to reach me **stephenconochie@gmail.com**
 
