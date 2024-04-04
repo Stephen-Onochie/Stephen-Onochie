@@ -1,9 +1,9 @@
 <h1 align="center">Hi 👋, I'm Stephen Onochie</h1>
 <h3 align="center">Just a passionate teenager learning to code!</h3>
 
-- 🔭 I’m currently working on the **[Raven Pioneer Drone](https://github.com/Stephen-Onochie/Raven-Pioneer-Drone)** 🐦‍⬛🟣
+- 🔭 I’m currently working on the **[StyleMate Python Prototype](https://github.com/Stephen-Onochie/StyleMate-Python)** 🧢👕
 
-- 🌱 I’m currently learning **ArduPilot & OpenCV (Python)**
+- 🌱 I’m currently learning about **Firebase & APIs w/ Python**
 
 - 💬 Ask me about **Java, Python**
 
