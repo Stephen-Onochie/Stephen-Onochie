@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-beige: #F5F0E8;
+  --color-surface: #EDE8DC;
+  --color-gold: #C9A84C;
+  --color-gold-light: #E2C97E;
+  --color-brown-accent: #6B4F2A;
+  --color-text-primary: #2C1F0E;
+  --color-text-muted: #8C7355;
+}
+
+html,
+body {
+  background-color: #F5F0E8;
+  color: #2C1F0E;
+  min-height: 100%;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
