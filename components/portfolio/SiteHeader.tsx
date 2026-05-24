@@ -1,5 +1,5 @@
-import Image from 'next/image'
 import Link from 'next/link'
+import AppsLogoLink from '@/components/auth/AppsLogoLink'
 
 const socialLinks = [
   { label: 'GitHub', href: 'https://github.com/Stephen-Onochie' },
@@ -47,25 +47,7 @@ export default function SiteHeader() {
           </nav>
 
           <div className="flex items-center gap-0 pl-2 pr-2 md:pr-3">
-            <Link
-              href="/login"
-              className="group relative flex items-center justify-center w-11 h-11 md:w-12 md:h-12 border border-transparent hover:border-grid transition-colors duration-200"
-              aria-label="Private apps sign in"
-              title="Apps"
-            >
-              <Image
-                src="/logo-so.png"
-                alt="SO monogram"
-                width={40}
-                height={40}
-                className="w-8 h-8 md:w-9 md:h-9 object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-200"
-                priority
-              />
-              <span
-                className="absolute -bottom-0.5 -right-0.5 w-1 h-1 bg-gold opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                aria-hidden="true"
-              />
-            </Link>
+            <AppsLogoLink />
           </div>
         </div>
       </div>

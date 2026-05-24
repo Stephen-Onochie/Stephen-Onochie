@@ -1,10 +1,14 @@
 import AppCard from '@/components/apps/AppCard'
+import HomeLink from '@/components/apps/HomeLink'
 import SignOutButton from '@/components/auth/SignOutButton'
 
 export default function AppsPage() {
   return (
     <main className="min-h-screen bg-beige px-6 py-10">
       <div className="max-w-lg mx-auto">
+        <div className="mb-6">
+          <HomeLink />
+        </div>
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <h1 className="font-playfair text-3xl font-bold text-textPrimary mb-1">

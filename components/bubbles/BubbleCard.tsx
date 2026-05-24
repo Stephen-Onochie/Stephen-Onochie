@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import * as Dialog from '@radix-ui/react-dialog'
 import { Bubble, BubbleType } from '@/types/bubbles'
 
 const typeConfig: Record<BubbleType, { icon: string; label: string; color: string }> = {
@@ -48,6 +49,7 @@ interface BubbleCardProps {
 
 export default function BubbleCard({ bubble, view, onSave, onDelete, onUnsave, onRescue }: BubbleCardProps) {
   const [countdown, setCountdown] = useState(() => formatCountdown(bubble.expires_at))
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const config = typeConfig[bubble.type]
 
   useEffect(() => {
@@ -115,12 +117,48 @@ export default function BubbleCard({ bubble, view, onSave, onDelete, onUnsave, o
             Rescue
           </button>
         )}
-        <button
-          onClick={() => onDelete(bubble.id)}
-          className="min-h-[40px] px-3 py-2 border border-red-200 text-red-400 text-sm font-inter font-medium rounded-lg hover:bg-red-50 transition-colors"
-        >
-          Delete
-        </button>
+        <Dialog.Root open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <Dialog.Trigger asChild>
+            <button
+              type="button"
+              className="min-h-[40px] px-3 py-2 border border-red-200 text-red-400 text-sm font-inter font-medium rounded-lg hover:bg-red-50 transition-colors"
+            >
+              Delete
+            </button>
+          </Dialog.Trigger>
+
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
+            <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm bg-beige rounded-2xl p-6 z-50 shadow-lg border border-goldLight">
+              <Dialog.Title className="font-playfair text-xl font-bold text-textPrimary mb-2">
+                Delete bubble?
+              </Dialog.Title>
+              <Dialog.Description className="font-inter text-sm text-textMuted leading-relaxed mb-6">
+                &ldquo;{bubble.title}&rdquo; will be permanently deleted. This cannot be undone.
+              </Dialog.Description>
+              <div className="flex gap-3">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="flex-1 min-h-[44px] px-4 py-2 border border-gold text-gold text-sm font-inter font-medium rounded-lg hover:bg-surface transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDelete(bubble.id)
+                    setDeleteOpen(false)
+                  }}
+                  className="flex-1 min-h-[44px] px-4 py-2 bg-red-500 text-white text-sm font-inter font-medium rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </div>
     </div>
   )
