@@ -1,11 +1,9 @@
 <h1 align="center">Hi 👋, I'm Stephen Onochie</h1>
-<h3 align="center">Just a passionate teenager learning to code!</h3>
+<h3 align="center">Computer Engineering Student at Purdue</h3>
 
 - 🔭 I’m currently working on my **[Portfolio Website](https://github.com/Stephen-Onochie/Stephen-Onochie.github.io)** 🧢👕
 
-- 🌱 I’m currently learning about **Computer Vision w/ OpenCV**
-
-- 💬 Ask me about **Python, Java, FTC**
+- 🌱 I’m currently learning about **MCP servers and AI**
 
 - 📫 How to reach me **stephenconochie@gmail.com**
 

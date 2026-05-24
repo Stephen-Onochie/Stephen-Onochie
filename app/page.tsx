@@ -1,19 +1,22 @@
+import PortfolioFonts from '@/components/portfolio/PortfolioFonts'
+import SiteHeader from '@/components/portfolio/SiteHeader'
 import Hero from '@/components/portfolio/Hero'
-import About from '@/components/portfolio/About'
-import SBSDigital from '@/components/portfolio/SBSDigital'
+import GridMatrix from '@/components/portfolio/GridMatrix'
 import GitHubSection from '@/components/portfolio/GitHubSection'
 import ResumeCTA from '@/components/portfolio/ResumeCTA'
 import Footer from '@/components/portfolio/Footer'
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-beige">
-      <Hero />
-      <About />
-      <SBSDigital />
-      <GitHubSection />
-      <ResumeCTA />
+    <PortfolioFonts>
+      <SiteHeader />
+      <main>
+        <Hero />
+        <GridMatrix />
+        <GitHubSection />
+        <ResumeCTA />
+      </main>
       <Footer />
-    </main>
+    </PortfolioFonts>
   )
 }

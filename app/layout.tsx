@@ -16,7 +16,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: 'Stephen Onochie',
-  description: 'Builder at the intersection of business and technology.',
+  description: 'Computer Engineering student at Purdue. Engineer and founder of SBS Digital LLC.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

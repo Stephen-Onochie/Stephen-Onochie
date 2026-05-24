@@ -23,7 +23,23 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Smooth scroll */
 html {
   scroll-behavior: smooth;
+}
+
+@keyframes portfolio-ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.portfolio-ticker {
+  animation: portfolio-ticker 40s linear infinite;
+}
+
+.portfolio-ticker:hover {
+  animation-play-state: paused;
 }

@@ -1,23 +1,25 @@
 export default function ResumeCTA() {
   return (
-    <section id="resume" className="py-20 px-6 bg-surface">
-      <div className="max-w-3xl mx-auto text-center">
-        <h2 className="font-playfair text-4xl md:text-5xl font-bold text-textPrimary mb-4">
-          Resume
-        </h2>
-        <p className="text-textMuted font-inter text-lg mb-8">
-          Download my resume to learn more about my experience.
-        </p>
-        {/* TODO: Replace href with Supabase Storage URL once PDF is uploaded */}
-        <a
-          href="#"
-          className="inline-flex items-center gap-2 px-8 py-4 bg-gold text-white font-inter font-semibold rounded-lg hover:bg-brownAccent transition-colors duration-200 min-h-[44px] text-lg"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Download Resume
-        </a>
+    <section id="resume" className="border-b border-grid">
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        <div className="p-8 md:p-12 border-b md:border-b-0 md:border-r border-grid flex flex-col justify-center">
+          <h2 className="font-display text-4xl md:text-5xl uppercase tracking-wide text-textPrimary">
+            Resume
+          </h2>
+          <p className="font-mono text-sm text-textMuted mt-4 leading-relaxed max-w-md">
+            Download a PDF overview of engineering experience, projects, and leadership.
+          </p>
+        </div>
+        <div className="p-8 md:p-12 flex items-center justify-center bg-surface">
+          <a
+            href="https://drive.google.com/file/d/1wwWW8jbMPgyqH5YyqObefPECvoomPn7N/view?usp=sharing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-xs uppercase tracking-[0.3em] text-textPrimary border border-grid px-8 py-4 hover:border-gold hover:text-gold bg-beige transition-colors duration-200"
+          >
+            View Resume →
+          </a>
+        </div>
       </div>
     </section>
   )

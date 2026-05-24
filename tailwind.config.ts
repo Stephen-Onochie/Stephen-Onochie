@@ -15,10 +15,13 @@ const config: Config = {
         brownAccent: '#6B4F2A',
         textPrimary: '#2C1F0E',
         textMuted: '#8C7355',
+        grid: '#B8A48E',
       },
       fontFamily: {
         inter: ['var(--font-inter)', 'sans-serif'],
         playfair: ['var(--font-playfair)', 'serif'],
+        display: ['var(--font-display)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
       },
     },
   },
