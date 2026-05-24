@@ -24,6 +24,12 @@ export default function AppsPage() {
             icon="🧍"
             href="/apps/standing-timer"
           />
+          <AppCard
+            name="StyleMate"
+            description="Catalog your wardrobe and get dressed with less friction."
+            icon="👔"
+            href="/apps/stylemate"
+          />
         </div>
       </div>
     </main>
