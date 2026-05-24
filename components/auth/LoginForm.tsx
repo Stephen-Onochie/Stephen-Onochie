@@ -18,10 +18,21 @@ export default function LoginForm() {
     const supabase = createClient()
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
 
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo },
+      options: {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     })
+
+    if (error) {
+      console.error('Google sign-in failed:', error.message)
+      window.location.href = `/login?error=auth&next=${encodeURIComponent(next)}`
+    }
   }
 
   return (
