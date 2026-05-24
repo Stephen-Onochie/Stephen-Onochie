@@ -18,11 +18,13 @@ export async function ensureTimerData(
   supabase: SupabaseClient,
   userId: string
 ): Promise<{ settings: TimerSettings; state: TimerState }> {
-  const { data: settingsRow } = await supabase
+  const { data: settingsRow, error: settingsSelectError } = await supabase
     .from('workstation_timer_settings')
     .select('*')
     .eq('user_id', userId)
     .maybeSingle()
+
+  if (settingsSelectError) throw settingsSelectError
 
   let settings = settingsRow as TimerSettings | null
 
@@ -37,11 +39,13 @@ export async function ensureTimerData(
     settings = data as TimerSettings
   }
 
-  const { data: stateRow } = await supabase
+  const { data: stateRow, error: stateSelectError } = await supabase
     .from('workstation_timer_state')
     .select('*')
     .eq('user_id', userId)
     .maybeSingle()
+
+  if (stateSelectError) throw stateSelectError
 
   let state = stateRow as TimerState | null
 

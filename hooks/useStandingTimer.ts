@@ -141,8 +141,17 @@ export function useStandingTimer() {
       setOpenInterval(interval)
       syncDerivedValues(loadedState, loadedSettings, interval)
       await refreshStatsAndHistory(session.user.id)
-    } catch {
-      setError('Failed to load timer. Is Supabase configured?')
+    } catch (err) {
+      console.error('Standing timer load failed:', err)
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : null
+      if (message?.includes('does not exist')) {
+        setError('Timer database tables are missing. Run the Supabase migration and refresh.')
+      } else {
+        setError(message ?? 'Failed to load timer. Is Supabase configured?')
+      }
     } finally {
       setLoading(false)
     }
