@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Bubble, BubbleType } from '@/types/bubbles'
 import BubbleCard from '@/components/bubbles/BubbleCard'
 import BubbleForm from '@/components/bubbles/BubbleForm'
+import AppHeader from '@/components/apps/AppHeader'
 import BottomNav from '@/components/apps/BottomNav'
 import * as Dialog from '@radix-ui/react-dialog'
 
@@ -97,15 +98,16 @@ export default function BubblesPage() {
 
   return (
     <main className="min-h-screen bg-beige pb-24">
-      {/* Header */}
-      <div className="sticky top-0 bg-beige border-b border-goldLight px-6 py-4 flex items-center justify-between z-40">
-        <h1 className="font-playfair text-2xl font-bold text-textPrimary">Bubbles</h1>
-        <span className="text-textMuted text-sm font-inter">
-          {tab === 'active' && `${visibleBubbles.length} active`}
-          {tab === 'saved' && `${visibleBubbles.length} saved`}
-          {tab === 'graveyard' && `${visibleBubbles.length} expired`}
-        </span>
-      </div>
+      <AppHeader
+        title="Bubbles"
+        right={
+          <span className="text-textMuted text-sm font-inter">
+            {tab === 'active' && `${visibleBubbles.length} active`}
+            {tab === 'saved' && `${visibleBubbles.length} saved`}
+            {tab === 'graveyard' && `${visibleBubbles.length} expired`}
+          </span>
+        }
+      />
 
       {/* Content */}
       <div className="px-4 pt-4">
