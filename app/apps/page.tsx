@@ -18,6 +18,12 @@ export default function AppsPage() {
             icon="💭"
             href="/apps/bubbles"
           />
+          <AppCard
+            name="Standing Timer"
+            description="Cycle between standing, sitting, and breaks at your desk."
+            icon="🧍"
+            href="/apps/standing-timer"
+          />
         </div>
       </div>
     </main>
