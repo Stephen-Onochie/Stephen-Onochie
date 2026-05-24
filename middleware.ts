@@ -14,8 +14,23 @@ function isSupabaseConfigured() {
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  const isAuthRoute =
-    pathname.startsWith('/login') || pathname.startsWith('/auth')
+
+  // Supabase sometimes falls back to Site URL (/) with ?code= — forward to callback
+  if (pathname === '/' && request.nextUrl.searchParams.has('code')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    if (!url.searchParams.has('next')) {
+      url.searchParams.set('next', '/apps')
+    }
+    return NextResponse.redirect(url)
+  }
+
+  // Let the callback route handle PKCE exchange without middleware interference
+  if (pathname === '/auth/callback') {
+    return NextResponse.next()
+  }
+
+  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth')
   const isAppsRoute = pathname.startsWith('/apps')
 
   if (!isSupabaseConfigured()) {
