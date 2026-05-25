@@ -12,8 +12,16 @@
       "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
       "static/chunks/240-d3b5d4ee34603e01.js",
       "static/chunks/main-app-bf8b92d7f026c2fc.js",
-      "static/css/b5335e6624c12694.css",
+      "static/css/48a0cf0310530145.css",
       "static/chunks/app/layout-3fa289620f7ab2a6.js"
+    ],
+    "/apps/page": [
+      "static/chunks/webpack-a281cebd1db231d1.js",
+      "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
+      "static/chunks/240-d3b5d4ee34603e01.js",
+      "static/chunks/main-app-bf8b92d7f026c2fc.js",
+      "static/chunks/443-e25083c8ba9cd6dc.js",
+      "static/chunks/app/apps/page-1f8e4766a22b97f6.js"
     ],
     "/apps/stylemate/page": [
       "static/chunks/webpack-a281cebd1db231d1.js",
@@ -26,14 +34,6 @@
       "static/chunks/107-00a34adc5c9b31a8.js",
       "static/chunks/app/apps/stylemate/page-560eae08f70ed994.js"
     ],
-    "/apps/page": [
-      "static/chunks/webpack-a281cebd1db231d1.js",
-      "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
-      "static/chunks/240-d3b5d4ee34603e01.js",
-      "static/chunks/main-app-bf8b92d7f026c2fc.js",
-      "static/chunks/443-e25083c8ba9cd6dc.js",
-      "static/chunks/app/apps/page-1f8e4766a22b97f6.js"
-    ],
     "/login/page": [
       "static/chunks/webpack-a281cebd1db231d1.js",
       "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
@@ -42,7 +42,17 @@
       "static/chunks/f9832c27-931f9e448c0621e4.js",
       "static/chunks/443-e25083c8ba9cd6dc.js",
       "static/chunks/358-4776420c1d79c708.js",
-      "static/chunks/app/login/page-f08d20ecf491bc48.js"
+      "static/chunks/app/login/page-f867d2f06fa6cdd6.js"
+    ],
+    "/page": [
+      "static/chunks/webpack-a281cebd1db231d1.js",
+      "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
+      "static/chunks/240-d3b5d4ee34603e01.js",
+      "static/chunks/main-app-bf8b92d7f026c2fc.js",
+      "static/css/b79b0403d10f96f6.css",
+      "static/chunks/443-e25083c8ba9cd6dc.js",
+      "static/chunks/547-04665421f2a8af96.js",
+      "static/chunks/app/page-150208a2195677c0.js"
     ],
     "/apps/standing-timer/page": [
       "static/chunks/webpack-a281cebd1db231d1.js",
@@ -66,15 +76,29 @@
       "static/chunks/107-00a34adc5c9b31a8.js",
       "static/chunks/app/apps/bubbles/page-30001cefa349d9e9.js"
     ],
-    "/page": [
+    "/apps/native-clock/settings/page": [
+      "static/chunks/webpack-a281cebd1db231d1.js",
+      "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
+      "static/chunks/240-d3b5d4ee34603e01.js",
+      "static/chunks/main-app-bf8b92d7f026c2fc.js",
+      "static/chunks/443-e25083c8ba9cd6dc.js",
+      "static/chunks/app/apps/native-clock/settings/page-c187bcf9a32ee3b2.js"
+    ],
+    "/apps/native-clock/layout": [
       "static/chunks/webpack-a281cebd1db231d1.js",
       "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
       "static/chunks/240-d3b5d4ee34603e01.js",
       "static/chunks/main-app-bf8b92d7f026c2fc.js",
       "static/css/b79b0403d10f96f6.css",
+      "static/chunks/app/apps/native-clock/layout-08dbd0ae5069081d.js"
+    ],
+    "/apps/native-clock/page": [
+      "static/chunks/webpack-a281cebd1db231d1.js",
+      "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
+      "static/chunks/240-d3b5d4ee34603e01.js",
+      "static/chunks/main-app-bf8b92d7f026c2fc.js",
       "static/chunks/443-e25083c8ba9cd6dc.js",
-      "static/chunks/547-04665421f2a8af96.js",
-      "static/chunks/app/page-150208a2195677c0.js"
+      "static/chunks/app/apps/native-clock/page-33887e888f1995a2.js"
     ]
   }
 }

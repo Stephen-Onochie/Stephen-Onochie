@@ -30,6 +30,12 @@ export default function AppsPage() {
             icon="👔"
             href="/apps/stylemate"
           />
+          <AppCard
+            name="Native Clock"
+            description="Second-monitor clock with local weather and headline ticker."
+            icon="🕐"
+            href="/apps/native-clock"
+          />
         </div>
       </div>
     </main>
