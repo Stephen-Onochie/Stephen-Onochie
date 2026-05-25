@@ -270,6 +270,16 @@ export default function NativeClockSettingsView() {
             </div>
           </div>
 
+          <label className="flex items-center gap-3 cursor-pointer py-1">
+            <input
+              type="checkbox"
+              checked={form.showSeconds}
+              onChange={(e) => patch('showSeconds', e.target.checked)}
+              className="h-4 w-4 accent-[var(--nc-accent)]"
+            />
+            <span className="font-inter text-sm">Show seconds on clock</span>
+          </label>
+
           <div>
             <p className="font-inter text-xs mb-2" style={{ color: 'var(--nc-muted)' }}>
               Theme
@@ -295,7 +305,6 @@ export default function NativeClockSettingsView() {
 
           {(
             [
-              ['showSeconds', 'Show seconds on clock'],
               ['showSmallTimer', 'Show small timer widget'],
               ['showStockTicker', 'Show stock ticker'],
               ['showNewsTicker', 'Show news headlines'],

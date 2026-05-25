@@ -56,16 +56,6 @@
       "static/chunks/107-00a34adc5c9b31a8.js",
       "static/chunks/app/apps/stylemate/page-560eae08f70ed994.js"
     ],
-    "/page": [
-      "static/chunks/webpack-a281cebd1db231d1.js",
-      "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
-      "static/chunks/240-d3b5d4ee34603e01.js",
-      "static/chunks/main-app-bf8b92d7f026c2fc.js",
-      "static/css/b79b0403d10f96f6.css",
-      "static/chunks/443-e25083c8ba9cd6dc.js",
-      "static/chunks/547-04665421f2a8af96.js",
-      "static/chunks/app/page-150208a2195677c0.js"
-    ],
     "/login/page": [
       "static/chunks/webpack-a281cebd1db231d1.js",
       "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
@@ -76,13 +66,23 @@
       "static/chunks/358-4776420c1d79c708.js",
       "static/chunks/app/login/page-f867d2f06fa6cdd6.js"
     ],
+    "/page": [
+      "static/chunks/webpack-a281cebd1db231d1.js",
+      "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
+      "static/chunks/240-d3b5d4ee34603e01.js",
+      "static/chunks/main-app-bf8b92d7f026c2fc.js",
+      "static/css/b79b0403d10f96f6.css",
+      "static/chunks/443-e25083c8ba9cd6dc.js",
+      "static/chunks/547-04665421f2a8af96.js",
+      "static/chunks/app/page-150208a2195677c0.js"
+    ],
     "/apps/native-clock/page": [
       "static/chunks/webpack-a281cebd1db231d1.js",
       "static/chunks/8bc8d761-7ef6be1061b7adc8.js",
       "static/chunks/240-d3b5d4ee34603e01.js",
       "static/chunks/main-app-bf8b92d7f026c2fc.js",
       "static/chunks/443-e25083c8ba9cd6dc.js",
-      "static/chunks/app/apps/native-clock/page-c0adde9f6ea74671.js"
+      "static/chunks/app/apps/native-clock/page-d4cfd520815784d7.js"
     ],
     "/apps/native-clock/layout": [
       "static/chunks/webpack-a281cebd1db231d1.js",
@@ -98,7 +98,7 @@
       "static/chunks/240-d3b5d4ee34603e01.js",
       "static/chunks/main-app-bf8b92d7f026c2fc.js",
       "static/chunks/443-e25083c8ba9cd6dc.js",
-      "static/chunks/app/apps/native-clock/settings/page-7eb8cd02d2d50dbc.js"
+      "static/chunks/app/apps/native-clock/settings/page-78f025847f76bc2e.js"
     ]
   }
 }

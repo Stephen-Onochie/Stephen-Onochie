@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getAuthorizedAppUser } from '@/lib/native-clock/auth'
 import { fetchStockQuotes, normalizeStockSymbols } from '@/lib/native-clock/stocks'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
   const user = await getAuthorizedAppUser()
   if (!user) {
