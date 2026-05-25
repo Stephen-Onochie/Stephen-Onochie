@@ -14,6 +14,10 @@ export interface NativeClockSettings {
   showSmallTimer: boolean
   showStockTicker: boolean
   showNewsTicker: boolean
+  /** Seconds for one full news ticker loop (lower = faster). */
+  newsTickerScrollSec: number
+  /** Seconds for one full stock ticker loop (lower = faster). */
+  stockTickerScrollSec: number
 }
 
 export interface NativeClockWeather {

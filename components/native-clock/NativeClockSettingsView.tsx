@@ -10,6 +10,11 @@ import {
   isValidFeedUrl,
   parseStockSymbols,
 } from '@/lib/native-clock/settings'
+import {
+  TICKER_SCROLL_MAX_SEC,
+  TICKER_SCROLL_MIN_SEC,
+  clampTickerScrollSeconds,
+} from '@/lib/native-clock/ticker'
 import { useNativeClockSettings } from '@/hooks/useNativeClockSettings'
 import type { NativeClockSettings, NativeClockTheme, NativeClockTimeFormat } from '@/types/native-clock'
 
@@ -165,6 +170,74 @@ export default function NativeClockSettingsView() {
               placeholder="AAPL, MSFT, GOOGL"
             />
           </label>
+
+          <div className="space-y-3 pt-2">
+            <p className="font-inter text-xs" style={{ color: 'var(--nc-muted)' }}>
+              Ticker scroll speed — lower seconds = faster scroll
+            </p>
+            <label className="block space-y-2">
+              <span className="font-inter text-sm flex justify-between">
+                <span>News headlines</span>
+                <span className="font-mono text-xs tabular-nums">
+                  {form.newsTickerScrollSec}s
+                </span>
+              </span>
+              <input
+                type="range"
+                min={TICKER_SCROLL_MIN_SEC}
+                max={TICKER_SCROLL_MAX_SEC}
+                value={form.newsTickerScrollSec}
+                onChange={(e) =>
+                  patch(
+                    'newsTickerScrollSec',
+                    clampTickerScrollSeconds(Number(e.target.value))
+                  )
+                }
+                className="w-full accent-[var(--nc-accent)]"
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="font-inter text-sm flex justify-between">
+                <span>Stock quotes</span>
+                <span className="font-mono text-xs tabular-nums">
+                  {form.stockTickerScrollSec}s
+                </span>
+              </span>
+              <input
+                type="range"
+                min={TICKER_SCROLL_MIN_SEC}
+                max={TICKER_SCROLL_MAX_SEC}
+                value={form.stockTickerScrollSec}
+                onChange={(e) =>
+                  patch(
+                    'stockTickerScrollSec',
+                    clampTickerScrollSeconds(Number(e.target.value))
+                  )
+                }
+                className="w-full accent-[var(--nc-accent)]"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: 'Fast', sec: 20 },
+                { label: 'Normal', sec: 40 },
+                { label: 'Slow', sec: 70 },
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => {
+                    patch('newsTickerScrollSec', preset.sec)
+                    patch('stockTickerScrollSec', preset.sec)
+                  }}
+                  className="px-3 py-1 rounded border font-mono text-[10px] uppercase tracking-wider"
+                  style={{ borderColor: 'var(--nc-border)', color: 'var(--nc-muted)' }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section

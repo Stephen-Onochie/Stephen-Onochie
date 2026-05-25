@@ -1,11 +1,13 @@
 'use client'
 
+import { tickerScrollStyle } from '@/lib/native-clock/ticker'
 import type { NativeClockStockQuote } from '@/types/native-clock'
 
 interface StockTickerProps {
   quotes: NativeClockStockQuote[]
   loading: boolean
   error: string | null
+  scrollSec: number
 }
 
 function formatPrice(price: number): string {
@@ -24,7 +26,7 @@ function buildTickerText(quotes: NativeClockStockQuote[]): string {
   )
 }
 
-export default function StockTicker({ quotes, loading, error }: StockTickerProps) {
+export default function StockTicker({ quotes, loading, error, scrollSec }: StockTickerProps) {
   const ticker = buildTickerText(quotes)
 
   return (
@@ -65,7 +67,7 @@ export default function StockTicker({ quotes, loading, error }: StockTickerProps
           {!loading && !error && ticker && (
             <div
               className="portfolio-ticker flex whitespace-nowrap text-[10px] md:text-xs uppercase tracking-[0.15em] font-mono tabular-nums"
-              style={{ color: 'var(--nc-muted)' }}
+              style={{ color: 'var(--nc-muted)', ...tickerScrollStyle(scrollSec) }}
               aria-live="polite"
             >
               <span>{ticker}</span>

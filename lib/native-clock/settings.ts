@@ -1,3 +1,7 @@
+import {
+  clampTickerScrollSeconds,
+  TICKER_SCROLL_DEFAULT_SEC,
+} from '@/lib/native-clock/ticker'
 import type { NativeClockSettings } from '@/types/native-clock'
 
 export const NATIVE_CLOCK_SETTINGS_KEY = 'native-clock-settings'
@@ -22,6 +26,8 @@ export function getDefaultNativeClockSettings(): NativeClockSettings {
     showSmallTimer: false,
     showStockTicker: true,
     showNewsTicker: true,
+    newsTickerScrollSec: TICKER_SCROLL_DEFAULT_SEC,
+    stockTickerScrollSec: TICKER_SCROLL_DEFAULT_SEC,
   }
 }
 
@@ -80,6 +86,13 @@ export function mergeNativeClockSettings(
   merged.locationName = merged.locationName.trim() || defaults.locationName
   merged.newsFeedUrl = merged.newsFeedUrl.trim() || defaults.newsFeedUrl
 
+  merged.newsTickerScrollSec = clampTickerScrollSeconds(
+    merged.newsTickerScrollSec ?? defaults.newsTickerScrollSec
+  )
+  merged.stockTickerScrollSec = clampTickerScrollSeconds(
+    merged.stockTickerScrollSec ?? defaults.stockTickerScrollSec
+  )
+
   return merged
 }
 
@@ -91,7 +104,7 @@ export function loadNativeClockSettings(): NativeClockSettings {
     if (!raw) return getDefaultNativeClockSettings()
     const parsed: unknown = JSON.parse(raw)
     if (!isValidSettings(parsed)) return getDefaultNativeClockSettings()
-    return mergeNativeClockSettings(parsed)
+    return mergeNativeClockSettings(parsed as NativeClockSettings)
   } catch {
     return getDefaultNativeClockSettings()
   }

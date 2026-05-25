@@ -18,7 +18,9 @@ export async function GET(request: Request) {
   try {
     const quotes = await fetchStockQuotes(symbols)
     return NextResponse.json({ quotes })
-  } catch {
-    return NextResponse.json({ error: 'Failed to load stocks' }, { status: 502 })
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to load stocks'
+    return NextResponse.json({ error: message }, { status: 502 })
   }
 }

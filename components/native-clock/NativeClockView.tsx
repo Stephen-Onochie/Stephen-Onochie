@@ -133,11 +133,18 @@ export default function NativeClockView() {
 
     try {
       const response = await fetch(`/api/native-clock/stocks?${params}`)
-      if (!response.ok) throw new Error('unavailable')
-      const data = (await response.json()) as NativeClockStocksResponse
+      const data = (await response.json()) as NativeClockStocksResponse & {
+        error?: string
+      }
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Quotes unavailable')
+      }
+      if (!data.quotes?.length) {
+        throw new Error('No quotes returned for those symbols')
+      }
       setQuotes(data.quotes)
-    } catch {
-      setStocksError('Quotes unavailable')
+    } catch (err) {
+      setStocksError(err instanceof Error ? err.message : 'Quotes unavailable')
       setQuotes([])
     } finally {
       setStocksLoading(false)
@@ -236,7 +243,12 @@ export default function NativeClockView() {
       </div>
 
       {settings.showStockTicker && (
-        <StockTicker quotes={quotes} loading={stocksLoading} error={stocksError} />
+        <StockTicker
+          quotes={quotes}
+          loading={stocksLoading}
+          error={stocksError}
+          scrollSec={settings.stockTickerScrollSec}
+        />
       )}
 
       {settings.showNewsTicker && (
@@ -245,6 +257,7 @@ export default function NativeClockView() {
           source={newsSource}
           loading={newsLoading}
           error={newsError}
+          scrollSec={settings.newsTickerScrollSec}
         />
       )}
 

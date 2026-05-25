@@ -1,16 +1,16 @@
 import type { NativeClockStockQuote } from '@/types/native-clock'
 
-interface YahooQuote {
+const YAHOO_USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+interface YahooSparkEntry {
   symbol?: string
-  regularMarketPrice?: number
-  regularMarketChangePercent?: number
+  close?: number[]
+  chartPreviousClose?: number
 }
 
-interface YahooQuoteResponse {
-  quoteResponse?: {
-    result?: YahooQuote[]
-    error?: { description?: string } | null
-  }
+interface YahooSparkResponse {
+  [symbol: string]: YahooSparkEntry
 }
 
 export function normalizeStockSymbols(symbols: string[]): string[] {
@@ -18,6 +18,53 @@ export function normalizeStockSymbols(symbols: string[]): string[] {
     .map((s) => s.trim().toUpperCase())
     .filter((s) => /^[A-Z][A-Z0-9.-]{0,9}$/.test(s))
     .slice(0, 12)
+}
+
+function parseSparkQuote(symbol: string, entry: YahooSparkEntry): NativeClockStockQuote | null {
+  const closes = entry.close
+  const price = closes?.[closes.length - 1]
+  const previous = entry.chartPreviousClose
+
+  if (price == null || !Number.isFinite(price)) return null
+
+  let changePercent = 0
+  if (previous != null && previous !== 0 && Number.isFinite(previous)) {
+    changePercent = ((price - previous) / previous) * 100
+  }
+
+  return {
+    symbol: entry.symbol ?? symbol,
+    price,
+    changePercent,
+  }
+}
+
+async function fetchSparkBatch(symbols: string[]): Promise<NativeClockStockQuote[]> {
+  const url = new URL('https://query1.finance.yahoo.com/v8/finance/spark')
+  url.searchParams.set('symbols', symbols.join(','))
+  url.searchParams.set('range', '1d')
+  url.searchParams.set('interval', '1d')
+
+  const response = await fetch(url.toString(), {
+    headers: { 'User-Agent': YAHOO_USER_AGENT },
+    next: { revalidate: 60 },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Stock quote service unavailable (${response.status})`)
+  }
+
+  const data = (await response.json()) as YahooSparkResponse
+  const quotes: NativeClockStockQuote[] = []
+
+  for (const symbol of symbols) {
+    const entry = data[symbol]
+    if (!entry) continue
+    const quote = parseSparkQuote(symbol, entry)
+    if (quote) quotes.push(quote)
+  }
+
+  return quotes
 }
 
 export async function fetchStockQuotes(
@@ -28,26 +75,11 @@ export async function fetchStockQuotes(
     return []
   }
 
-  const url = new URL('https://query1.finance.yahoo.com/v7/finance/quote')
-  url.searchParams.set('symbols', normalized.join(','))
+  const quotes = await fetchSparkBatch(normalized)
 
-  const response = await fetch(url.toString(), {
-    headers: { 'User-Agent': 'Stephen-Onochie-NativeClock/1.0' },
-    next: { revalidate: 60 },
-  })
-
-  if (!response.ok) {
-    throw new Error('Stock quote service unavailable')
+  if (quotes.length === 0) {
+    throw new Error('No stock quotes returned')
   }
 
-  const data = (await response.json()) as YahooQuoteResponse
-  const results = data.quoteResponse?.result ?? []
-
-  return results
-    .filter((q) => q.symbol && q.regularMarketPrice != null)
-    .map((q) => ({
-      symbol: q.symbol!,
-      price: q.regularMarketPrice!,
-      changePercent: q.regularMarketChangePercent ?? 0,
-    }))
+  return quotes
 }

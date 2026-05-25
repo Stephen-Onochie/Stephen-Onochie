@@ -1,5 +1,6 @@
 'use client'
 
+import { tickerScrollStyle } from '@/lib/native-clock/ticker'
 import type { NativeClockHeadline } from '@/types/native-clock'
 
 interface NewsHeadlinesProps {
@@ -7,6 +8,7 @@ interface NewsHeadlinesProps {
   source: string
   loading: boolean
   error: string | null
+  scrollSec: number
 }
 
 function buildTickerText(headlines: NativeClockHeadline[]): string {
@@ -19,6 +21,7 @@ export default function NewsHeadlines({
   source,
   loading,
   error,
+  scrollSec,
 }: NewsHeadlinesProps) {
   const ticker = buildTickerText(headlines)
 
@@ -59,7 +62,7 @@ export default function NewsHeadlines({
           {!loading && !error && ticker && (
             <div
               className="portfolio-ticker flex whitespace-nowrap text-[10px] md:text-xs uppercase tracking-[0.2em]"
-              style={{ color: 'var(--nc-muted)' }}
+              style={{ color: 'var(--nc-muted)', ...tickerScrollStyle(scrollSec) }}
               aria-live="polite"
             >
               <span>{ticker}</span>
