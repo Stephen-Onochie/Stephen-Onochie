@@ -116,10 +116,40 @@ export function saveNativeClockSettings(settings: NativeClockSettings): void {
   window.dispatchEvent(new CustomEvent(NATIVE_CLOCK_SETTINGS_EVENT))
 }
 
+// Block hosts that point at internal infrastructure to prevent SSRF — the feed
+// URL is fetched server-side, so an attacker-supplied URL must not reach loopback,
+// link-local (cloud metadata), or private network ranges.
+function isInternalHost(hostname: string): boolean {
+  const host = hostname.toLowerCase()
+
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.internal')) {
+    return true
+  }
+
+  // IPv6 loopback / unspecified, and IPv4-mapped forms
+  if (host === '::1' || host === '[::1]' || host === '::' || host === '0.0.0.0') {
+    return true
+  }
+
+  // IPv4 ranges: loopback, link-local (169.254 incl. metadata), private (10/172.16-31/192.168)
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])]
+    if (a === 127 || a === 0) return true
+    if (a === 169 && b === 254) return true
+    if (a === 10) return true
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 192 && b === 168) return true
+  }
+
+  return false
+}
+
 export function isValidFeedUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+    if (parsed.protocol !== 'https:') return false
+    return !isInternalHost(parsed.hostname)
   } catch {
     return false
   }

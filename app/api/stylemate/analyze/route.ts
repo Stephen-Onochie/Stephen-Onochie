@@ -29,7 +29,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'imageBase64 is required' }, { status: 400 })
   }
 
-  const safeMime = mimeType && typeof mimeType === 'string' ? mimeType : 'image/jpeg'
+  // Cap payload size to bound cost/abuse on the paid Gemini API.
+  // ~10MB decoded image ≈ 13.7M base64 chars; cap at 15M to leave headroom.
+  const MAX_BASE64_LENGTH = 15_000_000
+  if (imageBase64.length > MAX_BASE64_LENGTH) {
+    return NextResponse.json({ error: 'Image too large' }, { status: 413 })
+  }
+
+  // Only accept image types Gemini can analyze; reject arbitrary mime strings.
+  const ALLOWED_MIME_TYPES = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+  ])
+  const safeMime =
+    typeof mimeType === 'string' && ALLOWED_MIME_TYPES.has(mimeType)
+      ? mimeType
+      : 'image/jpeg'
 
   try {
     const tags = await analyzeClothingImage(imageBase64, safeMime)

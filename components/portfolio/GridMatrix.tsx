@@ -68,28 +68,23 @@ export default function GridMatrix() {
             </span>
           </div>
 
-          <div className="flex-1 border border-grid bg-surface/80 backdrop-blur-[2px] p-0 flex flex-col">
-            <div className="grid grid-cols-3 border-b border-grid text-[10px] uppercase tracking-[0.15em]">
-              <div className="px-3 py-2 border-r border-grid text-textMuted">Clients</div>
-              <div className="px-3 py-2 border-r border-grid text-textMuted">Projects</div>
-              <div className="px-3 py-2 text-textMuted">Stack</div>
-            </div>
-            <div className="grid grid-cols-3 flex-1 min-h-[120px]">
-              <div className="border-r border-grid p-4 font-mono text-2xl text-textPrimary">—</div>
-              <div className="border-r border-grid p-4 font-mono text-2xl text-textPrimary">—</div>
-              <div className="p-4 font-mono text-xs text-textMuted leading-relaxed">
-                Next.js
-                <br />
-                n8n
-                <br />
-                Design
+          <div className="flex-1 border border-grid bg-surface/80 backdrop-blur-[2px] flex flex-col justify-between p-4 md:p-5">
+            <p className="font-mono text-sm text-textMuted leading-relaxed">
+              Premium websites and automated workflows for businesses ready to scale
+              their online presence. Design, full-stack build, and ongoing automation —
+              handled end to end.
+            </p>
+            <div className="mt-6">
+              <div className="flex flex-wrap gap-2 mb-5">
+                {['Next.js', 'n8n', 'Design'].map((tag) => (
+                  <span
+                    key={tag}
+                    className="font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted border border-grid px-2.5 py-1"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
-            </div>
-            <div className="border-t border-grid p-4 md:p-5">
-              <p className="font-mono text-sm text-textMuted leading-relaxed mb-4">
-                Premium websites and automated workflows for businesses ready to scale
-                their online presence.
-              </p>
               <a
                 href="https://sitesbystephen.com"
                 target="_blank"
