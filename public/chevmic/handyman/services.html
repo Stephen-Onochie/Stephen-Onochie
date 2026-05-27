@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Services — Chevmic Handyman</title>
+<link rel="stylesheet" href="../shared/base.css" />
+<link rel="stylesheet" href="../shared/handyman.css" />
+<style>
+  .sv-hero { padding: 80px 32px 56px; background: var(--hm-paper); text-align: center; }
+  .sv-hero-inner { max-width: 800px; margin: 0 auto; }
+  .sv-hero h1 { margin: 16px auto 16px; max-width: 18ch; }
+  .sv-hero h1 .hl { color: var(--hm-navy); }
+  .sv-hero .cta-row { margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* Service block */
+  .sv-block { padding: clamp(56px, 6vw, 80px) 32px; }
+  .sv-block:nth-child(even) { background: var(--hm-white); }
+  .sv-block:nth-child(odd) { background: var(--hm-paper); }
+  .sv-block-inner { max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 64px; align-items: center; }
+  .sv-block.reverse .sv-block-inner { grid-template-columns: 1.05fr 0.95fr; direction: rtl; }
+  .sv-block.reverse .sv-block-inner > * { direction: ltr; }
+  .sv-block .img { aspect-ratio: 4/3; border-radius: 20px; background-size: cover; background-position: center;
+    box-shadow: 0 24px 50px -20px rgba(15,28,46,0.25); }
+  .sv-block .copy h2 { margin: 16px 0 16px; max-width: 14ch; }
+  .sv-block .copy h2 .hl { color: var(--hm-navy); }
+  .sv-block .copy .hm-lede { margin-bottom: 24px; }
+  .sv-block .list { list-style: none; padding: 0; margin: 24px 0 0;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
+  .sv-block .list li { font-size: 15px; color: var(--hm-ink); padding-left: 26px; position: relative; }
+  .sv-block .list li::before { content: '✓'; position: absolute; left: 0; top: 0;
+    width: 18px; height: 18px; border-radius: 50%; background: var(--hm-accent); color: var(--hm-ink);
+    display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;
+    line-height: 1; }
+  .sv-block .price-row { margin-top: 28px; display: inline-flex; gap: 12px; align-items: center;
+    padding: 14px 20px; background: var(--hm-light); border-radius: 12px; }
+  .sv-block .price-row .label { font-size: 12px; color: var(--hm-steel); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+  .sv-block .price-row .val { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 18px; color: var(--hm-navy); }
+  .sv-block .copy .actions { margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+  /* Misc CTA */
+  .sv-mid { background: var(--hm-navy); padding: 64px 32px; color: var(--hm-white); }
+  .sv-mid-inner { max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+  .sv-mid h3 { color: var(--hm-white); margin: 0 0 8px; font-size: 28px; }
+  .sv-mid p { margin: 0; color: #c8d2e0; }
+
+  /* Other small jobs */
+  .sv-extra { padding: clamp(56px, 7vw, 100px) 32px; background: var(--hm-light); }
+  .sv-extra-inner { max-width: 1200px; margin: 0 auto; }
+  .sv-extra-head { text-align: center; margin-bottom: 48px; }
+  .sv-extra-head h2 .hl { color: var(--hm-navy); }
+  .sv-extra-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .sv-extra-grid .it { background: var(--hm-white); border-radius: 14px; padding: 20px;
+    border: 1px solid var(--hm-line); text-align: center; }
+  .sv-extra-grid .it .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--hm-light);
+    margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; }
+  .sv-extra-grid .it h4 { margin: 0 0 4px; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px; color: var(--hm-ink); }
+  .sv-extra-grid .it p { margin: 0; font-size: 13px; color: var(--hm-steel); }
+
+  @media (max-width: 900px) {
+    .sv-block-inner, .sv-block.reverse .sv-block-inner { grid-template-columns: 1fr; gap: 28px; }
+    .sv-block.reverse .sv-block-inner { direction: ltr; }
+    .sv-block .list { grid-template-columns: 1fr; }
+    .sv-extra-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body class="handyman-body" data-screen-label="Handyman Services">
+
+<div class="sister-bar handyman">
+  <span>Chevmic LLC</span><span class="dot"></span>
+  <span>Currently browsing Handyman</span><span class="dot"></span>
+  <a href="../events/home.html">Visit Chevmic Events →</a>
+</div>
+
+<nav class="hm-nav">
+  <div class="hm-nav-inner">
+    <a href="home.html" class="hm-logo"><span class="mark">C</span><span><span class="name">Chevmic</span><span class="sub">Handyman Services</span></span></a>
+    <div class="hm-links">
+      <a href="home.html">Home</a>
+      <a href="services.html" class="active">Services</a>
+      <a href="projects.html">Projects</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div class="hm-phone"><span class="num">(317) 698-0044</span><a href="tel:+13176980044" class="hm-call-btn">📞 Call Now</a></div>
+  </div>
+</nav>
+
+<section class="sv-hero">
+  <div class="sv-hero-inner">
+    <span class="hm-eyebrow">Our Services</span>
+    <h1>Comprehensive home &amp; office services, <span class="hl">tailored to your needs.</span></h1>
+    <p class="hm-lede" style="margin: 16px auto 0; text-align:center;">From painting and electrical to outdoor projects, repairs and office decoration — our skilled team delivers exceptional craftsmanship on every job, big or small.</p>
+    <div class="cta-row">
+      <a href="tel:+13176980044" class="hm-btn primary">📞 Call (317) 698-0044</a>
+      <a href="contact.html" class="hm-btn outline">Free Quote →</a>
+    </div>
+  </div>
+</section>
+
+<!-- Painting -->
+<section class="sv-block" id="painting">
+  <div class="sv-block-inner">
+    <div class="img" style="background-image:url('https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=1400&q=85');"></div>
+    <div class="copy">
+      <span class="hm-eyebrow">01 — Painting Services</span>
+      <h2>Bring us your vision — we'll <span class="hl">paint your dream.</span></h2>
+      <p class="hm-lede">From interior and exterior painting to specialty finishes, our talented painters deliver impeccable, long-lasting results that bring life to your space. PDCA-certified, eco-friendly, and meticulously clean.</p>
+      <ul class="list">
+        <li>Residential interior painting</li><li>Residential exterior painting</li>
+        <li>Commercial interior painting</li><li>Commercial exterior painting</li>
+        <li>Industrial painting &amp; coatings</li><li>Specialty &amp; decorative finishes</li>
+        <li>Color consultation &amp; mixing</li><li>Cabinet &amp; trim refinishing</li>
+      </ul>
+      <div class="price-row"><span class="label">PDCA Certified</span><span class="val">Quoted per project</span></div>
+      <div class="actions">
+        <a href="contact.html" class="hm-btn navy">Book This Service →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Electrical -->
+<section class="sv-block reverse" id="electrical">
+  <div class="sv-block-inner">
+    <div class="img" style="background-image:url('https://images.unsplash.com/photo-1565008447742-97f6f38c985c?w=1400&q=85');"></div>
+    <div class="copy">
+      <span class="hm-eyebrow">02 — Electrical Services</span>
+      <h2>Safe, code-compliant <span class="hl">electrical work.</span></h2>
+      <p class="hm-lede">Lights, fans, thermostats, smoke alarms — the everyday electrical installations that make a real difference in how your home or office functions.</p>
+      <ul class="list">
+        <li>Light fixture installation</li><li>Ceiling fan installation</li>
+        <li>Thermostat installation</li><li>Smoke alarm install &amp; replacement</li>
+        <li>Outlet &amp; switch replacement</li><li>USB &amp; smart outlet upgrades</li>
+        <li>GFCI outlet installation</li><li>Under-cabinet &amp; accent lighting</li>
+      </ul>
+      <div class="price-row"><span class="label">Service Calls Start At</span><span class="val">$110</span></div>
+      <div class="actions"><a href="contact.html" class="hm-btn navy">Book This Service →</a></div>
+    </div>
+  </div>
+</section>
+
+<div class="sv-mid">
+  <div class="sv-mid-inner">
+    <div>
+      <h3>Not sure what you need?</h3>
+      <p>Send a photo or describe the project — we'll quote it same day, no obligation.</p>
+    </div>
+    <a href="contact.html" class="hm-btn primary">Get a Quote →</a>
+  </div>
+</div>
+
+<!-- Outdoor Projects -->
+<section class="sv-block" id="outdoor">
+  <div class="sv-block-inner">
+    <div class="img" style="background-image:url('https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1400&q=85');"></div>
+    <div class="copy">
+      <span class="hm-eyebrow">03 — Outdoor Projects</span>
+      <h2>Protect &amp; refresh your <span class="hl">exterior.</span></h2>
+      <p class="hm-lede">From roofing to fences and everything in between — we keep your home or business looking sharp and standing strong against the elements.</p>
+      <ul class="list">
+        <li>Roofs &amp; gutters</li><li>Structure assembly</li>
+        <li>Power washing</li><li>Fences &amp; gates</li>
+        <li>Siding &amp; exterior finishes</li><li>Grout repair service</li>
+        <li>Deck &amp; patio refinishing</li><li>Exterior trim &amp; soffits</li>
+      </ul>
+      <div class="price-row"><span class="label">Free Estimate</span><span class="val">On-site walkthrough</span></div>
+      <div class="actions"><a href="contact.html" class="hm-btn navy">Book This Service →</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- Home Repairs / Handyman -->
+<section class="sv-block reverse" id="repairs">
+  <div class="sv-block-inner">
+    <div class="img" style="background-image:url('https://images.unsplash.com/photo-1572297615876-9d8a87b2c5cd?w=1400&q=85');"></div>
+    <div class="copy">
+      <span class="hm-eyebrow">04 — Home Repairs &amp; Handyman</span>
+      <h2>From minor fixes to <span class="hl">extensive repairs.</span></h2>
+      <p class="hm-lede">Our handyman team handles all your maintenance needs — the long list of jobs you've been meaning to get to, done right the first time.</p>
+      <ul class="list">
+        <li>Drywall patch &amp; repair</li><li>Interior touch-ups</li>
+        <li>Door &amp; lock repair</li><li>Caulking &amp; sealing</li>
+        <li>Tile repair &amp; regrouting</li><li>Cabinet hardware</li>
+        <li>Trim &amp; molding repair</li><li>Faucets, fixtures &amp; minor plumbing</li>
+      </ul>
+      <div class="price-row"><span class="label">Hourly Rate</span><span class="val">$85/hr (1 hr min)</span></div>
+      <div class="actions"><a href="contact.html" class="hm-btn navy">Book This Service →</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- Office Decoration -->
+<section class="sv-block" id="office">
+  <div class="sv-block-inner">
+    <div class="img" style="background-image:url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=1400&q=85');"></div>
+    <div class="copy">
+      <span class="hm-eyebrow">05 — Office Decoration</span>
+      <h2>An inspiring, functional <span class="hl">workspace.</span></h2>
+      <p class="hm-lede">We help you create an office space that fosters productivity and creativity — from accent walls and feature lighting to full workspace fit-outs.</p>
+      <ul class="list">
+        <li>Accent &amp; branded walls</li><li>Office painting &amp; finishes</li>
+        <li>Feature lighting</li><li>Conference room refresh</li>
+        <li>Reception &amp; lobby styling</li><li>Storage &amp; built-in install</li>
+        <li>Signage mounting</li><li>Cabling &amp; tech tidy-up</li>
+      </ul>
+      <div class="price-row"><span class="label">Project Based</span><span class="val">Quoted per scope</span></div>
+      <div class="actions"><a href="contact.html" class="hm-btn navy">Book This Service →</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- All-in-One -->
+<section class="sv-block reverse" id="all-in-one">
+  <div class="sv-block-inner">
+    <div class="img" style="background-image:url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1400&q=85');"></div>
+    <div class="copy">
+      <span class="hm-eyebrow">06 — All-in-One Home Services</span>
+      <h2>One trusted partner, <span class="hl">every project.</span></h2>
+      <p class="hm-lede">Our all-in-one approach lets us cover all your home and office service needs under one roof — one schedule, one team, one point of contact.</p>
+      <ul class="list">
+        <li>Seasonal maintenance plans</li><li>Multi-trade projects</li>
+        <li>Move-in / move-out prep</li><li>Property manager packages</li>
+        <li>Pre-listing refresh</li><li>Annual inspection &amp; tune-up</li>
+        <li>Bundled service savings</li><li>Single invoice convenience</li>
+      </ul>
+      <div class="price-row"><span class="label">Bundle &amp; Save</span><span class="val">Custom packages</span></div>
+      <div class="actions"><a href="contact.html" class="hm-btn navy">Build a Package →</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- Other small jobs -->
+<section class="sv-extra">
+  <div class="sv-extra-inner">
+    <div class="sv-extra-head">
+      <span class="hm-eyebrow">Other Small Jobs</span>
+      <h2 style="margin-top:14px;">The 5-minute fixes <span class="hl">we handle too.</span></h2>
+    </div>
+    <div class="sv-extra-grid">
+      <div class="it"><div class="ic">🔩</div><h4>Door hinges</h4><p>Squeaks, tightening, replacement</p></div>
+      <div class="it"><div class="ic">🪟</div><h4>Window screens</h4><p>Repair &amp; replacement</p></div>
+      <div class="it"><div class="ic">🪣</div><h4>Gutter cleaning</h4><p>Single-story homes</p></div>
+      <div class="it"><div class="ic">🧱</div><h4>Pressure washing</h4><p>Driveways &amp; siding</p></div>
+      <div class="it"><div class="ic">🪜</div><h4>High-reach jobs</h4><p>Bulbs, smoke detectors</p></div>
+      <div class="it"><div class="ic">🚪</div><h4>Sticky doors</h4><p>Planing &amp; adjustment</p></div>
+      <div class="it"><div class="ic">🛁</div><h4>Bathroom caulk</h4><p>Tub &amp; shower reseal</p></div>
+      <div class="it"><div class="ic">📦</div><h4>Moving help</h4><p>Heavy lifts &amp; assembly</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section style="background:var(--hm-navy);color:#fff;padding:80px 32px;text-align:center;">
+  <div style="max-width:700px;margin:0 auto;">
+    <span class="hm-eyebrow" style="color:var(--hm-accent);">Ready to Book</span>
+    <h2 style="color:#fff;margin:14px 0 18px;">Don't see your project listed?</h2>
+    <p style="color:#c8d2e0;font-size:18px;margin-bottom:32px;">If you can describe it, we can probably do it. Call or email — we'll let you know honestly, with a fair, flat-rate quote.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a href="tel:+13176980044" class="hm-btn primary">📞 (317) 698-0044</a>
+      <a href="mailto:enquiry@chevmic.com" class="hm-btn outline" style="border-color:#fff;color:#fff;">enquiry@chevmic.com →</a>
+    </div>
+  </div>
+</section>
+
+<footer class="hm-footer">
+  <div class="hm-footer-inner">
+    <div class="colophon">
+      <div class="hm-logo" style="margin-bottom:18px;">
+        <span class="mark" style="background:var(--hm-accent);color:var(--hm-ink);">C</span>
+        <span><span class="name" style="color:#fff;">Chevmic</span><span class="sub" style="color:#a3b3c7;">Handyman</span></span>
+      </div>
+      <p>Family-owned handyman services across the Indianapolis area.</p>
+    </div>
+    <div><h4>Services</h4>
+      <a href="#painting">Painting</a><a href="#electrical">Electrical</a>
+      <a href="#outdoor">Outdoor Projects</a><a href="#repairs">Home Repairs</a>
+      <a href="#office">Office Decoration</a><a href="#all-in-one">All-in-One</a></div>
+    <div><h4>Company</h4>
+      <a href="about.html">About</a><a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a><a href="#">Reviews</a></div>
+    <div><h4>Sister Brand</h4>
+      <a href="../events/home.html">Chevmic Events ↗</a>
+      <a href="../index.html">Chevmic LLC ↗</a></div>
+  </div>
+  <div class="bottom"><span>© 2026 Chevmic LLC · Licensed &amp; Insured</span><span>Avon · Indiana</span></div>
+</footer>
+
+<script src="../shared/site.js"></script>
+</body>
+</html>

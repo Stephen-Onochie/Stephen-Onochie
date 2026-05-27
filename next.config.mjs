@@ -8,9 +8,9 @@
 const cspDirectives = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "frame-src https://www.instagram.com",
   "frame-ancestors 'none'",
@@ -43,6 +43,18 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: securityHeaders,
+      },
+    ]
+  },
+  // Chevmic LLC is a static client site served from public/chevmic/.
+  // Bare /chevmic redirects to the landing page; the trailing-slash path
+  // lets the pages' relative links resolve under /chevmic/.
+  async redirects() {
+    return [
+      {
+        source: '/chevmic',
+        destination: '/chevmic/index.html',
+        permanent: false,
       },
     ]
   },

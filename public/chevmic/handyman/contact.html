@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact — Chevmic Handyman</title>
+<link rel="stylesheet" href="../shared/base.css" />
+<link rel="stylesheet" href="../shared/handyman.css" />
+<style>
+  .cn-hero { padding: 64px 32px 32px; background: var(--hm-paper); text-align: center; }
+  .cn-hero h1 { margin: 14px auto 14px; max-width: 18ch; }
+  .cn-hero h1 .hl { color: var(--hm-navy); }
+  .cn-hero p { max-width: 50ch; margin: 0 auto; }
+
+  .cn-call { padding: 0 32px 32px; background: var(--hm-paper); }
+  .cn-call-inner { max-width: 800px; margin: 0 auto; background: var(--hm-navy);
+    border-radius: 20px; padding: 36px 32px; color: #fff; display: flex; justify-content: space-between;
+    align-items: center; gap: 32px; box-shadow: 0 20px 50px -20px rgba(15,28,46,0.4); }
+  .cn-call-inner .left h3 { color: #fff; margin: 0 0 6px; font-size: 22px; }
+  .cn-call-inner .left p { color: #c8d2e0; margin: 0; }
+  .cn-call-inner .num { font-family: 'DM Sans', sans-serif; font-weight: 700;
+    font-size: 32px; color: var(--hm-accent); }
+
+  .cn-grid { padding: 64px 32px; background: var(--hm-white); }
+  .cn-grid-inner { max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 64px; align-items: start; }
+
+  .cn-form { background: var(--hm-paper); border-radius: 20px; padding: 36px; border: 1px solid var(--hm-line); }
+  .cn-form h2 { margin-bottom: 8px; }
+  .cn-form h2 .hl { color: var(--hm-navy); }
+  .cn-form .sub { color: var(--hm-steel); margin: 0 0 28px; }
+  .cn-form .fld { margin-bottom: 18px; }
+  .cn-form .fld label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--hm-ink); }
+  .cn-form .fld input, .cn-form .fld select, .cn-form .fld textarea {
+    width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--hm-line);
+    background: #fff; color: var(--hm-ink); font-size: 15px; outline: none; transition: border-color 0.15s; }
+  .cn-form .fld input:focus, .cn-form .fld select:focus, .cn-form .fld textarea:focus { border-color: var(--hm-navy); }
+  .cn-form .fld textarea { resize: vertical; min-height: 110px; }
+  .cn-form .fld.err input, .cn-form .fld.err select, .cn-form .fld.err textarea { border-color: #c44; }
+  .cn-form .fld.err .errmsg { display: block; }
+  .cn-form .errmsg { display: none; color: #c44; font-size: 12px; margin-top: 4px; }
+  .cn-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cn-form .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cn-form .chips input { display: none; }
+  .cn-form .chips label { padding: 10px 16px; border-radius: 999px; background: #fff;
+    border: 1px solid var(--hm-line); font-size: 13px; font-weight: 500; cursor: pointer;
+    color: var(--hm-ink); transition: all 0.15s; }
+  .cn-form .chips label:hover { border-color: var(--hm-navy); }
+  .cn-form .chips input:checked + label { background: var(--hm-navy); color: #fff; border-color: var(--hm-navy); }
+  .cn-form .urgency { display: flex; gap: 8px; }
+  .cn-form .urgency input { display: none; }
+  .cn-form .urgency label { flex: 1; padding: 14px; text-align: center; border-radius: 12px;
+    background: #fff; border: 1px solid var(--hm-line); font-size: 13px; font-weight: 500; cursor: pointer;
+    color: var(--hm-ink); transition: all 0.15s; }
+  .cn-form .urgency input:checked + label { background: var(--hm-accent); border-color: var(--hm-accent); }
+  .cn-form .photo-upload { border: 2px dashed var(--hm-line); border-radius: 12px;
+    padding: 24px; text-align: center; background: #fff; cursor: pointer; transition: border-color 0.15s; }
+  .cn-form .photo-upload:hover { border-color: var(--hm-navy); }
+  .cn-form .photo-upload .icon { font-size: 24px; color: var(--hm-navy); }
+  .cn-form .photo-upload p { margin: 8px 0 0; font-size: 13px; color: var(--hm-steel); }
+  .cn-form .submit { width: 100%; padding: 16px; border-radius: 12px;
+    background: var(--hm-accent); color: var(--hm-ink); font-weight: 700; font-size: 16px; cursor: pointer;
+    transition: background 0.15s; border: 0; margin-top: 12px; }
+  .cn-form .submit:hover { background: var(--hm-accent-dark); }
+  .cn-form .success { display: none; text-align: center; padding: 40px 20px; }
+  .cn-form .success.show { display: block; }
+  .cn-form .success .check { width: 60px; height: 60px; border-radius: 50%; background: var(--hm-accent);
+    color: var(--hm-ink); display: inline-flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 700; margin-bottom: 18px; }
+  .cn-form .success h3 { margin-bottom: 8px; }
+  .cn-form .success p { color: var(--hm-steel); }
+
+  /* Sidebar */
+  .cn-side .block { background: var(--hm-paper); border-radius: 18px; padding: 24px;
+    border: 1px solid var(--hm-line); margin-bottom: 16px; }
+  .cn-side .block h3 { font-size: 18px; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+  .cn-side .block h3 .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--hm-navy);
+    color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+  .cn-side .block p { margin: 0; color: var(--hm-steel); font-size: 14px; line-height: 1.6; }
+  .cn-side .block .big { font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 22px; color: var(--hm-navy);
+    display: block; margin: 4px 0; }
+  .cn-side .hours { list-style: none; padding: 0; margin: 0; }
+  .cn-side .hours li { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px solid var(--hm-line); }
+  .cn-side .hours li:last-child { border-bottom: 0; }
+  .cn-side .hours .day { font-weight: 500; }
+  .cn-side .hours .time { color: var(--hm-steel); }
+  .cn-side .areas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .cn-side .areas span { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #fff;
+    border: 1px solid var(--hm-line); color: var(--hm-navy); }
+
+  @media (max-width: 860px) {
+    .cn-call-inner { flex-direction: column; text-align: center; gap: 18px; padding: 28px 24px; }
+    .cn-grid-inner { grid-template-columns: 1fr; gap: 32px; }
+    .cn-form .row2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body class="handyman-body" data-screen-label="Handyman Contact">
+
+<div class="sister-bar handyman">
+  <span>Chevmic LLC</span><span class="dot"></span>
+  <span>Currently browsing Handyman</span><span class="dot"></span>
+  <a href="../events/home.html">Visit Chevmic Events →</a>
+</div>
+
+<nav class="hm-nav">
+  <div class="hm-nav-inner">
+    <a href="home.html" class="hm-logo"><span class="mark">C</span><span><span class="name">Chevmic</span><span class="sub">Handyman Services</span></span></a>
+    <div class="hm-links">
+      <a href="home.html">Home</a>
+      <a href="services.html">Services</a>
+      <a href="projects.html">Projects</a>
+      <a href="about.html">About</a>
+      <a href="contact.html" class="active">Contact</a>
+    </div>
+    <div class="hm-phone"><span class="num">(317) 698-0044</span><a href="tel:+13176980044" class="hm-call-btn">📞 Call Now</a></div>
+  </div>
+</nav>
+
+<section class="cn-hero">
+  <span class="hm-eyebrow">Get In Touch</span>
+  <h1>Let's <span class="hl">get it fixed.</span></h1>
+  <p class="hm-lede">Call us, email, or send a photo through the form — same-day response on weekdays.</p>
+</section>
+
+<section class="cn-call">
+  <div class="cn-call-inner">
+    <div class="left">
+      <h3>Fastest way to a quote</h3>
+      <p>Call us — we'll talk through the project on the spot.</p>
+    </div>
+    <a href="tel:+13176980044" class="hm-btn primary" style="font-size:18px;padding:18px 28px;">📞 (317) 698-0044</a>
+  </div>
+</section>
+
+<section class="cn-grid">
+  <div class="cn-grid-inner">
+
+    <!-- FORM -->
+    <div class="cn-form">
+      <span class="hm-eyebrow">Quick Quote Request</span>
+      <h2 style="margin-top:12px;">Tell us about the <span class="hl">job.</span></h2>
+      <p class="sub">Fill this out and we'll respond within 1 business day with a flat-rate quote.</p>
+
+      <form id="hmForm" novalidate>
+        <div class="row2">
+          <div class="fld">
+            <label for="name">Your name *</label>
+            <input id="name" name="name" type="text" required>
+            <div class="errmsg">Required</div>
+          </div>
+          <div class="fld">
+            <label for="phone">Phone *</label>
+            <input id="phone" name="phone" type="tel" placeholder="(317) 555-0123" required>
+            <div class="errmsg">Required</div>
+          </div>
+        </div>
+
+        <div class="fld">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="you@email.com">
+        </div>
+
+        <div class="fld">
+          <label>What's the project? *</label>
+          <div class="chips" id="serviceChips">
+            <input type="checkbox" name="service" id="s1" value="Painting"><label for="s1">Painting</label>
+            <input type="checkbox" name="service" id="s2" value="Electrical"><label for="s2">Electrical</label>
+            <input type="checkbox" name="service" id="s3" value="Outdoor"><label for="s3">Outdoor Project</label>
+            <input type="checkbox" name="service" id="s4" value="Home Repairs"><label for="s4">Home Repairs</label>
+            <input type="checkbox" name="service" id="s5" value="Office Decoration"><label for="s5">Office Decoration</label>
+            <input type="checkbox" name="service" id="s6" value="All-in-One"><label for="s6">All-in-One</label>
+            <input type="checkbox" name="service" id="s7" value="Not Sure"><label for="s7">Not Sure</label>
+          </div>
+          <div class="errmsg">Pick at least one</div>
+        </div>
+
+        <div class="fld">
+          <label>How urgent? *</label>
+          <div class="urgency">
+            <input type="radio" name="urgency" id="u1" value="emergency" required><label for="u1">🚨<br/>Emergency</label>
+            <input type="radio" name="urgency" id="u2" value="this-week" required><label for="u2">📅<br/>This Week</label>
+            <input type="radio" name="urgency" id="u3" value="flexible" required><label for="u3">😌<br/>Flexible</label>
+          </div>
+          <div class="errmsg">Pick one</div>
+        </div>
+
+        <div class="fld">
+          <label for="details">Describe the job *</label>
+          <textarea id="details" name="details" placeholder="What's broken? Approximate location in the home? When did it start?" required></textarea>
+          <div class="errmsg">A short description helps us quote faster</div>
+        </div>
+
+        <div class="row2">
+          <div class="fld">
+            <label for="zip">ZIP Code</label>
+            <input id="zip" name="zip" type="text" placeholder="46123">
+          </div>
+          <div class="fld">
+            <label for="referral">Heard about us from?</label>
+            <select id="referral" name="referral">
+              <option value="">Optional</option>
+              <option>Google</option><option>Neighbor / friend</option>
+              <option>Facebook / Instagram</option><option>Yelp / Nextdoor</option>
+              <option>Truck spotted</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fld">
+          <label>Got a photo? (Optional)</label>
+          <label for="photo" class="photo-upload">
+            <div class="icon">📎</div>
+            <p><strong>Click to attach</strong> or drop a photo here<br/><span style="font-size:12px;color:var(--hm-gray);">PNG / JPG — speeds up our quote</span></p>
+            <input type="file" id="photo" name="photo" accept="image/*" style="display:none;">
+          </label>
+        </div>
+
+        <button type="submit" class="submit">Get My Free Quote →</button>
+      </form>
+
+      <div class="success" id="success">
+        <div class="check">✓</div>
+        <h3>Got it — thank you!</h3>
+        <p>We've received your request and we'll get back to you within one business day with a quote. If it's urgent, give us a ring at (317) 698-0044.</p>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="cn-side">
+      <div class="block">
+        <h3><span class="ic">📞</span> Call or text</h3>
+        <span class="big">(317) 698-0044</span>
+        <p>Fastest response. We pick up between 7am – 9pm, seven days a week.</p>
+      </div>
+      <div class="block">
+        <h3><span class="ic">✉️</span> Email</h3>
+        <span class="big" style="font-size:18px;">enquiry@chevmic.com</span>
+        <p>Best for non-urgent projects, photos &amp; detailed scopes. We respond within 24 hours.</p>
+      </div>
+      <div class="block">
+        <h3><span class="ic">📘</span> Facebook</h3>
+        <span class="big" style="font-size:16px;"><a href="https://www.facebook.com/profile.php?id=61559824927524" target="_blank" rel="noopener" style="color:var(--hm-navy);text-decoration:none;">@ChevmicLLC ↗</a></span>
+        <p>See recent project photos, customer reviews and seasonal offers.</p>
+      </div>
+      <div class="block">
+        <h3><span class="ic">🕘</span> Hours</h3>
+        <ul class="hours">
+          <li><span class="day">Mon – Fri</span><span class="time">7am – 9pm</span></li>
+          <li><span class="day">Saturday</span><span class="time">8am – 6pm</span></li>
+          <li><span class="day">Sunday</span><span class="time">Emergencies only</span></li>
+        </ul>
+      </div>
+      <div class="block">
+        <h3><span class="ic">📍</span> Service Area</h3>
+        <p>Avon, Indiana &amp; surrounding cities. No travel fee within 30 minutes.</p>
+        <div class="areas">
+          <span>Avon</span><span>Plainfield</span><span>Brownsburg</span>
+          <span>Danville</span><span>Speedway</span><span>Indianapolis</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="padding: 80px 32px; background: var(--hm-light);">
+  <div style="max-width:800px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:40px;">
+      <span class="hm-eyebrow">FAQ</span>
+      <h2 style="margin-top:14px;">Common <span style="color:var(--hm-navy);">questions.</span></h2>
+    </div>
+    <div id="faq">
+      <details style="background:#fff;border-radius:14px;padding:20px 24px;margin-bottom:10px;border:1px solid var(--hm-line);">
+        <summary style="font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">What services does Chevmic LLC offer?<span style="color:var(--hm-accent);font-size:22px;">+</span></summary>
+        <p style="margin:12px 0 0;color:var(--hm-steel);">Painting (residential, commercial &amp; industrial), electrical, outdoor projects, home repairs &amp; handyman, office decoration, and all-in-one home maintenance — plus our sister division, Chevmic Events.</p>
+      </details>
+      <details style="background:#fff;border-radius:14px;padding:20px 24px;margin-bottom:10px;border:1px solid var(--hm-line);">
+        <summary style="font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">Do you offer same-day service?<span style="color:var(--hm-accent);font-size:22px;">+</span></summary>
+        <p style="margin:12px 0 0;color:var(--hm-steel);">For most repairs and small jobs, yes — call before 11am and we'll usually have someone out the same day. Larger painting and outdoor projects are scheduled around your availability.</p>
+      </details>
+      <details style="background:#fff;border-radius:14px;padding:20px 24px;margin-bottom:10px;border:1px solid var(--hm-line);">
+        <summary style="font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">How do you price work?<span style="color:var(--hm-accent);font-size:22px;">+</span></summary>
+        <p style="margin:12px 0 0;color:var(--hm-steel);">Project-based quotes for painting, outdoor and office work. Hourly ($85/hr, 1 hr minimum) for repairs and installations. Always quoted up front — no surprises.</p>
+      </details>
+      <details style="background:#fff;border-radius:14px;padding:20px 24px;margin-bottom:10px;border:1px solid var(--hm-line);">
+        <summary style="font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">Are you certified, licensed &amp; insured?<span style="color:var(--hm-accent);font-size:22px;">+</span></summary>
+        <p style="margin:12px 0 0;color:var(--hm-steel);">Yes — PDCA certified members, fully licensed and insured. Documentation provided with any quote.</p>
+      </details>
+      <details style="background:#fff;border-radius:14px;padding:20px 24px;margin-bottom:10px;border:1px solid var(--hm-line);">
+        <summary style="font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">Do you guarantee your work?<span style="color:var(--hm-accent);font-size:22px;">+</span></summary>
+        <p style="margin:12px 0 0;color:var(--hm-steel);">Every job carries a one-year workmanship guarantee. If our fix fails within 12 months, we come back and re-do it at no charge.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer class="hm-footer">
+  <div class="hm-footer-inner">
+    <div class="colophon">
+      <div class="hm-logo" style="margin-bottom:18px;">
+        <span class="mark" style="background:var(--hm-accent);color:var(--hm-ink);">C</span>
+        <span><span class="name" style="color:#fff;">Chevmic</span><span class="sub" style="color:#a3b3c7;">Handyman</span></span>
+      </div>
+      <p>Family-owned handyman services across the Indianapolis area.</p>
+    </div>
+    <div><h4>Services</h4>
+      <a href="services.html#painting">Painting</a><a href="services.html#electrical">Electrical</a>
+      <a href="services.html#outdoor">Outdoor Projects</a><a href="services.html#repairs">Home Repairs</a>
+      <a href="services.html#office">Office Decoration</a><a href="services.html#all-in-one">All-in-One</a></div>
+    <div><h4>Company</h4>
+      <a href="about.html">About</a><a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a><a href="#">Reviews</a></div>
+    <div><h4>Sister Brand</h4>
+      <a href="../events/home.html">Chevmic Events ↗</a>
+      <a href="../index.html">Chevmic LLC ↗</a></div>
+  </div>
+  <div class="bottom"><span>© 2026 Chevmic LLC · Licensed &amp; Insured</span><span>Avon · Indiana</span></div>
+</footer>
+
+<script>
+const form = document.getElementById('hmForm');
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  let ok = true;
+  ['name','phone','details'].forEach(id => {
+    const el = document.getElementById(id);
+    const wrap = el.closest('.fld');
+    if (!el.value.trim()) { wrap.classList.add('err'); ok = false; }
+    else wrap.classList.remove('err');
+  });
+  // Services
+  const svcChecked = form.querySelectorAll('input[name="service"]:checked').length;
+  const svcWrap = document.getElementById('serviceChips').closest('.fld');
+  if (svcChecked === 0) { svcWrap.classList.add('err'); ok = false; } else svcWrap.classList.remove('err');
+  // Urgency
+  const urgChecked = form.querySelector('input[name="urgency"]:checked');
+  const urgWrap = form.querySelector('.urgency').closest('.fld');
+  if (!urgChecked) { urgWrap.classList.add('err'); ok = false; } else urgWrap.classList.remove('err');
+
+  if (!ok) return;
+  form.style.display = 'none';
+  document.getElementById('success').classList.add('show');
+  window.scrollTo({ top: form.parentElement.offsetTop - 100, behavior: 'smooth' });
+});
+
+// FAQ toggle indicator
+document.querySelectorAll('#faq details').forEach(d => {
+  d.addEventListener('toggle', () => {
+    const span = d.querySelector('summary span');
+    span.textContent = d.open ? '−' : '+';
+  });
+});
+</script>
+<script src="../shared/site.js"></script>
+</body>
+</html>

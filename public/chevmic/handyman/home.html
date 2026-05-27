@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chevmic Handyman — Reliable Repairs You Can Trust</title>
+<link rel="stylesheet" href="../shared/base.css" />
+<link rel="stylesheet" href="../shared/handyman.css" />
+<style>
+  /* Hero */
+  .hm-hero { padding: clamp(56px, 7vw, 96px) 0; background: var(--hm-paper); }
+  .hm-hero-inner { max-width: 1320px; margin: 0 auto; padding: 0 32px;
+    display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 64px; align-items: center; }
+  .hm-hero .hm-eyebrow { margin-bottom: 18px; }
+  .hm-hero h1 { font-size: clamp(40px, 5.6vw, 78px); line-height: 1.04;
+    color: var(--hm-ink); max-width: 14ch; }
+  .hm-hero h1 .hl { color: var(--hm-navy); }
+  .hm-hero h1 .hl-y { background: linear-gradient(180deg, transparent 64%, rgba(230,166,78,0.4) 64%); padding: 0 4px; }
+  .hm-hero p.hm-lede { margin: 24px 0 0; }
+  .hm-hero .cta-row { margin-top: 36px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .hm-hero .trust-row { margin-top: 40px; display: flex; gap: 28px; align-items: center;
+    padding-top: 28px; border-top: 1px solid var(--hm-line); }
+  .hm-hero .trust { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--hm-steel); }
+  .hm-hero .trust .ic { width: 36px; height: 36px; border-radius: 50%; background: var(--hm-navy); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+  .hm-hero .trust .ic.acc { background: var(--hm-accent); color: var(--hm-ink); }
+  .hm-hero .photo { position: relative; aspect-ratio: 4/5; border-radius: 24px; overflow: hidden;
+    background-image: url('https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=1400&q=85');
+    background-size: cover; background-position: center; box-shadow: 0 30px 60px -20px rgba(15,28,46,0.3); }
+  .hm-hero .badge { position: absolute; bottom: 28px; left: 28px; right: 28px;
+    background: var(--hm-white); padding: 18px 22px; border-radius: 14px;
+    display: flex; align-items: center; gap: 14px; box-shadow: 0 18px 40px -10px rgba(0,0,0,0.2); }
+  .hm-hero .badge .stars { color: var(--hm-accent); font-size: 18px; letter-spacing: 2px; }
+  .hm-hero .badge .text { font-size: 14px; font-weight: 500; color: var(--hm-ink); line-height: 1.35; }
+  .hm-hero .badge .text strong { display: block; font-size: 15px; color: var(--hm-navy); font-weight: 700; }
+
+  /* Services strip */
+  .hm-svc { padding: clamp(56px, 7vw, 100px) 0; background: var(--hm-white); }
+  .hm-svc-inner { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+  .hm-svc-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px;
+    gap: 32px; flex-wrap: wrap; }
+  .hm-svc-head .left h2 { max-width: 16ch; }
+  .hm-svc-head .left h2 .hl { color: var(--hm-navy); }
+  .hm-svc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .svc-tile { background: var(--hm-paper); border: 1px solid var(--hm-line); border-radius: 18px;
+    padding: 28px 24px; transition: all 0.2s; cursor: pointer;
+    display: flex; flex-direction: column; gap: 16px; }
+  .svc-tile:hover { background: var(--hm-navy); color: var(--hm-white); transform: translateY(-3px);
+    box-shadow: 0 18px 40px -12px rgba(30,58,95,0.4); }
+  .svc-tile:hover h3, .svc-tile:hover p, .svc-tile:hover .arr { color: var(--hm-white); }
+  .svc-tile:hover .ic { background: var(--hm-accent); }
+  .svc-tile .ic { width: 56px; height: 56px; border-radius: 14px; background: var(--hm-navy);
+    color: var(--hm-white); display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.2s; }
+  .svc-tile h3 { font-size: 22px; margin: 0; }
+  .svc-tile p { font-size: 14px; color: var(--hm-steel); margin: 0; line-height: 1.55; }
+  .svc-tile .arr { margin-top: auto; color: var(--hm-navy); font-weight: 600; font-size: 13px;
+    display: inline-flex; gap: 6px; align-items: center; }
+
+  /* Why us */
+  .hm-why { padding: clamp(56px, 7vw, 100px) 32px; background: var(--hm-navy); color: var(--hm-white); position: relative; }
+  .hm-why::before { content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 20% 20%, rgba(230,166,78,0.1), transparent 50%); }
+  .hm-why-inner { max-width: 1320px; margin: 0 auto; position: relative;
+    display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 72px; align-items: center; }
+  .hm-why .hm-eyebrow { color: var(--hm-accent); }
+  .hm-why h2 { color: var(--hm-white); max-width: 14ch; margin: 16px 0 20px; }
+  .hm-why h2 .hl { color: var(--hm-accent); }
+  .hm-why p { color: #c8d2e0; font-size: 17px; line-height: 1.65; max-width: 50ch; }
+  .hm-why .img { aspect-ratio: 4/3; border-radius: 20px; overflow: hidden;
+    background-image: url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1400&q=85');
+    background-size: cover; background-position: center; }
+  .hm-why .features { margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px; }
+  .hm-why .feat { display: flex; gap: 14px; align-items: flex-start; }
+  .hm-why .feat .ic { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(230,166,78,0.15); color: var(--hm-accent);
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+  .hm-why .feat .t { font-weight: 600; color: var(--hm-white); margin: 0 0 4px; }
+  .hm-why .feat .d { font-size: 13px; color: #a3b3c7; margin: 0; line-height: 1.5; }
+
+  /* How */
+  .hm-how { padding: clamp(56px, 7vw, 100px) 32px; background: var(--hm-paper); }
+  .hm-how-inner { max-width: 1320px; margin: 0 auto; }
+  .hm-how-inner .head { text-align: center; margin-bottom: 56px; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .hm-how-inner .head h2 .hl { color: var(--hm-navy); }
+  .hm-how .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; position: relative; }
+  .hm-how .step { background: var(--hm-white); border-radius: 18px; padding: 32px 28px; position: relative;
+    border: 1px solid var(--hm-line); }
+  .hm-how .step .n { width: 40px; height: 40px; border-radius: 12px; background: var(--hm-accent);
+    color: var(--hm-ink); display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-family: 'DM Sans', sans-serif; font-size: 17px; }
+  .hm-how .step h3 { margin: 18px 0 10px; }
+  .hm-how .step p { color: var(--hm-steel); margin: 0; font-size: 15px; line-height: 1.6; }
+
+  /* Recent work */
+  .hm-work { padding: clamp(56px, 7vw, 100px) 32px; background: var(--hm-white); }
+  .hm-work-inner { max-width: 1320px; margin: 0 auto; }
+  .hm-work .head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+  .hm-work .head h2 .hl { color: var(--hm-navy); }
+  .hm-work .grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 220px 220px; gap: 12px; }
+  .hm-work .grid .it { background-size: cover; background-position: center; border-radius: 14px; overflow: hidden;
+    position: relative; cursor: pointer; transition: transform 0.3s; }
+  .hm-work .grid .it:hover { transform: scale(1.01); }
+  .hm-work .grid .it:first-child { grid-row: span 2; }
+  .hm-work .grid .it::after { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.6)); }
+  .hm-work .grid .it .tag { position: absolute; bottom: 16px; left: 20px; color: #fff;
+    font-weight: 600; z-index: 1; font-size: 14px; }
+
+  /* Testimonials */
+  .hm-test { padding: clamp(56px, 7vw, 100px) 32px; background: var(--hm-light); }
+  .hm-test-inner { max-width: 1100px; margin: 0 auto; }
+  .hm-test .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+  .hm-test .card { background: var(--hm-white); padding: 28px; border-radius: 18px; border: 1px solid var(--hm-line); }
+  .hm-test .stars { color: var(--hm-accent); letter-spacing: 2px; margin-bottom: 14px; }
+  .hm-test .quote { font-size: 16px; line-height: 1.6; color: var(--hm-ink); margin: 0 0 18px; }
+  .hm-test .author { display: flex; gap: 12px; align-items: center; padding-top: 16px; border-top: 1px solid var(--hm-line); }
+  .hm-test .author .av { width: 38px; height: 38px; border-radius: 50%; background: var(--hm-navy); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+  .hm-test .author .name { font-weight: 600; font-size: 14px; }
+  .hm-test .author .where { font-size: 12px; color: var(--hm-steel); }
+
+  /* CTA */
+  .hm-cta { padding: 80px 32px; background: var(--hm-navy); color: var(--hm-white); text-align: center; }
+  .hm-cta-inner { max-width: 800px; margin: 0 auto; }
+  .hm-cta h2 { color: var(--hm-white); margin-bottom: 20px; }
+  .hm-cta h2 .hl { color: var(--hm-accent); }
+  .hm-cta p { color: #c8d2e0; font-size: 18px; max-width: 50ch; margin: 0 auto 32px; }
+  .hm-cta .row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+  @media (max-width: 900px) {
+    .hm-hero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .hm-hero .trust-row { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .hm-svc-grid { grid-template-columns: 1fr 1fr; }
+    .hm-trust-row { grid-template-columns: 1fr 1fr; }
+    .hm-why-inner { grid-template-columns: 1fr; gap: 32px; }
+    .hm-why .features { grid-template-columns: 1fr; }
+    .hm-how .steps { grid-template-columns: 1fr; }
+    .hm-work .grid { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 180px); }
+    .hm-work .grid .it:first-child { grid-row: span 1; grid-column: span 2; }
+    .hm-test .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body class="handyman-body" data-screen-label="Handyman Home">
+
+<div class="sister-bar handyman">
+  <span>Chevmic LLC</span><span class="dot"></span>
+  <span>Currently browsing Handyman</span><span class="dot"></span>
+  <a href="../events/home.html">Visit Chevmic Events →</a>
+</div>
+
+<nav class="hm-nav">
+  <div class="hm-nav-inner">
+    <a href="home.html" class="hm-logo">
+      <span class="mark">C</span>
+      <span><span class="name">Chevmic</span><span class="sub">Handyman Services</span></span>
+    </a>
+    <div class="hm-links">
+      <a href="home.html" class="active">Home</a>
+      <a href="services.html">Services</a>
+      <a href="projects.html">Projects</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <div class="hm-phone">
+      <span class="num">(317) 698-0044</span>
+      <a href="tel:+13176980044" class="hm-call-btn">📞 Call Now</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hm-hero">
+  <div class="hm-hero-inner">
+    <div>
+      <span class="hm-eyebrow">Family-Owned · Avon, Indiana</span>
+      <h1>Your trusted partner for <span class="hl">home &amp; office</span> care.</h1>
+      <p class="hm-lede">Painting, repairs, electrical, outdoor projects and office decoration — Chevmic LLC delivers comprehensive home and office services with the craftsmanship and attention to detail your space deserves.</p>
+      <div class="cta-row">
+        <a href="tel:+13176980044" class="hm-btn primary">📞 Call (317) 698-0044</a>
+        <a href="contact.html" class="hm-btn outline">Request a Quote →</a>
+      </div>
+      <div class="trust-row">
+        <div class="trust"><span class="ic acc">✓</span><span><strong style="display:block;font-weight:700;color:var(--hm-ink);">PDCA Certified</strong>Painting &amp; Decorating</span></div>
+        <div class="trust"><span class="ic">🕘</span><span><strong style="display:block;font-weight:700;color:var(--hm-ink);">Flexible Scheduling</strong>Around your day</span></div>
+        <div class="trust"><span class="ic acc">🌿</span><span><strong style="display:block;font-weight:700;color:var(--hm-ink);">Eco-Friendly</strong>Clean work areas</span></div>
+      </div>
+    </div>
+    <div class="photo">
+      <div class="badge">
+        <div>
+          <div class="stars">★★★★★</div>
+        </div>
+        <div class="text"><strong>"Comprehensive home services done right."</strong>Avon, Indiana · Family-owned</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES STRIP -->
+<section class="hm-svc">
+  <div class="hm-svc-inner">
+    <div class="hm-svc-head">
+      <div class="left">
+        <span class="hm-eyebrow">What We Offer</span>
+        <h2 style="margin-top:14px;">All your home &amp; office services <span class="hl">under one roof.</span></h2>
+      </div>
+      <a href="services.html" class="hm-btn navy">See All Services →</a>
+    </div>
+    <div class="hm-svc-grid">
+      <a href="services.html#painting" class="svc-tile">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 11h-4a2 2 0 0 0-2 2v8"/><rect x="3" y="3" width="16" height="8" rx="1"/><path d="M11 14h4"/></svg></div>
+        <div><h3>Painting Services</h3><p>Interior &amp; exterior painting, specialty finishes &amp; color consulting — residential, commercial &amp; industrial.</p></div>
+        <span class="arr">Learn more →</span>
+      </a>
+      <a href="services.html#electrical" class="svc-tile">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
+        <div><h3>Electrical Services</h3><p>Light installation, ceiling fans, thermostats &amp; smoke alarms — safe, code-compliant work.</p></div>
+        <span class="arr">Learn more →</span>
+      </a>
+      <a href="services.html#outdoor" class="svc-tile">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg></div>
+        <div><h3>Outdoor Projects</h3><p>Roofs &amp; gutters, power washing, fences, siding, exterior finishes &amp; grout repair.</p></div>
+        <span class="arr">Learn more →</span>
+      </a>
+      <a href="services.html#repairs" class="svc-tile">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+        <div><h3>Home Repairs &amp; Handyman</h3><p>From minor fixes to extensive repairs — drywall, doors, tile, fixtures &amp; everything in between.</p></div>
+        <span class="arr">Learn more →</span>
+      </a>
+      <a href="services.html#office" class="svc-tile">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4M8 3v4M2 12h20"/></svg></div>
+        <div><h3>Office Decoration</h3><p>Workspace fit-out, finishes &amp; styling to create an inspiring, productive office environment.</p></div>
+        <span class="arr">Learn more →</span>
+      </a>
+      <a href="services.html#all-in-one" class="svc-tile">
+        <div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <div><h3>All-in-One Maintenance</h3><p>One trusted partner, one schedule — covering every home &amp; office service need under a single roof.</p></div>
+        <span class="arr">Learn more →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section class="hm-why">
+  <div class="hm-why-inner">
+    <div class="img"></div>
+    <div>
+      <span class="hm-eyebrow">Why Chevmic</span>
+      <h2>Exceptional craftsmanship, <span class="hl">superior care.</span></h2>
+      <p>With years of industry experience, we've established ourselves as a reliable service provider dedicated to delivering exceptional craftsmanship and superior customer satisfaction — whether the project is big or small.</p>
+      <div class="features">
+        <div class="feat"><span class="ic">✓</span><div><p class="t">PDCA Certified Member</p><p class="d">Accredited by the Painting &amp; Decorating Contractors of America.</p></div></div>
+        <div class="feat"><span class="ic">✓</span><div><p class="t">Flexible Scheduling</p><p class="d">Evenings, Saturdays, project phases — we schedule around your day.</p></div></div>
+        <div class="feat"><span class="ic">✓</span><div><p class="t">Eco-Friendly &amp; Clean</p><p class="d">Low-VOC materials and a tidy work area on every job. Always.</p></div></div>
+        <div class="feat"><span class="ic">✓</span><div><p class="t">Licensed &amp; Insured</p><p class="d">Fully insured family operation — every project, every time.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="hm-how">
+  <div class="hm-how-inner">
+    <div class="head">
+      <span class="hm-eyebrow">How It Works</span>
+      <h2 style="margin-top:14px;">Three steps. <span class="hl">No headache.</span></h2>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><h3>Tell us about the project</h3><p>Call, email, or send a photo. We discuss your vision &amp; provide a clear, flat-rate quote — usually the same day.</p></div>
+      <div class="step"><span class="n">2</span><h3>Schedule on your terms</h3><p>Flexible mornings, evenings &amp; Saturdays. We work around your day, not ours.</p></div>
+      <div class="step"><span class="n">3</span><h3>Craftsmanship, delivered</h3><p>Licensed, insured, family-run. We clean as we go &amp; back our workmanship for a full year.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- RECENT WORK -->
+<section class="hm-work">
+  <div class="hm-work-inner">
+    <div class="head">
+      <div>
+        <span class="hm-eyebrow">Recent Work</span>
+        <h2 style="margin-top:14px;">A look at <span class="hl">finished jobs.</span></h2>
+      </div>
+      <a href="projects.html" class="hm-btn navy">View All Projects →</a>
+    </div>
+    <div class="grid">
+      <a href="projects.html" class="it" style="background-image:url('https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=1400&q=85');"><span class="tag">Residential interior painting</span></a>
+      <a href="projects.html" class="it" style="background-image:url('https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=900&q=85');"><span class="tag">Ceiling fan &amp; lighting install</span></a>
+      <a href="projects.html" class="it" style="background-image:url('https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=900&q=85');"><span class="tag">Bathroom tile &amp; grout</span></a>
+      <a href="projects.html" class="it" style="background-image:url('https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=900&q=85');"><span class="tag">Exterior siding refresh</span></a>
+      <a href="projects.html" class="it" style="background-image:url('https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=85');"><span class="tag">Office decoration</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="hm-test">
+  <div class="hm-test-inner">
+    <div style="text-align:center;">
+      <span class="hm-eyebrow">Client Testimonials</span>
+      <h2 style="margin-top:14px;">Trusted by <span style="color:var(--hm-navy)">homeowners &amp; businesses</span> across the Indianapolis area.</h2>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="stars">★★★★★</div>
+        <p class="quote">"Chevmic repainted our entire main floor and you'd never know there'd been a brush in the room — every line is crisp, every wall is even. True craftsmanship."</p>
+        <div class="author"><span class="av">MK</span><div><div class="name">Marcus K.</div><div class="where">Avon · Interior Painting</div></div></div>
+      </div>
+      <div class="card">
+        <div class="stars">★★★★★</div>
+        <p class="quote">"I had a list of repairs piling up for a year — drywall, ceiling fan, leaky faucet, sticky door. They knocked it all out in one afternoon. Absolutely calling them again."</p>
+        <div class="author"><span class="av">RP</span><div><div class="name">Renee P.</div><div class="where">Brownsburg · Handyman</div></div></div>
+      </div>
+      <div class="card">
+        <div class="stars">★★★★★</div>
+        <p class="quote">"They redid our office reception area — new paint, new lighting, fresh trim. Clients now compliment the space before we even sit down. Worth every penny."</p>
+        <div class="author"><span class="av">DA</span><div><div class="name">David A.</div><div class="where">Plainfield · Office Decoration</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="hm-cta">
+  <div class="hm-cta-inner">
+    <span class="hm-eyebrow">Get Started Today</span>
+    <h2 style="margin-top:14px;">Got something <span class="hl">broken?</span></h2>
+    <p>Call now or send a photo — we'll quote it the same day. Family-owned, locally trusted, fully insured.</p>
+    <div class="row">
+      <a href="tel:+13176980044" class="hm-btn primary">📞 (317) 698-0044</a>
+      <a href="mailto:enquiry@chevmic.com" class="hm-btn outline" style="border-color:#fff;color:#fff;">enquiry@chevmic.com →</a>
+    </div>
+  </div>
+</section>
+
+<footer class="hm-footer">
+  <div class="hm-footer-inner">
+    <div class="colophon">
+      <div class="hm-logo" style="margin-bottom:18px;">
+        <span class="mark" style="background:var(--hm-accent);color:var(--hm-ink);">C</span>
+        <span><span class="name" style="color:#fff;">Chevmic</span><span class="sub" style="color:#a3b3c7;">Handyman</span></span>
+      </div>
+      <p>Family-owned handyman services across the Indianapolis area. Licensed, insured, and proud to be on a first-name basis with our neighbors.</p>
+    </div>
+    <div><h4>Services</h4>
+      <a href="services.html#painting">Painting</a><a href="services.html#electrical">Electrical</a>
+      <a href="services.html#outdoor">Outdoor Projects</a><a href="services.html#repairs">Home Repairs</a>
+      <a href="services.html#office">Office Decoration</a><a href="services.html#all-in-one">All-in-One</a></div>
+    <div><h4>Company</h4>
+      <a href="about.html">About</a><a href="projects.html">Projects</a>
+      <a href="contact.html">Contact</a><a href="#">Reviews</a></div>
+    <div><h4>Sister Brand</h4>
+      <a href="../events/home.html">Chevmic Events ↗</a>
+      <a href="../index.html">Chevmic LLC ↗</a></div>
+  </div>
+  <div class="bottom"><span>© 2026 Chevmic LLC · Licensed &amp; Insured</span><span>Avon · Indiana</span></div>
+</footer>
+
+<script src="../shared/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chevmic Events — Luxury Event Design</title>
+<link rel="stylesheet" href="../shared/base.css" />
+<link rel="stylesheet" href="../shared/events.css" />
+<style>
+  /* Page-specific */
+  .evt-hero { position: relative; min-height: 92vh; display: flex; align-items: flex-end;
+    padding: 0 40px 80px; overflow: hidden; }
+  .evt-hero::before { content: ''; position: absolute; inset: 0; z-index: 0;
+    background-image: url('https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=2200&q=85');
+    background-size: cover; background-position: center;
+    transform: scale(1.05); animation: heroZoom 8s ease forwards; }
+  @keyframes heroZoom { to { transform: scale(1); } }
+  .evt-hero::after { content: ''; position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(180deg, rgba(10,9,7,0.3) 0%, rgba(10,9,7,0.55) 50%, rgba(10,9,7,0.95) 100%); }
+  .evt-hero-inner { position: relative; z-index: 2; max-width: 1440px; margin: 0 auto; width: 100%;
+    display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 48px; }
+  .evt-hero h1 { font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: clamp(56px, 8vw, 132px); line-height: 0.96; max-width: 12ch; letter-spacing: -0.01em; }
+  .evt-hero h1 .ital { font-style: italic; color: var(--gold); }
+  .evt-hero .side-rail { max-width: 320px; padding-bottom: 12px; }
+  .evt-hero .side-rail .num { font-family: 'Cormorant Garamond', serif; font-size: 14px;
+    color: var(--gold); letter-spacing: 0.16em; }
+  .evt-hero .side-rail .body { font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 22px; line-height: 1.4; color: var(--blush); margin: 14px 0 24px; }
+
+  .marquee-strip { background: var(--ink); color: var(--gold); padding: 18px 0;
+    border-block: 1px solid rgba(201,169,97,0.18); overflow: hidden; }
+  .marquee-strip .track { display: flex; gap: 64px; white-space: nowrap;
+    animation: marquee 40s linear infinite; font-family: 'Cormorant Garamond', serif;
+    font-size: 24px; font-style: italic; letter-spacing: 0.04em; }
+  .marquee-strip .track span { display: inline-flex; align-items: center; gap: 64px; }
+  .marquee-strip .track .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+
+  /* Featured services */
+  .services-preview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: rgba(201,169,97,0.18); margin: 0; }
+  .services-preview .item { background: var(--ink); padding: 56px 32px; text-align: center;
+    transition: background 0.3s; cursor: pointer; }
+  .services-preview .item:hover { background: var(--ink-soft); }
+  .services-preview .item .ic { font-family: 'Cormorant Garamond', serif; font-size: 36px;
+    color: var(--gold); font-style: italic; }
+  .services-preview .item h3 { margin: 14px 0 8px; font-size: 24px; }
+  .services-preview .item p { font-size: 14px; color: var(--blush); opacity: 0.75; margin: 0; }
+
+  /* Editorial split */
+  .editorial { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 0; align-items: stretch; }
+  .editorial .img { background-size: cover; background-position: center; min-height: 700px; }
+  .editorial .copy { padding: clamp(48px, 6vw, 100px); background: var(--ink-soft); }
+  .editorial .copy h2 { margin-bottom: 24px; }
+  .editorial .copy h2 .ital { color: var(--gold); font-style: italic; }
+  .editorial .copy p { font-size: 17px; line-height: 1.7; color: var(--blush); margin: 0 0 18px; max-width: 50ch; }
+  .editorial .copy .gold-button { margin-top: 32px; }
+
+  /* Gallery preview */
+  .gallery-preview { padding: 0; background: var(--ink); }
+  .gp-header { padding: 80px 40px 48px; text-align: center; }
+  .gp-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 240px 240px; gap: 8px;
+    padding: 0 40px 80px; max-width: 1500px; margin: 0 auto; }
+  .gp-grid .item { background-size: cover; background-position: center; overflow: hidden; position: relative; cursor: pointer; }
+  .gp-grid .item::after { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5)); transition: background 0.3s; }
+  .gp-grid .item:hover::after { background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.7)); }
+  .gp-grid .item:first-child { grid-row: span 2; }
+
+  /* Testimonial */
+  .testimonial { background: var(--paper); color: var(--ink); padding: clamp(80px, 11vw, 160px) 40px; text-align: center; }
+  .testimonial .quote { font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: clamp(28px, 4vw, 48px); line-height: 1.25; max-width: 22ch; margin: 32px auto; font-weight: 300; }
+  .testimonial .quote::before { content: '"'; color: var(--gold); font-size: 1.2em; }
+  .testimonial .quote::after { content: '"'; color: var(--gold); font-size: 1.2em; }
+  .testimonial .author { font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+  .testimonial .author .name { color: var(--ink); margin-right: 12px; }
+
+  /* CTA band */
+  .cta-band { padding: clamp(80px, 11vw, 160px) 40px; text-align: center;
+    background: linear-gradient(180deg, var(--ink) 0%, #050402 100%); }
+  .cta-band h2 { max-width: 18ch; margin: 16px auto 12px; }
+  .cta-band h2 .ital { font-style: italic; color: var(--gold); }
+  .cta-band p { color: var(--blush); margin: 0 auto 40px; max-width: 50ch;
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 22px; }
+
+  /* Reveal */
+  [data-reveal] { opacity: 0; transform: translateY(20px); transition: opacity 0.9s, transform 0.9s cubic-bezier(0.2,0.8,0.2,1); }
+  [data-reveal].in { opacity: 1; transform: none; }
+
+  @media (max-width: 860px) {
+    .evt-hero-inner { grid-template-columns: 1fr; }
+    .evt-hero { padding: 0 20px 56px; }
+    .services-preview { grid-template-columns: 1fr 1fr; }
+    .editorial { grid-template-columns: 1fr; }
+    .editorial .img { min-height: 400px; }
+    .gp-grid { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 200px); padding: 0 20px 60px; }
+    .gp-grid .item:first-child { grid-row: span 1; grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body class="events-body" data-screen-label="Events Home">
+
+<div class="sister-bar events">
+  <span>Chevmic LLC</span><span class="dot"></span>
+  <span>Currently browsing Events</span><span class="dot"></span>
+  <a href="../handyman/home.html">Visit Chevmic Handyman →</a>
+</div>
+
+<nav class="evt-nav">
+  <div class="evt-nav-inner">
+    <a href="home.html" class="evt-logo">
+      <span class="mark">C</span>
+      <span class="name">Chevmic</span>
+      <span class="sub">Events</span>
+    </a>
+    <div class="evt-links">
+      <a href="home.html" class="active">Home</a>
+      <a href="about.html">About</a>
+      <a href="services.html">Services</a>
+      <a href="packages.html">Packages</a>
+      <a href="rentals.html">Rentals</a>
+      <a href="gallery.html">Gallery</a>
+    </div>
+    <a href="contact.html" class="evt-cta">Book Consultation</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="evt-hero" data-screen-label="Hero">
+  <div class="evt-hero-inner">
+    <h1 data-reveal>Turning your<br/>vision into <span class="ital">unforgettable</span> experiences.</h1>
+    <div class="side-rail" data-reveal>
+      <div class="num">— 01 / The Studio</div>
+      <p class="body">Bespoke event design, decor and rentals for the moments that mark a life.</p>
+      <a href="contact.html" class="gold-button">Book Now <span class="arrow">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip" aria-hidden="true">
+  <div class="track">
+    <span>Weddings <span class="dot"></span> Birthdays <span class="dot"></span> Corporate <span class="dot"></span> Anniversaries <span class="dot"></span> Quinceañeras <span class="dot"></span> Galas <span class="dot"></span> Showers <span class="dot"></span></span>
+    <span>Weddings <span class="dot"></span> Birthdays <span class="dot"></span> Corporate <span class="dot"></span> Anniversaries <span class="dot"></span> Quinceañeras <span class="dot"></span> Galas <span class="dot"></span> Showers <span class="dot"></span></span>
+  </div>
+</div>
+
+<!-- SERVICES PREVIEW -->
+<section class="services-preview">
+  <a href="services.html" class="item" data-reveal>
+    <div class="ic">i.</div>
+    <h3>Weddings</h3>
+    <p>Ceremony to last dance — full event design</p>
+  </a>
+  <a href="services.html" class="item" data-reveal>
+    <div class="ic">ii.</div>
+    <h3>Birthdays</h3>
+    <p>Milestones styled like a magazine cover</p>
+  </a>
+  <a href="services.html" class="item" data-reveal>
+    <div class="ic">iii.</div>
+    <h3>Corporate</h3>
+    <p>Brand-forward galas &amp; activations</p>
+  </a>
+  <a href="services.html" class="item" data-reveal>
+    <div class="ic">iv.</div>
+    <h3>Decoration</h3>
+    <p>Florals, draping, lighting &amp; tablescapes</p>
+  </a>
+</section>
+
+<!-- EDITORIAL -->
+<section class="editorial" data-screen-label="About preview">
+  <div class="img" style="background-image:url('https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1600&q=85');" data-reveal></div>
+  <div class="copy">
+    <div class="eyebrow" data-reveal>The Chevmic Way</div>
+    <span class="evt-rule"></span>
+    <h2 data-reveal>A family who believes<br/><span class="ital">every detail</span> tells a story.</h2>
+    <p data-reveal>We treat your celebration like the moment of a lifetime — because for the people you love, it is. Every linen, every centerpiece, every lit candle is placed by hand. We're not a warehouse; we're a studio.</p>
+    <p data-reveal>From the first consultation to the final breakdown, you'll work with the same family who'll be there long after the last guest leaves.</p>
+    <a href="about.html" class="gold-button outline" data-reveal>Our Story <span class="arrow">→</span></a>
+  </div>
+</section>
+
+<!-- GALLERY PREVIEW -->
+<section class="gallery-preview">
+  <div class="gp-header" data-reveal>
+    <div class="eyebrow">Recent Events</div>
+    <span class="evt-rule center"></span>
+    <h2>A look <span style="font-style:italic;color:var(--gold)">inside</span> the room.</h2>
+  </div>
+  <div class="gp-grid">
+    <a href="gallery.html" class="item" style="background-image:url('https://images.unsplash.com/photo-1519741497674-611481863552?w=1600&q=85');"></a>
+    <a href="gallery.html" class="item" style="background-image:url('https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=1200&q=85');"></a>
+    <a href="gallery.html" class="item" style="background-image:url('https://images.unsplash.com/photo-1606800052052-a08af7148866?w=1200&q=85');"></a>
+    <a href="gallery.html" class="item" style="background-image:url('https://images.unsplash.com/photo-1530023367847-a683933f4172?w=1200&q=85');"></a>
+    <a href="gallery.html" class="item" style="background-image:url('https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1200&q=85');"></a>
+  </div>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial">
+  <div class="eyebrow" data-reveal>Kind Words</div>
+  <p class="quote" data-reveal>They didn't just decorate our wedding — they made every guest feel like they'd walked into a daydream.</p>
+  <div class="author" data-reveal><span class="name serif" style="font-family:'Cormorant Garamond',serif;font-size:18px;letter-spacing:0.04em;text-transform:none;font-style:italic;">Naomi &amp; Jordan</span> · Spring Wedding 2025</div>
+</section>
+
+<!-- CTA -->
+<section class="cta-band">
+  <div class="eyebrow" data-reveal>Now Booking 2026</div>
+  <h2 data-reveal>Let's design your<br/><span class="ital">unforgettable.</span></h2>
+  <p data-reveal>Tell us what you're celebrating — we'll handle the rest.</p>
+  <a href="contact.html" class="gold-button" data-reveal>Book a Consultation <span class="arrow">→</span></a>
+</section>
+
+<!-- FOOTER -->
+<footer class="evt-footer">
+  <div class="evt-footer-inner">
+    <div>
+      <div class="evt-logo" style="margin-bottom:24px;"><span class="mark">C</span><span class="name">Chevmic</span><span class="sub">Events</span></div>
+      <p class="colophon">Family-owned event design in Avon, Indiana, styling celebrations across Indiana and beyond.</p>
+    </div>
+    <div>
+      <h4>Visit</h4>
+      <a href="home.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a>
+      <a href="packages.html">Packages</a><a href="rentals.html">Rentals</a><a href="gallery.html">Gallery</a>
+    </div>
+    <div>
+      <h4>Studio</h4>
+      <a href="tel:+13175550100">(317) 555-0100</a>
+      <a href="mailto:hello@chevmicevents.com">hello@chevmicevents.com</a>
+      <a href="#">Instagram</a><a href="#">Facebook</a>
+    </div>
+    <div>
+      <h4>Sister Brand</h4>
+      <a href="../handyman/home.html">Chevmic Handyman ↗</a>
+      <a href="../index.html">Chevmic LLC ↗</a>
+    </div>
+  </div>
+  <div class="bottom">
+    <span>© 2026 Chevmic LLC</span>
+    <span>Avon · Indiana</span>
+  </div>
+</footer>
+
+<script src="../shared/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+/* Chevmic Events — luxury editorial */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --ink: #0a0907;
+  --ink-soft: #1a1612;
+  --gold: #c9a961;
+  --gold-soft: #d9bd80;
+  --blush: #e8d5cd;
+  --blush-deep: #d4b7ac;
+  --ivory: #f6f2ec;
+  --paper: #efe9e0;
+  --line: rgba(201,169,97,0.25);
+}
+
+.events-body {
+  background: var(--ink);
+  color: var(--ivory);
+  font-family: 'Inter', sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+.events-body.paper { background: var(--paper); color: var(--ink); }
+.events-body.ivory { background: var(--ivory); color: var(--ink); }
+
+/* Typography */
+.serif, .events-body h1, .events-body h2, .events-body h3, .events-body .display {
+  font-family: 'Cormorant Garamond', serif; font-weight: 400; letter-spacing: 0.01em;
+}
+.events-body .display { font-size: clamp(56px, 9vw, 140px); line-height: 1.02; letter-spacing: -0.01em; }
+.events-body h1 { font-size: clamp(40px, 5.5vw, 80px); line-height: 1.05; margin: 0; }
+.events-body h2 { font-size: clamp(32px, 4vw, 56px); line-height: 1.1; margin: 0 0 24px; }
+.events-body h3 { font-size: 26px; margin: 0 0 12px; }
+.eyebrow { font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.32em;
+  text-transform: uppercase; color: var(--gold); font-weight: 500; }
+.lede { font-family: 'Cormorant Garamond', serif; font-size: clamp(22px, 2.2vw, 30px);
+  line-height: 1.45; font-weight: 300; font-style: italic; color: var(--blush); max-width: 56ch; }
+.italic { font-style: italic; }
+
+/* Nav */
+.evt-nav {
+  position: sticky; top: 0; z-index: 30;
+  background: rgba(10,9,7,0.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(201,169,97,0.18);
+}
+.evt-nav-inner {
+  max-width: 1440px; margin: 0 auto; padding: 18px 40px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.evt-logo { font-family: 'Cormorant Garamond', serif; font-size: 24px; letter-spacing: 0.12em;
+  display: flex; align-items: center; gap: 10px; }
+.evt-logo .mark { width: 28px; height: 28px; border: 1px solid var(--gold); display: inline-flex;
+  align-items: center; justify-content: center; font-size: 13px; color: var(--gold); letter-spacing: 0; }
+.evt-logo .name { color: var(--ivory); }
+.evt-logo .sub { color: var(--gold); font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; margin-left: 4px; }
+.evt-links { display: flex; gap: 28px; font-size: 12px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--ivory); font-weight: 400; }
+.evt-links a { padding: 6px 0; border-bottom: 1px solid transparent; transition: all 0.2s; opacity: 0.78; }
+.evt-links a:hover, .evt-links a.active { opacity: 1; border-color: var(--gold); }
+.evt-cta {
+  font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+  border: 1px solid var(--gold); color: var(--gold); padding: 12px 22px; transition: all 0.2s;
+  display: inline-block;
+}
+.evt-cta:hover { background: var(--gold); color: var(--ink); }
+.evt-cta.solid { background: var(--gold); color: var(--ink); }
+.evt-cta.solid:hover { background: var(--gold-soft); }
+
+/* Sister bar */
+.sister-bar.events { background: var(--ink-soft); color: var(--blush); border-bottom: 1px solid rgba(201,169,97,0.12); }
+.sister-bar.events a { color: var(--gold); }
+
+/* Layout helpers */
+.evt-container { max-width: 1440px; margin: 0 auto; padding: 0 40px; }
+.evt-section { padding: clamp(64px, 9vw, 140px) 0; }
+.evt-rule { width: 80px; height: 1px; background: var(--gold); display: block; margin: 24px 0; }
+.evt-rule.center { margin-left: auto; margin-right: auto; }
+
+/* Footer */
+.evt-footer { background: #050402; color: var(--blush); padding: 80px 40px 32px; border-top: 1px solid rgba(201,169,97,0.18); }
+.evt-footer-inner { max-width: 1440px; margin: 0 auto; display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; }
+.evt-footer h4 { font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.28em;
+  text-transform: uppercase; color: var(--gold); margin: 0 0 18px; font-weight: 500; }
+.evt-footer a { display: block; padding: 4px 0; opacity: 0.8; font-size: 14px; }
+.evt-footer a:hover { opacity: 1; color: var(--gold); }
+.evt-footer .colophon { font-family: 'Cormorant Garamond', serif; font-size: 32px; line-height: 1.1; color: var(--ivory); max-width: 360px; }
+.evt-footer .bottom { max-width: 1440px; margin: 56px auto 0; padding-top: 24px; border-top: 1px solid rgba(201,169,97,0.12);
+  display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(232,213,205,0.6); }
+
+/* Cards & UI */
+.gold-button { display: inline-flex; align-items: center; gap: 12px; font-size: 12px;
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink); background: var(--gold);
+  padding: 18px 32px; transition: all 0.2s; }
+.gold-button:hover { background: var(--gold-soft); transform: translateY(-1px); }
+.gold-button.outline { background: transparent; color: var(--gold); border: 1px solid var(--gold); }
+.gold-button.outline:hover { background: var(--gold); color: var(--ink); }
+.gold-button .arrow { transition: transform 0.2s; }
+.gold-button:hover .arrow { transform: translateX(4px); }
+
+/* Mobile */
+@media (max-width: 860px) {
+  .evt-nav-inner { padding: 14px 20px; }
+  .evt-links { display: none; }
+  .evt-container { padding: 0 20px; }
+  .evt-footer { padding: 56px 20px 24px; }
+  .evt-footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .evt-footer .colophon { grid-column: 1 / -1; }
+}

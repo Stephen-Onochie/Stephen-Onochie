@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rentals — Chevmic Events</title>
+<link rel="stylesheet" href="../shared/base.css" />
+<link rel="stylesheet" href="../shared/events.css" />
+<style>
+  .rn-hero { padding: 120px 40px 60px; text-align: center; max-width: 1100px; margin: 0 auto; }
+  .rn-hero h1 { font-weight: 300; margin: 24px auto; max-width: 16ch; line-height: 1.04; }
+  .rn-hero h1 .ital { font-style: italic; color: var(--gold); }
+
+  .rn-filter-bar { position: sticky; top: 62px; z-index: 20;
+    background: rgba(10,9,7,0.92); backdrop-filter: blur(14px);
+    border-block: 1px solid rgba(201,169,97,0.18); padding: 18px 40px; }
+  .rn-filter-inner { max-width: 1400px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .rn-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .rn-chip { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 10px 18px; border: 1px solid rgba(201,169,97,0.3); color: var(--ivory);
+    transition: all 0.15s; background: transparent; }
+  .rn-chip:hover { border-color: var(--gold); }
+  .rn-chip.active { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+  .rn-chip .ct { opacity: 0.6; margin-left: 6px; font-size: 10px; }
+  .rn-chip.active .ct { color: var(--ink); opacity: 0.7; }
+  .rn-search { display: flex; align-items: center; gap: 8px; }
+  .rn-search input { background: transparent; border: 1px solid rgba(201,169,97,0.3);
+    padding: 10px 14px; color: var(--ivory); font-size: 13px; min-width: 220px;
+    letter-spacing: 0.04em; outline: none; transition: border-color 0.15s; }
+  .rn-search input:focus { border-color: var(--gold); }
+  .rn-search input::placeholder { color: rgba(232,213,205,0.4); letter-spacing: 0.04em; }
+
+  .rn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px 24px;
+    max-width: 1400px; margin: 0 auto; padding: 56px 40px 80px; }
+  .rn-prod { cursor: pointer; transition: transform 0.25s; }
+  .rn-prod:hover { transform: translateY(-4px); }
+  .rn-prod .ph { aspect-ratio: 4/5; background: var(--ink-soft); overflow: hidden;
+    background-size: cover; background-position: center; transition: transform 0.4s; position: relative; }
+  .rn-prod:hover .ph::after { background: rgba(0,0,0,0); }
+  .rn-prod .ph::after { content: ''; position: absolute; inset: 0;
+    background: rgba(0,0,0,0.06); transition: background 0.3s; }
+  .rn-prod .meta { padding: 16px 4px 0; }
+  .rn-prod .meta h3 { font-size: 20px; margin: 0; font-weight: 400; }
+  .rn-prod .cat { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--blush); opacity: 0.65; margin-top: 4px; }
+  .rn-prod .stock { font-size: 11px; color: rgba(232,213,205,0.5); margin-top: 6px;
+    display: flex; align-items: center; gap: 6px; }
+  .rn-prod .stock::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #65d18a; }
+
+  .rn-empty { grid-column: 1 / -1; text-align: center; padding: 80px 0;
+    color: var(--blush); font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 28px; }
+
+  /* Detail modal */
+  .rn-modal { position: fixed; inset: 0; z-index: 100; background: rgba(8,7,5,0.94);
+    display: none; align-items: center; justify-content: center; padding: 40px; animation: lbIn 0.25s ease; }
+  .rn-modal.open { display: flex; }
+  .rn-modal-card { background: var(--ink); max-width: 900px; width: 100%; max-height: 90vh; overflow: auto;
+    display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--gold); position: relative; }
+  .rn-modal-card .mph { background-size: cover; background-position: center; min-height: 540px; }
+  .rn-modal-card .mc { padding: 48px 40px; }
+  .rn-modal-card .mc .cat { font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+  .rn-modal-card .mc h2 { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 40px; margin: 14px 0 18px; }
+  .rn-modal-card .mc p { color: var(--blush); line-height: 1.7; margin: 0 0 18px; }
+  .rn-modal-card .mc .specs { list-style: none; padding: 18px 0; margin: 18px 0;
+    border-block: 1px solid rgba(201,169,97,0.18); }
+  .rn-modal-card .mc .specs li { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+  .rn-modal-card .mc .specs li .k { color: var(--blush); opacity: 0.7; }
+  .rn-modal-card .mc .specs li .v { color: var(--ivory); }
+
+  .rn-modal-card .close { position: absolute; top: 16px; right: 16px; color: var(--ivory); font-size: 24px;
+    width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+
+  .rn-cta { background: linear-gradient(180deg, var(--ink), #050402); padding: 100px 40px; text-align: center; }
+  .rn-cta h2 { max-width: 18ch; margin: 16px auto 32px; }
+  .rn-cta h2 .ital { font-style: italic; color: var(--gold); }
+  .rn-cta .note { color: var(--blush); margin: 24px auto 0; max-width: 50ch;
+    font-family: 'Cormorant Garamond', serif; font-style: italic; }
+
+  @media (max-width: 1100px) { .rn-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 800px) {
+    .rn-grid { grid-template-columns: 1fr 1fr; padding: 32px 20px 60px; gap: 24px 16px; }
+    .rn-filter-bar { padding: 14px 20px; }
+    .rn-modal-card { grid-template-columns: 1fr; max-height: 96vh; }
+    .rn-modal-card .mph { min-height: 280px; }
+    .rn-modal-card .mc { padding: 28px 20px; }
+  }
+</style>
+</head>
+<body class="events-body" data-screen-label="Events Rentals">
+
+<div class="sister-bar events">
+  <span>Chevmic LLC</span><span class="dot"></span>
+  <span>Currently browsing Events</span><span class="dot"></span>
+  <a href="../handyman/home.html">Visit Chevmic Handyman →</a>
+</div>
+
+<nav class="evt-nav">
+  <div class="evt-nav-inner">
+    <a href="home.html" class="evt-logo"><span class="mark">C</span><span class="name">Chevmic</span><span class="sub">Events</span></a>
+    <div class="evt-links">
+      <a href="home.html">Home</a><a href="about.html">About</a>
+      <a href="services.html">Services</a><a href="packages.html">Packages</a>
+      <a href="rentals.html" class="active">Rentals</a>
+      <a href="gallery.html">Gallery</a>
+    </div>
+    <a href="contact.html" class="evt-cta">Book Consultation</a>
+  </div>
+</nav>
+
+<section class="rn-hero">
+  <div class="eyebrow">The Atelier</div>
+  <span class="evt-rule center"></span>
+  <h1>Rentals from the <span class="ital">Chevmic</span> inventory.</h1>
+  <p class="lede" style="margin:24px auto 0;">Chairs, tables, dinnerware and accents — curated to elevate any event. Available individually or as part of a styled package.</p>
+</section>
+
+<div class="rn-filter-bar">
+  <div class="rn-filter-inner">
+    <div class="rn-chips" id="chips"></div>
+    <div class="rn-search">
+      <input type="search" id="search" placeholder="Search the catalog…" />
+    </div>
+  </div>
+</div>
+
+<section class="rn-grid" id="grid"></section>
+
+<section class="rn-cta">
+  <div class="eyebrow">Building Your Day</div>
+  <h2>Need a <span class="ital">curated package?</span></h2>
+  <a href="contact.html" class="gold-button">Book Consultation <span class="arrow">→</span></a>
+  <p class="note">Bulk availability for events of 200+ guests. Delivery, setup and breakdown included with select packages.</p>
+</section>
+
+<!-- Detail modal -->
+<div class="rn-modal" id="modal" role="dialog">
+  <div class="rn-modal-card">
+    <div class="mph" id="mph"></div>
+    <div class="mc">
+      <span class="cat" id="mcat"></span>
+      <h2 id="mtitle"></h2>
+      <p id="mdesc"></p>
+      <ul class="specs" id="mspecs"></ul>
+      <a href="contact.html" class="gold-button">Book Consultation <span class="arrow">→</span></a>
+    </div>
+    <button class="close" id="mclose" aria-label="Close">×</button>
+  </div>
+</div>
+
+<footer class="evt-footer">
+  <div class="evt-footer-inner">
+    <div><div class="evt-logo" style="margin-bottom:24px;"><span class="mark">C</span><span class="name">Chevmic</span><span class="sub">Events</span></div>
+      <p class="colophon">Family-owned event design in Avon, Indiana, styling celebrations across Indiana and beyond.</p></div>
+    <div><h4>Visit</h4>
+      <a href="home.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a>
+      <a href="packages.html">Packages</a><a href="rentals.html">Rentals</a><a href="gallery.html">Gallery</a></div>
+    <div><h4>Studio</h4>
+      <a href="tel:+13175550100">(317) 555-0100</a>
+      <a href="mailto:hello@chevmicevents.com">hello@chevmicevents.com</a>
+      <a href="#">Instagram</a><a href="#">Facebook</a></div>
+    <div><h4>Sister Brand</h4>
+      <a href="../handyman/home.html">Chevmic Handyman ↗</a>
+      <a href="../index.html">Chevmic LLC ↗</a></div>
+  </div>
+  <div class="bottom"><span>© 2026 Chevmic LLC</span><span>Avon · Indiana</span></div>
+</footer>
+
+<script>
+const products = [
+  // Seating
+  { id:'white-folding', name:'White Folding Chairs', cat:'Seating', price:'$4', stock:'200+ available',
+    img:'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=900&q=80',
+    desc:'Crisp white folding chairs — the workhorse of outdoor ceremonies and casual receptions. Lightweight, stackable, and endlessly photogenic.',
+    specs:[['Material','Powder-coated steel'],['Color','White'],['Inventory','200+'],['Use','Ceremony · Dinner']]},
+  { id:'chiavari-gold', name:'Chiavari Chairs — Gold', cat:'Seating', price:'$9', stock:'140 available',
+    img:'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900&q=80',
+    desc:'The classic. Bamboo-style chiavari in brushed gold finish with ivory linen cushions — the chair we use on most weddings.',
+    specs:[['Material','Resin with linen cushion'],['Color','Gold · Ivory'],['Inventory','140'],['Use','Wedding · Gala']]},
+  { id:'o-back-gold', name:'O-Back Gold Chairs', cat:'Seating', price:'$14', stock:'80 available',
+    img:'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=900&q=80',
+    desc:'Statement seating with a sculptural O-shaped back in polished gold. Ideal for sweetheart tables and head tables.',
+    specs:[['Material','Polished gold steel'],['Color','Gold'],['Inventory','80'],['Use','Head Table · Sweetheart']]},
+  { id:'high-back-luxury', name:'High-Back Luxury Chairs', cat:'Seating', price:'$22', stock:'24 available',
+    img:'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=900&q=80',
+    desc:'Upholstered velvet high-back chairs for an editorial, modern-luxury statement at the head of the room.',
+    specs:[['Material','Velvet upholstery, gold frame'],['Color','Champagne · Blush · Black'],['Inventory','24'],['Use','Statement seating']]},
+  { id:'dior-chair', name:'Dior Chairs', cat:'Seating', price:'$11', stock:'120 available',
+    img:'https://images.unsplash.com/photo-1542665952-14513db15293?w=900&q=80',
+    desc:'Elegant gold-frame ghost-style "Dior" chairs with clear acrylic backs — modern, light, and perfectly polished.',
+    specs:[['Material','Acrylic · Gold frame'],['Color','Clear · Gold'],['Inventory','120'],['Use','Modern wedding · Corporate']]},
+
+  // Tables
+  { id:'table-serpentine', name:'Serpentine Tables', cat:'Tables', price:'$45', stock:'12 available',
+    img:'https://images.unsplash.com/photo-1530023367847-a683933f4172?w=900&q=80',
+    desc:'Curved serpentine tables that link to form sweeping S-shapes, halos, or feast tables — the centerpiece of any modern layout.',
+    specs:[['Size','60" x 30"'],['Color','Black or White top'],['Inventory','12'],['Use','Feast · Sweetheart']]},
+  { id:'table-round', name:'Round Tables — 60"', cat:'Tables', price:'$15', stock:'40 available',
+    img:'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=900&q=80',
+    desc:'Classic 60-inch round tables, seating eight comfortably. The standard for wedding receptions.',
+    specs:[['Size','60" round'],['Seats','8 guests'],['Inventory','40'],['Use','Reception dinner']]},
+  { id:'table-rectangular', name:'Rectangular Tables — 8ft', cat:'Tables', price:'$18', stock:'30 available',
+    img:'https://images.unsplash.com/photo-1519741497674-611481863552?w=900&q=80',
+    desc:'8-foot rectangular tables — perfect for long farm-style feast layouts, buffet stations, or head tables.',
+    specs:[['Size','8\' x 30"'],['Seats','8–10 guests'],['Inventory','30'],['Use','Feast · Buffet']]},
+
+  // Dinnerware
+  { id:'charger-gold', name:'Charger Plates — Gold', cat:'Dinnerware', price:'$3', stock:'500+ available',
+    img:'https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=900&q=80',
+    desc:'Bevelled gold charger plates with subtle hammered texture. The base layer of any luxe place setting.',
+    specs:[['Diameter','13"'],['Color','Gold'],['Inventory','500+'],['Use','Wedding · Gala']]},
+  { id:'charger-black', name:'Charger Plates — Black', cat:'Dinnerware', price:'$3', stock:'320 available',
+    img:'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=900&q=80',
+    desc:'Matte black chargers — modern, dramatic, and the perfect backdrop for white florals and gold cutlery.',
+    specs:[['Diameter','13"'],['Color','Matte black'],['Inventory','320'],['Use','Modern · Editorial']]},
+  { id:'charger-clear', name:'Charger Plates — Clear', cat:'Dinnerware', price:'$3', stock:'400 available',
+    img:'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=900&q=80',
+    desc:'Beaded clear glass chargers — minimalist, light-reflective, and lets your linens take center stage.',
+    specs:[['Diameter','13"'],['Color','Clear · Gold rim'],['Inventory','400'],['Use','Outdoor · Garden']]},
+  { id:'dinner-plates', name:'Dinner Plates — White', cat:'Dinnerware', price:'$1.50', stock:'600+ available',
+    img:'https://images.unsplash.com/photo-1543353071-10c8ba85a904?w=900&q=80',
+    desc:'Classic white porcelain dinner plates, lightly rimmed. Always available, always in stock.',
+    specs:[['Diameter','10.5"'],['Color','White'],['Inventory','600+'],['Use','All events']]},
+  { id:'wine-glasses', name:'Wine Glasses', cat:'Dinnerware', price:'$1.25', stock:'800+ available',
+    img:'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=900&q=80',
+    desc:'Stemmed crystal wine glasses, polished to a shine. Available with gold-rimmed upgrade.',
+    specs:[['Volume','14 oz'],['Color','Clear or gold-rim'],['Inventory','800+'],['Use','Reception · Dinner']]},
+  { id:'cutlery-gold', name:'Cutlery — Gold', cat:'Dinnerware', price:'$2 (set)', stock:'300+ available',
+    img:'https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=900&q=80',
+    desc:'Five-piece brushed gold cutlery sets — knife, fork, salad fork, soup spoon, dessert spoon.',
+    specs:[['Pieces','5 per setting'],['Finish','Brushed gold'],['Inventory','300+ sets'],['Use','Wedding · Gala']]},
+  { id:'chafing', name:'Chafing Dishes', cat:'Dinnerware', price:'$22', stock:'24 available',
+    img:'https://images.unsplash.com/photo-1555244162-803834f70033?w=900&q=80',
+    desc:'Polished gold chafing dishes for warm food service — full size and half size available.',
+    specs:[['Sizes','Full · Half'],['Finish','Polished gold'],['Inventory','24'],['Use','Buffet · Catering']]},
+];
+
+const categories = ['All', 'Seating', 'Tables', 'Dinnerware'];
+let activeCat = 'All';
+let searchQ = '';
+
+const chips = document.getElementById('chips');
+const grid = document.getElementById('grid');
+const searchEl = document.getElementById('search');
+
+function counts() {
+  const c = { All: products.length };
+  products.forEach(p => { c[p.cat] = (c[p.cat]||0) + 1; });
+  return c;
+}
+function renderChips() {
+  const c = counts();
+  chips.innerHTML = categories.map(cat =>
+    `<button class="rn-chip ${cat===activeCat?'active':''}" data-cat="${cat}">${cat} <span class="ct">${c[cat]||0}</span></button>`
+  ).join('');
+  chips.querySelectorAll('.rn-chip').forEach(b => {
+    b.addEventListener('click', () => { activeCat = b.dataset.cat; renderChips(); renderGrid(); });
+  });
+}
+function renderGrid() {
+  let filtered = products;
+  if (activeCat !== 'All') filtered = filtered.filter(p => p.cat === activeCat);
+  if (searchQ) {
+    const q = searchQ.toLowerCase();
+    filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q));
+  }
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="rn-empty">No items match — try another filter.</div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(p => `
+    <div class="rn-prod" data-id="${p.id}">
+      <div class="ph" style="background-image:url('${p.img}');"></div>
+      <div class="meta"><h3>${p.name}</h3></div>
+      <div class="cat">${p.cat}</div>
+      <div class="stock">${p.stock}</div>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.rn-prod').forEach(el => {
+    el.addEventListener('click', () => openModal(el.dataset.id));
+  });
+}
+searchEl.addEventListener('input', e => { searchQ = e.target.value; renderGrid(); });
+
+// Modal
+const modal = document.getElementById('modal');
+function openModal(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('mph').style.backgroundImage = `url('${p.img}')`;
+  document.getElementById('mcat').textContent = p.cat;
+  document.getElementById('mtitle').textContent = p.name;
+  document.getElementById('mdesc').textContent = p.desc;
+  document.getElementById('mspecs').innerHTML = p.specs.map(([k,v])=>`<li><span class="k">${k}</span><span class="v">${v}</span></li>`).join('');
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() { modal.classList.remove('open'); document.body.style.overflow = ''; }
+document.getElementById('mclose').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+renderChips();
+renderGrid();
+</script>
+<script src="../shared/site.js"></script>
+</body>
+</html>
