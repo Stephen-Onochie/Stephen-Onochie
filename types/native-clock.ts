@@ -14,6 +14,10 @@ export interface NativeClockSettings {
   showSmallTimer: boolean
   showStockTicker: boolean
   showNewsTicker: boolean
+  /** Show today's todos inline below the clock face. */
+  showTodaysTasks: boolean
+  /** Max number of items in the inline today strip before it scrolls. */
+  todaysTasksMax: number
   /** Seconds for one full news ticker loop (lower = faster). */
   newsTickerScrollSec: number
   /** Seconds for one full stock ticker loop (lower = faster). */

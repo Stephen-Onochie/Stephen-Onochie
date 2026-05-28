@@ -26,6 +26,8 @@ export function getDefaultNativeClockSettings(): NativeClockSettings {
     showSmallTimer: false,
     showStockTicker: true,
     showNewsTicker: true,
+    showTodaysTasks: true,
+    todaysTasksMax: 5,
     newsTickerScrollSec: TICKER_SCROLL_DEFAULT_SEC,
     stockTickerScrollSec: TICKER_SCROLL_DEFAULT_SEC,
   }
@@ -85,6 +87,11 @@ export function mergeNativeClockSettings(
 
   merged.locationName = merged.locationName.trim() || defaults.locationName
   merged.newsFeedUrl = merged.newsFeedUrl.trim() || defaults.newsFeedUrl
+
+  const rawMax = Number(merged.todaysTasksMax)
+  merged.todaysTasksMax = Number.isFinite(rawMax)
+    ? Math.min(20, Math.max(1, Math.round(rawMax)))
+    : defaults.todaysTasksMax
 
   merged.newsTickerScrollSec = clampTickerScrollSeconds(
     merged.newsTickerScrollSec ?? defaults.newsTickerScrollSec

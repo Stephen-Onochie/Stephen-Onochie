@@ -13,12 +13,6 @@ export default function AppsPage() {
 
         <div className="grid grid-cols-1 gap-4">
           <AppCard
-            name="Todo"
-            description="Quick-capture tasks into lists you spin up on the fly."
-            icon="✅"
-            href="/apps/todo"
-          />
-          <AppCard
             name="Bubbles"
             description="Capture thoughts, ideas, and impulses before they vanish."
             icon="💭"
@@ -38,7 +32,7 @@ export default function AppsPage() {
           />
           <AppCard
             name="Native Clock"
-            description="Second-monitor clock with local weather and headline ticker."
+            description="Desk clock with today's tasks, weather, stocks, and a headline ticker."
             icon="🕐"
             href="/apps/native-clock"
           />

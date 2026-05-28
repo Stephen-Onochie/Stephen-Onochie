@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const links = [
   { href: '/apps/native-clock', label: 'Clock', icon: '🕐', exact: true },
+  { href: '/apps/native-clock/tasks', label: 'Tasks', icon: '✅', exact: false },
   { href: '/apps/native-clock/settings', label: 'Settings', icon: '⚙️', exact: false },
 ]
 

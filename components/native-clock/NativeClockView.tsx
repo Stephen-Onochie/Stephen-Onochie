@@ -8,8 +8,11 @@ import NativeClockShell from '@/components/native-clock/NativeClockShell'
 import NewsHeadlines from '@/components/native-clock/NewsHeadlines'
 import SmallTimer from '@/components/native-clock/SmallTimer'
 import StockTicker from '@/components/native-clock/StockTicker'
+import TodaysTasks from '@/components/native-clock/TodaysTasks'
 import WeatherPanel from '@/components/native-clock/WeatherPanel'
 import { useNativeClockSettings } from '@/hooks/useNativeClockSettings'
+import { scheduleDueReminders } from '@/lib/todo/notifications'
+import type { Todo } from '@/types/todo'
 import type {
   NativeClockHeadline,
   NativeClockNewsResponse,
@@ -36,6 +39,7 @@ export default function NativeClockView() {
   const [quotes, setQuotes] = useState<NativeClockStockQuote[]>([])
   const [stocksLoading, setStocksLoading] = useState(true)
   const [stocksError, setStocksError] = useState<string | null>(null)
+  const [todos, setTodos] = useState<Todo[]>([])
   const settingsRef = useRef<NativeClockSettings | null>(null)
 
   useEffect(() => {
@@ -156,6 +160,12 @@ export default function NativeClockView() {
     return () => clearInterval(tick)
   }, [])
 
+  // Native Clock is the "always on" desk tab, so it owns reminder scheduling
+  // for the merged Todo app. TodaysTasks hands us the live todo set.
+  useEffect(() => {
+    return scheduleDueReminders(todos)
+  }, [todos])
+
   useEffect(() => {
     if (!hydrated || !settings) return
 
@@ -229,6 +239,13 @@ export default function NativeClockView() {
             timeFormat={settings.timeFormat}
             showSeconds={settings.showSeconds}
           />
+
+          {settings.showTodaysTasks && (
+            <TodaysTasks
+              max={settings.todaysTasksMax}
+              onTodosChange={setTodos}
+            />
+          )}
         </div>
 
         <div

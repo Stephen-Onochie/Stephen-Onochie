@@ -308,6 +308,7 @@ export default function NativeClockSettingsView() {
               ['showSmallTimer', 'Show small timer widget'],
               ['showStockTicker', 'Show stock ticker'],
               ['showNewsTicker', 'Show news headlines'],
+              ['showTodaysTasks', "Show today's tasks under the clock"],
             ] as const
           ).map(([key, label]) => (
             <label key={key} className="flex items-center gap-3 cursor-pointer">
