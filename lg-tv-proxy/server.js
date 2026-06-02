@@ -1,5 +1,8 @@
 'use strict'
 
+// The TV uses a self-signed TLS cert on wss://; disable verification for this local-only process.
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
 /**
  * LG TV Proxy
  * -----------
@@ -19,7 +22,7 @@ const express = require('express')
 const cors = require('cors')
 const lgtvConnect = require('lgtv2')
 
-const TV_IP = process.env.TV_IP || '192.168.1.50'
+const TV_IP = process.env.TV_IP || '192.168.1.28'
 const PORT = parseInt(process.env.PORT || '3001', 10)
 const API_TOKEN = (process.env.API_TOKEN || '').trim()
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '*')
@@ -32,8 +35,9 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '*')
 // lgtv2 manages the WebSocket, the pairing handshake, automatic reconnects,
 // and persists the client key to ~/.lgtv2/keyfile-<ip> after first pairing.
 const lgtv = lgtvConnect({
-  url: `ws://${TV_IP}:3000`,
+  url: `wss://${TV_IP}:3001`,
   reconnect: 5000,
+  wsconfig: { tlsOptions: { rejectUnauthorized: false } },
 })
 
 let tvConnected = false
@@ -96,9 +100,6 @@ function getPointerSocket() {
           return
         }
         pointerSocket = sock
-        sock.on('close', () => {
-          pointerSocket = null
-        })
         resolve(sock)
       }
     )
@@ -106,10 +107,15 @@ function getPointerSocket() {
 }
 
 function sendButton(name) {
-  return getPointerSocket().then((sock) => {
-    sock.button(name)
-    return { button: name }
-  })
+  return getPointerSocket()
+    .then((sock) => {
+      sock.send('button', { name })
+      return { button: name }
+    })
+    .catch((err) => {
+      pointerSocket = null
+      throw err
+    })
 }
 
 // --- Command map ---------------------------------------------------------
@@ -241,6 +247,6 @@ app.post('/app/launch', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[proxy] listening on http://localhost:${PORT}`)
-  console.log(`[proxy] target TV: ${TV_IP}:3000`)
+  console.log(`[proxy] target TV: ${TV_IP}:3001 (wss)`)
   console.log(`[proxy] auth: ${API_TOKEN ? 'enabled' : 'DISABLED (set API_TOKEN)'}`)
 })
