@@ -36,6 +36,12 @@ export default function AppsPage() {
             icon="🕐"
             href="/apps/native-clock"
           />
+          <AppCard
+            name="LG Remote"
+            description="Control your LG WebOS TV from the browser through a local laptop proxy."
+            icon="📺"
+            href="/apps/lg-remote"
+          />
         </div>
       </div>
     </main>
