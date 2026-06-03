@@ -7,6 +7,7 @@ import { Trash2 } from 'lucide-react'
 import NativeClockNav from '@/components/native-clock/NativeClockNav'
 import NativeClockShell from '@/components/native-clock/NativeClockShell'
 import { useNativeClockSettings } from '@/hooks/useNativeClockSettings'
+import { nativeClockThemeClass } from '@/lib/native-clock/theme'
 import { createClient } from '@/lib/supabase/client'
 import { formatDue, isDueToday, isOverdue, parseTodoInput } from '@/lib/todo/parse'
 import {
@@ -462,7 +463,7 @@ export default function TasksView() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
           <Dialog.Content
-            className="fixed bottom-0 left-0 right-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-3xl p-6"
+            className={`fixed bottom-0 left-0 right-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-3xl p-6 ${nativeClockThemeClass(theme)}`}
             style={{
               backgroundColor: 'var(--nc-bg)',
               color: 'var(--nc-text)',
@@ -491,7 +492,7 @@ export default function TasksView() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/10" />
           <Dialog.Content
-            className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md max-h-[85vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl p-6 shadow-2xl"
+            className={`fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md max-h-[85vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl p-6 shadow-2xl ${nativeClockThemeClass(theme)}`}
             style={{
               backgroundColor: 'var(--nc-bg)',
               color: 'var(--nc-text)',
