@@ -489,13 +489,13 @@ export default function TasksView() {
         onOpenChange={(open) => !open && setEditing(null)}
       >
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/10" />
           <Dialog.Content
-            className="fixed bottom-0 left-0 right-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-3xl p-6"
+            className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md max-h-[85vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl p-6 shadow-2xl"
             style={{
               backgroundColor: 'var(--nc-bg)',
               color: 'var(--nc-text)',
-              borderTop: '1px solid var(--nc-border)',
+              border: '1px solid var(--nc-border)',
             }}
           >
             <Dialog.Title
