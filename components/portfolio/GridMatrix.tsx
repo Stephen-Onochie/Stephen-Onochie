@@ -1,4 +1,4 @@
-import InstagramFeed from '@/components/portfolio/InstagramFeed'
+import LinkedInCard from '@/components/portfolio/LinkedInCard'
 
 const stackGroups = [
   {
@@ -97,23 +97,23 @@ export default function GridMatrix() {
           </div>
         </div>
 
-        {/* Cell 3 — Instagram */}
+        {/* Cell 3 — LinkedIn */}
         <div className="lg:col-span-3 p-6 md:p-8 flex flex-col min-h-[320px]">
           <div className="flex items-center justify-between border-b border-grid pb-3 mb-6">
             <h2 className="font-display text-2xl uppercase tracking-wide text-textPrimary">
-              Feed
+              Connect
             </h2>
             <a
-              href="https://www.instagram.com/stephenconochie/"
+              href="https://www.linkedin.com/in/stephenonochie"
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted hover:text-gold transition-colors duration-200"
             >
-              @stephenconochie
+              /in/stephenonochie
             </a>
           </div>
 
-          <InstagramFeed />
+          <LinkedInCard />
         </div>
       </div>
     </section>
