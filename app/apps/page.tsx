@@ -42,6 +42,12 @@ export default function AppsPage() {
             icon="📺"
             href="/apps/lg-remote"
           />
+          <AppCard
+            name="Project Waves"
+            description="Track your daily brushing routine and hair care sessions to build and maintain 360 waves."
+            icon="〰️"
+            href="/apps/waves"
+          />
         </div>
       </div>
     </main>

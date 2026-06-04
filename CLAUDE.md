@@ -24,6 +24,7 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 | **Standing Timer** | Stand/sit/break health cycles + stats |
 | **Bubbles** | Ephemeral auto-expiring notes |
 | **Todo** | Quick-capture tasks, natural-language due dates (`lib/todo/parse.ts`), Today/Inbox smart views, browser reminders. Tables: `todo_lists`, `todos` (Inbox = null `list_id`) |
+| **Project Waves** | Daily 360 waves brushing routine: 3 timed sessions (morning/afternoon/evening) + weekly Wash Day, streak tracking, hair calendar, upcoming haircut schedule with Google Calendar links. Tables: `waves_settings`, `waves_sessions` |
 
 Planned apps: business dashboard (agency/startup stats), health dashboard (Apple Health data).
 
