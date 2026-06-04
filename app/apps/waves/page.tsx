@@ -461,19 +461,20 @@ export default function WavesPage() {
                     <div className="font-inter font-semibold text-textPrimary text-sm">{c.label}</div>
                     <div className="font-inter text-xs text-textMuted">{dur} min brushing</div>
                   </div>
-                  {done ? (
-                    <div className="flex items-center gap-1 text-gold font-inter text-xs font-medium">
-                      <Check className="w-4 h-4" />
-                      Done
-                    </div>
-                  ) : (
+                  <div className="flex items-center gap-2">
+                    {done && (
+                      <span className="flex items-center gap-1 text-gold font-inter text-xs font-medium">
+                        <Check className="w-4 h-4" />
+                        Done
+                      </span>
+                    )}
                     <button
                       onClick={() => startSession(type)}
                       className="bg-gold text-white font-inter text-sm font-medium px-4 py-2 rounded-xl hover:bg-brownAccent transition-colors"
                     >
-                      Start
+                      {done ? 'Again' : 'Start'}
                     </button>
-                  )}
+                  </div>
                 </div>
               )
             })}
@@ -504,12 +505,13 @@ export default function WavesPage() {
                       {isWashDay ? 'Full wash & style routine' : `Every ${washDayName}`}
                     </div>
                   </div>
-                  {done ? (
-                    <div className="flex items-center gap-1 text-gold font-inter text-xs font-medium">
-                      <Check className="w-4 h-4" />
-                      Done
-                    </div>
-                  ) : (
+                  <div className="flex items-center gap-2">
+                    {done && (
+                      <span className="flex items-center gap-1 text-gold font-inter text-xs font-medium">
+                        <Check className="w-4 h-4" />
+                        Done
+                      </span>
+                    )}
                     <button
                       onClick={() => startSession('wash')}
                       className={`font-inter text-sm font-medium px-4 py-2 rounded-xl transition-colors ${
@@ -518,9 +520,9 @@ export default function WavesPage() {
                           : 'bg-gold text-white hover:bg-brownAccent'
                       }`}
                     >
-                      Start
+                      {done ? 'Again' : 'Start'}
                     </button>
-                  )}
+                  </div>
                 </div>
               )
             })()}
