@@ -64,7 +64,7 @@ export default function AppPlayground() {
   }
 
   return (
-    <div className={layout === 'side-by-side' ? 'max-w-3xl mx-auto px-6 py-8' : 'max-w-lg mx-auto px-6 py-8'}>
+    <div className={layout === 'side-by-side' ? 'max-w-6xl mx-auto px-6 py-8' : 'max-w-lg mx-auto px-6 py-8'}>
       <div className="flex items-center justify-between gap-4 mb-8">
         <p className="text-textMuted font-inter text-sm">Personal tools, built for you.</p>
         <div className="flex items-center rounded-lg border border-gold overflow-hidden shrink-0">
@@ -99,7 +99,13 @@ export default function AppPlayground() {
         </div>
       </div>
 
-      <div className={`grid gap-4 ${layout === 'side-by-side' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      <div
+        className={`grid gap-4 ${
+          layout === 'side-by-side'
+            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+            : 'grid-cols-1'
+        }`}
+      >
         {apps.map((app) => (
           <AppCard key={app.href} {...app} />
         ))}
