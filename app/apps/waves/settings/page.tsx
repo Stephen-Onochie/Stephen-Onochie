@@ -3,7 +3,19 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import AppHeader from '@/components/apps/AppHeader'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 import type { WavesSettings } from '@/types/waves'
+
+const BackButton = (
+  <Link
+    href="/apps/waves"
+    className="flex items-center gap-1 text-textMuted hover:text-textPrimary transition-colors font-inter text-sm"
+  >
+    <ArrowLeft className="w-4 h-4" />
+    Back
+  </Link>
+)
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -65,7 +77,7 @@ export default function WavesSettingsPage() {
   if (!settings) {
     return (
       <main className="min-h-screen bg-beige">
-        <AppHeader title="Waves Settings" />
+        <AppHeader title="Waves Settings" right={BackButton} />
         <div className="max-w-lg mx-auto px-4 pt-8 space-y-3">
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-surface rounded-2xl h-16 animate-pulse" />
@@ -77,7 +89,7 @@ export default function WavesSettingsPage() {
 
   return (
     <main className="min-h-screen bg-beige pb-10">
-      <AppHeader title="Waves Settings" />
+      <AppHeader title="Waves Settings" right={BackButton} />
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
 
