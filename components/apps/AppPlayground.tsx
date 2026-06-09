@@ -46,6 +46,13 @@ const apps = [
     icon: '〰️',
     href: '/apps/waves',
   },
+  {
+    name: 'FastTrack',
+    description:
+      'Track controlled fasts with a live timer, cooldown rule, calendar, and lifetime metrics.',
+    icon: '⏳',
+    href: '/apps/fast',
+  },
 ]
 
 export default function AppPlayground() {
