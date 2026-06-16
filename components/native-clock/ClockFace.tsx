@@ -47,7 +47,7 @@ export default function ClockFace({ now, timeFormat, showSeconds }: ClockFacePro
     <div className="text-center select-none">
       <div className="flex items-baseline justify-center gap-3 md:gap-5">
         <span
-          className="font-display text-[clamp(4.5rem,18vw,12rem)] leading-none tracking-[0.04em] tabular-nums"
+          className="font-mono text-[clamp(4.5rem,18vw,12rem)] leading-none tracking-[0.04em] tabular-nums"
           style={{ color: 'var(--nc-text)' }}
         >
           {time}

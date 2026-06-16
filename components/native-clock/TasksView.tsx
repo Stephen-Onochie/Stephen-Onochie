@@ -40,7 +40,7 @@ export default function TasksView() {
 
   const [lists, setLists] = useState<TodoList[]>([])
   const [todos, setTodos] = useState<Todo[]>([])
-  const [view, setView] = useState<ViewId>('today')
+  const [view, setView] = useState<ViewId>('inbox')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newListOpen, setNewListOpen] = useState(false)
@@ -97,7 +97,7 @@ export default function TasksView() {
       return todos.filter((t) => !t.completed && t.due_at && isDueToday(t.due_at))
     }
     if (view === 'inbox') {
-      return todos.filter((t) => t.list_id === null)
+      return todos.filter((t) => !t.completed)
     }
     return todos.filter((t) => t.list_id === view)
   }, [todos, view])

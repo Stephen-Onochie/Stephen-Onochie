@@ -204,7 +204,7 @@ export default function FastPage() {
     if (!session) { setStarting(false); return }
 
     // Re-validate the cooldown against the DB so a stale UI can't bypass it
-    const { data: latest } = await supabase
+    const { data: latest, error: cooldownErr } = await supabase
       .from('fast_sessions')
       .select('ended_at')
       .eq('user_id', session.user.id)
@@ -213,16 +213,25 @@ export default function FastPage() {
       .limit(1)
       .maybeSingle()
 
-    const cooldownDays = settings?.cooldown_days ?? 14
-    if (latest?.ended_at) {
-      const allowed = new Date(latest.ended_at).getTime() + cooldownDays * 86400000
-      if (Date.now() < allowed) { setStarting(false); await loadData(); return }
+    if (cooldownErr) {
+      console.error('FastTrack cooldown check failed:', cooldownErr)
+    } else {
+      const cooldownDays = settings?.cooldown_days ?? 14
+      if (latest?.ended_at) {
+        const allowed = new Date(latest.ended_at).getTime() + cooldownDays * 86400000
+        if (Date.now() < allowed) { setStarting(false); await loadData(); return }
+      }
     }
 
-    await supabase.from('fast_sessions').insert({
+    const { error: insertErr } = await supabase.from('fast_sessions').insert({
       user_id: session.user.id,
       started_at: new Date().toISOString(),
     })
+    if (insertErr) {
+      console.error('FastTrack insert failed:', insertErr)
+      setStarting(false)
+      return
+    }
 
     setStarting(false)
     await loadData()

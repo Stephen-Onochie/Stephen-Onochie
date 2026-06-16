@@ -18,7 +18,7 @@ export default function StocksWidget() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (Array.isArray(data)) setStocks(data)
-        else if (data?.stocks) setStocks(data.stocks)
+        else if (data?.quotes) setStocks(data.quotes)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
