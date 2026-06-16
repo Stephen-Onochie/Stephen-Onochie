@@ -20,23 +20,29 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 | App | Purpose |
 |-----|---------|
 | **StyleMate** | Wardrobe catalog with Gemini Vision photo analysis |
-| **Native Clock** | Desk display: weather, stocks, NPR news tickers |
+| **Native Clock** | Desk display: weather, stocks, NPR news tickers. Tasks tab shows all incomplete todos (no today filter). |
 | **Standing Timer** | Stand/sit/break health cycles + stats |
 | **Bubbles** | Ephemeral auto-expiring notes |
-| **Todo** | Quick-capture tasks, natural-language due dates (`lib/todo/parse.ts`), Today/Inbox smart views, browser reminders. Tables: `todo_lists`, `todos` (Inbox = null `list_id`) |
+| **Todo** | Quick-capture tasks, natural-language due dates (`lib/todo/parse.ts`), Inbox shows all incomplete tasks (not list-scoped), browser reminders. Tables: `todo_lists`, `todos` |
 | **Project Waves** | Daily 360 waves brushing routine: 3 timed sessions (morning/afternoon/evening) + weekly Wash Day, streak tracking, hair calendar, upcoming haircut schedule with Google Calendar links. Tables: `waves_settings`, `waves_sessions` |
+| **FastTrack** | Intermittent fasting tracker: start/end fasts, configurable cooldown and target duration, fasting calendar, guidelines. Tables: `fast_settings`, `fast_sessions` |
 
 Planned apps: business dashboard (agency/startup stats), health dashboard (Apple Health data).
 
 ## IVEN
 
-IVEN is the evolution of the private app suite — a JARVIS-style personal OS interface for the backend. Rather than separate app pages, all tools surface as modules within a unified, aesthetically rich dashboard. The name IVEN is the project codename for this interface layer.
+IVEN is the live private app shell — a JARVIS-style personal OS replacing the old card-grid launcher. All apps are now IVEN modules.
 
-- Lives at `/app/apps/iven/` (or replaces the current app launcher)
-- All existing apps (StyleMate, Native Clock, Todo, etc.) become IVEN modules
-- New tools are built natively as IVEN modules from the start
-- Visual direction: dark, futuristic, HUD-like — inspired by Iron Man's JARVIS UI
-- Design goals: productivity-first with high visual polish; feels like a personal command center
+- **Shell:** `app/apps/layout.tsx` wraps all private routes in `IvenDarkModeProvider` + `IvenShell` (70px icon sidebar + scrollable main area)
+- **Sidebar:** `components/iven/IvenSidebar.tsx` — icon nav with flyout tooltips, settings gear (dark mode toggle + sign out), opens to the right of the sidebar
+- **Module chrome:** `components/iven/IvenModule.tsx` — wraps each app page with eyebrow label, Playfair title, horizontal rule
+- **Dashboard:** `app/apps/page.tsx` + `components/iven/dashboard/` — live widgets: clock hero, todo, standing timer, waves streak, weather, stocks/markets
+- **CSS tokens:** `--iven-bg/surface/border/text/muted/accent/grid` in `globals.css`, toggled by `data-iven-theme="dark"` on the shell root
+- **Fonts:** Inter (`font-inter`), Playfair Display (`font-playfair`), JetBrains Mono (`font-mono`) — all mapped in `tailwind.config.ts`. `font-display` is NOT defined; use `font-mono` for large monospaced numerals.
+- **Native Clock module** forces dark theme via `data-iven-theme="dark"` on its wrapper div; uses `--nc-*` CSS vars internally
+- **Default weather location:** Avon, Indiana — hardcoded fallback in `lib/native-clock/weather.ts` (`getDefaultCoordinates`); overridable via `NATIVE_CLOCK_LAT/LON/LOCATION` env vars
+- **Stocks API** returns `{ quotes: [] }` — widgets must read `data.quotes`, not `data.stocks`
+- **Weather API** returns `{ temperatureF, humidity, condition, location, weatherCode }` — no `temperature`, `high`, `low`, or `hourly` fields
 
 ## Key Conventions
 
