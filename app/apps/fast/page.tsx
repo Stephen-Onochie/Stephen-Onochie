@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import AppHeader from '@/components/apps/AppHeader'
+import IvenModule from '@/components/iven/IvenModule'
 import Link from 'next/link'
 import * as Dialog from '@radix-ui/react-dialog'
 import { Settings, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react'
@@ -255,14 +255,13 @@ export default function FastPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-beige">
-        <AppHeader title="FastTrack" />
+      <IvenModule index={8} title="FastTrack">
         <div className="max-w-lg mx-auto px-4 pt-8 space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-surface rounded-2xl h-24 animate-pulse" />
+            <div key={i} className="rounded-2xl h-24 animate-pulse" style={{ background: 'var(--iven-surface)' }} />
           ))}
         </div>
-      </main>
+      </IvenModule>
     )
   }
 
@@ -318,17 +317,16 @@ export default function FastPage() {
   }
 
   return (
-    <main className="min-h-screen bg-beige pb-12">
-      <AppHeader
-        title="FastTrack"
-        right={
-          <Link href="/apps/fast/settings" className="text-textMuted hover:text-textPrimary transition-colors">
-            <Settings className="w-5 h-5" />
-          </Link>
-        }
-      />
-
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
+    <IvenModule
+      index={8}
+      title="FastTrack"
+      right={
+        <Link href="/apps/fast/settings" style={{ color: 'var(--iven-muted)' }} className="hover:opacity-80 transition-opacity">
+          <Settings className="w-5 h-5" />
+        </Link>
+      }
+    >
+      <div className="max-w-lg px-4 py-6 space-y-8">
 
         {/* ── Timer (hero) ── */}
         <section className="bg-surface rounded-2xl px-6 py-8 flex flex-col items-center">
@@ -624,6 +622,6 @@ export default function FastPage() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-    </main>
+    </IvenModule>
   )
 }

@@ -27,6 +27,27 @@ html {
   scroll-behavior: smooth;
 }
 
+/* IVEN shell theme tokens — toggled via data-iven-theme on the shell root */
+:root, [data-iven-theme="light"] {
+  --iven-bg: #F5F0E8;
+  --iven-surface: #EDE8DC;
+  --iven-border: #E2C97E;
+  --iven-text: #2C1F0E;
+  --iven-muted: #8C7355;
+  --iven-accent: #C9A84C;
+  --iven-grid: #B8A48E;
+}
+
+[data-iven-theme="dark"] {
+  --iven-bg: #14100C;
+  --iven-surface: #221A12;
+  --iven-border: #4A3D2A;
+  --iven-text: #F5F0E8;
+  --iven-muted: #A89478;
+  --iven-accent: #E2C97E;
+  --iven-grid: #2E261C;
+}
+
 @keyframes portfolio-ticker {
   0% {
     transform: translateX(0);

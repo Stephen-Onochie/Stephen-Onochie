@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import AppHeader from '@/components/apps/AppHeader'
 import NativeClockNav from '@/components/native-clock/NativeClockNav'
 import NativeClockShell from '@/components/native-clock/NativeClockShell'
 import {
@@ -53,10 +52,9 @@ export default function NativeClockSettingsView() {
 
   if (!hydrated || !settings) {
     return (
-      <main className="min-h-screen bg-beige pb-24">
-        <AppHeader title="Native Clock" />
-        <div className="max-w-lg mx-auto px-4 py-12 animate-pulse bg-surface rounded-2xl h-64 mx-4" />
-      </main>
+      <div className="min-h-screen pb-24">
+        <div className="max-w-lg mx-auto px-4 py-12 animate-pulse rounded-2xl h-64" style={{ background: 'var(--iven-surface)' }} />
+      </div>
     )
   }
 
@@ -64,18 +62,6 @@ export default function NativeClockSettingsView() {
 
   return (
     <NativeClockShell theme={theme}>
-      <AppHeader
-        title="Native Clock"
-        right={
-          <Link
-            href="/apps/native-clock"
-            className="font-inter text-sm"
-            style={{ color: 'var(--nc-muted)' }}
-          >
-            Clock
-          </Link>
-        }
-      />
 
       <div className="max-w-lg mx-auto px-4 py-6 pb-28 space-y-6">
         <section

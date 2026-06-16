@@ -10,7 +10,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react'
-import AppHeader from '@/components/apps/AppHeader'
+import IvenModule from '@/components/iven/IvenModule'
 import DPad from '@/components/lg-remote/DPad'
 import RemoteButton from '@/components/lg-remote/RemoteButton'
 import SettingsPanel from '@/components/lg-remote/SettingsPanel'
@@ -38,18 +38,18 @@ export default function LgRemoteView() {
   const disabled = remote.connection !== 'online'
 
   return (
-    <main className="min-h-screen bg-beige pb-16">
-      <AppHeader
-        title="LG Remote"
-        right={
-          <div className="flex items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT[remote.connection]}`} />
-            <span className="text-textMuted text-sm font-inter">
-              {STATUS_LABEL[remote.connection]}
-            </span>
-          </div>
-        }
-      />
+    <IvenModule
+      index={8}
+      title="LG Remote"
+      right={
+        <div className="flex items-center gap-2">
+          <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT[remote.connection]}`} />
+          <span className="font-mono text-[11px] tracking-[1px]" style={{ color: 'var(--iven-muted)' }}>
+            {STATUS_LABEL[remote.connection]}
+          </span>
+        </div>
+      }
+    >
 
       <div className="mx-auto max-w-md px-6 py-6 space-y-6">
         {/* Status / error line */}
@@ -194,6 +194,6 @@ export default function LgRemoteView() {
           </>
         )}
       </div>
-    </main>
+    </IvenModule>
   )
 }

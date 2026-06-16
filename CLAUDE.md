@@ -28,6 +28,16 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 
 Planned apps: business dashboard (agency/startup stats), health dashboard (Apple Health data).
 
+## IVEN
+
+IVEN is the evolution of the private app suite — a JARVIS-style personal OS interface for the backend. Rather than separate app pages, all tools surface as modules within a unified, aesthetically rich dashboard. The name IVEN is the project codename for this interface layer.
+
+- Lives at `/app/apps/iven/` (or replaces the current app launcher)
+- All existing apps (StyleMate, Native Clock, Todo, etc.) become IVEN modules
+- New tools are built natively as IVEN modules from the start
+- Visual direction: dark, futuristic, HUD-like — inspired by Iron Man's JARVIS UI
+- Design goals: productivity-first with high visual polish; feels like a personal command center
+
 ## Key Conventions
 
 - Run dev server with `npm run dev`

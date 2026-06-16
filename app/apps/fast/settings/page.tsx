@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import AppHeader from '@/components/apps/AppHeader'
+import IvenModule from '@/components/iven/IvenModule'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import type { FastSettings } from '@/types/fast'
@@ -10,7 +10,8 @@ import type { FastSettings } from '@/types/fast'
 const BackButton = (
   <Link
     href="/apps/fast"
-    className="flex items-center gap-1 text-textMuted hover:text-textPrimary transition-colors font-inter text-sm"
+    className="flex items-center gap-1 font-inter text-sm transition-opacity hover:opacity-80"
+    style={{ color: 'var(--iven-muted)' }}
   >
     <ArrowLeft className="w-4 h-4" />
     Back
@@ -66,22 +67,19 @@ export default function FastSettingsPage() {
 
   if (!settings) {
     return (
-      <main className="min-h-screen bg-beige">
-        <AppHeader title="FastTrack Settings" right={BackButton} />
-        <div className="max-w-lg mx-auto px-4 pt-8 space-y-3">
+      <IvenModule index={8} title="FastTrack Settings" right={BackButton}>
+        <div className="max-w-lg px-4 pt-8 space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-surface rounded-2xl h-16 animate-pulse" />
+            <div key={i} className="rounded-2xl h-16 animate-pulse" style={{ background: 'var(--iven-surface)' }} />
           ))}
         </div>
-      </main>
+      </IvenModule>
     )
   }
 
   return (
-    <main className="min-h-screen bg-beige pb-10">
-      <AppHeader title="FastTrack Settings" right={BackButton} />
-
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+    <IvenModule index={8} title="FastTrack Settings" right={BackButton}>
+      <div className="max-w-lg px-4 py-6 space-y-6">
 
         {/* Rules */}
         <section>
@@ -170,6 +168,6 @@ export default function FastSettingsPage() {
         </button>
 
       </div>
-    </main>
+    </IvenModule>
   )
 }

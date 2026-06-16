@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import AppHeader from '@/components/apps/AppHeader'
+import IvenModule from '@/components/iven/IvenModule'
 import Link from 'next/link'
 import { Settings, ChevronLeft, ChevronRight, Check, X, Calendar, ChevronDown } from 'lucide-react'
 import type { WavesSession, WavesSettings, SessionType } from '@/types/waves'
@@ -292,14 +292,13 @@ export default function WavesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-beige">
-        <AppHeader title="Project Waves" />
-        <div className="max-w-lg mx-auto px-4 pt-8 space-y-3">
+      <IvenModule index={5} title="Project Waves">
+        <div className="max-w-lg mx-auto pt-4 space-y-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="bg-surface rounded-2xl h-20 animate-pulse" />
+            <div key={i} className="rounded-2xl h-20 animate-pulse" style={{ background: 'var(--iven-surface)' }} />
           ))}
         </div>
-      </main>
+      </IvenModule>
     )
   }
 
@@ -332,15 +331,15 @@ export default function WavesPage() {
   const progress = targetSeconds > 0 ? (targetSeconds - timerSeconds) / targetSeconds : 0
 
   return (
-    <main className="min-h-screen bg-beige pb-12">
-      <AppHeader
-        title="Project Waves"
-        right={
-          <Link href="/apps/waves/settings" className="text-textMuted hover:text-textPrimary transition-colors">
-            <Settings className="w-5 h-5" />
-          </Link>
-        }
-      />
+    <IvenModule
+      index={5}
+      title="Project Waves"
+      right={
+        <Link href="/apps/waves/settings" className="transition-colors" style={{ color: 'var(--iven-muted)' }}>
+          <Settings className="w-5 h-5" />
+        </Link>
+      }
+    >
 
       {/* ── Active Session Overlay ── */}
       {activeSession && cfg && (
@@ -673,6 +672,6 @@ export default function WavesPage() {
         </section>
 
       </div>
-    </main>
+    </IvenModule>
   )
 }
