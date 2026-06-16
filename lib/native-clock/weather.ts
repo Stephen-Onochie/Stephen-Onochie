@@ -29,9 +29,9 @@ function describeWeather(code: number): string {
 }
 
 export function getDefaultCoordinates(): { lat: number; lon: number; location: string } {
-  const lat = parseFloat(process.env.NATIVE_CLOCK_LAT ?? '40.4259')
-  const lon = parseFloat(process.env.NATIVE_CLOCK_LON ?? '-86.9081')
-  const location = process.env.NATIVE_CLOCK_LOCATION?.trim() || 'West Lafayette'
+  const lat = parseFloat(process.env.NATIVE_CLOCK_LAT ?? '39.7634')
+  const lon = parseFloat(process.env.NATIVE_CLOCK_LON ?? '-86.3997')
+  const location = process.env.NATIVE_CLOCK_LOCATION?.trim() || 'Avon, IN'
   return { lat, lon, location }
 }
 

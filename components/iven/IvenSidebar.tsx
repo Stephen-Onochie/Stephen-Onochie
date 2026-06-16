@@ -130,7 +130,7 @@ export default function IvenSidebar() {
       <div className="relative flex flex-col items-center gap-1">
         {settingsOpen && (
           <div
-            className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 rounded-xl p-2 flex flex-col gap-1 z-30"
+            className="absolute bottom-0 left-[calc(100%+8px)] rounded-xl p-2 flex flex-col gap-1 z-30"
             style={{
               background: 'var(--iven-surface)',
               border: '1px solid var(--iven-border)',

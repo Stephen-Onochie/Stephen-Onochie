@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { fetchTodos, setTodoCompleted, createTodo } from '@/lib/todo/supabase'
-import { isDueToday, parseTodoInput } from '@/lib/todo/parse'
+import { parseTodoInput } from '@/lib/todo/parse'
 import type { Todo } from '@/types/todo'
 import { Check, Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -25,9 +25,9 @@ export default function TodoWidget() {
 
   useEffect(() => { load() }, [])
 
-  const todayTodos = todos.filter(t => !t.completed && t.due_at && isDueToday(t.due_at))
-  const remaining = todayTodos.filter(t => !t.completed).length
-  const total = todayTodos.length
+  const outstanding = todos.filter(t => !t.completed)
+  const remaining = outstanding.length
+  const total = todos.length
   const pct = total > 0 ? Math.round(((total - remaining) / total) * 100) : 0
   const circumference = 2 * Math.PI * 15
 
@@ -53,7 +53,7 @@ export default function TodoWidget() {
       <div className="flex justify-between items-center mb-4">
         <div>
           <div className="font-mono text-[10px] font-semibold tracking-[2.5px] uppercase mb-1" style={{ color: 'var(--iven-accent)' }}>TODO</div>
-          <div className="font-playfair font-bold text-xl" style={{ color: 'var(--iven-text)' }}>Today's Focus</div>
+          <div className="font-playfair font-bold text-xl" style={{ color: 'var(--iven-text)' }}>Outstanding</div>
         </div>
         <div className="flex items-center gap-3">
           <span className="font-mono text-[11px] tracking-[1px]" style={{ color: 'var(--iven-muted)' }}>{remaining} LEFT</span>
@@ -76,12 +76,12 @@ export default function TodoWidget() {
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="h-11 rounded-lg mb-1 animate-pulse" style={{ background: 'var(--iven-grid)', opacity: 0.3 }} />
           ))
-        ) : todayTodos.length === 0 ? (
+        ) : outstanding.length === 0 ? (
           <div className="flex-1 flex items-center justify-center font-mono text-[11px] tracking-[1px]" style={{ color: 'var(--iven-muted)' }}>
-            NO TASKS DUE TODAY
+            ALL CAUGHT UP
           </div>
         ) : (
-          todayTodos.slice(0, 5).map(task => (
+          outstanding.slice(0, 5).map(task => (
             <button
               key={task.id}
               onClick={() => toggle(task)}
