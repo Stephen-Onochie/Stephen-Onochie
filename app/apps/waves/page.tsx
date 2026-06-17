@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import IvenModule from '@/components/iven/IvenModule'
+import SessionRunner from '@/components/iven/waves/SessionRunner'
 import Link from 'next/link'
-import { Settings, ChevronLeft, ChevronRight, Check, X, Calendar, ChevronDown } from 'lucide-react'
-import type { WavesSession, WavesSettings, SessionType } from '@/types/waves'
+import { Settings, ChevronLeft, ChevronRight, Check, Calendar, ChevronDown } from 'lucide-react'
+import type { WavesSession, WavesSettings, SessionType, SessionStep, StrokeLog, BrushType } from '@/types/waves'
 
 // ─── Config ───────────────────────────────────────────────────────
 
@@ -18,61 +19,84 @@ const MONTH_NAMES = [
 
 const SESSION_CONFIG = {
   morning: {
-    label: 'Morning',
+    label: 'Morning Grind',
     emoji: '🌅',
-    defaultDuration: 15,
     dot: 'bg-amber-400',
     steps: [
-      'Remove durag carefully',
-      'Mist hair lightly with water or leave-in spray',
-      'Apply a small amount of pomade or butter',
-      'Brush for 15 minutes using medium/soft brush',
-      '(Optional) Wear durag for 30–60 mins if at home',
+      { kind: 'timed', text: 'Unrag & comb completely through your pattern to detangle', durationSecs: 180 },
+      { kind: 'plain', text: 'Apply a dime-sized amount of wave butter or natural hair oil' },
+      { kind: 'brush', text: 'Pull the body of the hair down — 100 strokes per angle', brush: 'medium', strokesPerAngle: 100 },
+      { kind: 'brush', text: 'Polish the top layer to kill frizz — 75 strokes per angle', brush: 'soft', strokesPerAngle: 75 },
+      { kind: 'timed', text: 'Plastic bag — wipe down your pattern to kill frizz', durationSecs: 120 },
+      { kind: 'plain', text: 'Compress: put the durag on tight' },
     ],
   },
   afternoon: {
-    label: 'Afternoon',
-    emoji: '☀️',
-    defaultDuration: 20,
+    label: 'The Workday',
+    emoji: '🏢',
     dot: 'bg-orange-400',
     steps: [
-      'Mist hair if it feels dry',
-      'Apply light moisturizer or pomade as needed',
-      'Brush for 20 minutes, reinforcing your wave pattern',
-      '(Optional) Short durag or wave cap session (30–60 mins)',
+      { kind: 'plain', text: 'Do absolutely nothing. Do not brush it dry.' },
+      { kind: 'plain', text: 'Avoid wearing a hat if you can. Let it rest.' },
+      { kind: 'plain', text: 'Your hair is laid flat — leave it until the evening session.' },
     ],
   },
   evening: {
-    label: 'Evening',
+    label: 'Evening Training',
     emoji: '🌙',
-    defaultDuration: 25,
     dot: 'bg-indigo-400',
     steps: [
-      'Brush for 25 minutes — the most productive session',
-      'Apply moisturizer + pomade generously',
-      'Final brush to lay hair down flat',
-      'Tie on durag tightly (velvet/silk preferred)',
-      'Sleep with durag on every night',
+      { kind: 'timed', text: 'Comb your pattern out completely', durationSecs: 300 },
+      { kind: 'brush', text: 'Dig to the scalp to shift the root — 100 strokes per angle', brush: 'hard', strokesPerAngle: 100 },
+      { kind: 'brush', text: 'Pull the body of the hair down — 100 strokes per angle', brush: 'medium', strokesPerAngle: 100 },
+      { kind: 'brush', text: 'Lay it down — 50 strokes per angle', brush: 'soft', strokesPerAngle: 50 },
+      { kind: 'timed', text: 'Plastic bag — wipe down your pattern', durationSecs: 120 },
+      { kind: 'plain', text: 'Rag up: put the durag on and sleep in it' },
     ],
   },
   wash: {
-    label: 'Wash Day',
+    label: 'Wash & Style',
     emoji: '💧',
-    defaultDuration: 30,
     dot: 'bg-cyan-400',
     steps: [
-      'Comb hair gently in wave direction',
-      'Wet hair thoroughly',
-      'Apply shampoo, lather, and rinse (double wash if needed)',
-      'Deep condition — leave in 5–15 minutes',
-      'Towel dry lightly (damp is best)',
-      'Apply moisturizer + pomade',
-      'Brush 20–30 minutes while damp',
-      'Put on durag (optional: plastic bag underneath for moisture)',
-      'Air dry or wear durag overnight before removing',
+      { kind: 'plain', text: 'Wet hair, apply shampoo, roughly scramble-wash, and rinse out' },
+      { kind: 'plain', text: 'Apply shampoo again — brush it into your exact pattern with the medium brush until the lather is thick and white' },
+      { kind: 'timed', text: 'Brush through the lather in your pattern', durationSecs: 600 },
+      { kind: 'plain', text: 'Put the durag on over the lather, tie tight, and rinse under the showerhead until the water runs clear' },
+      { kind: 'plain', text: 'Towel-dry the durag. Keep it on. Wait 2–3 hours until hair is 100% bone dry' },
+      { kind: 'timed', text: 'Polish: unrag, add a tiny bit of pomade, soft brush', durationSecs: 300 },
+      { kind: 'plain', text: 'Plastic bag, then rag back up for sleep' },
     ],
   },
-} satisfies Record<SessionType, { label: string; emoji: string; defaultDuration: number; dot: string; steps: string[] }>
+} satisfies Record<SessionType, { label: string; emoji: string; dot: string; steps: SessionStep[] }>
+
+const BRUSH_MECHANICS: { brush: BrushType; label: string; pressure: string; purpose: string }[] = [
+  { brush: 'comb', label: 'Comb', pressure: 'Light', purpose: 'Lifts hair off the scalp and detangles. Comb exactly in your wave pattern.' },
+  { brush: 'hard', label: 'Hard Brush', pressure: 'Firm', purpose: 'Reaches down to the scalp to shift the root. Press hard enough to feel it, but do not scrape or bleed.' },
+  { brush: 'medium', label: 'Medium Brush', pressure: 'Moderate', purpose: 'Pulls the body of the hair down. Firm enough to move the hair, gentle enough to glide.' },
+  { brush: 'soft', label: 'Soft Brush', pressure: 'Light', purpose: 'Polishes the top layer. Let the bristles just sweep over the surface to eliminate frizz.' },
+]
+
+const HAIRCUT_ROADMAP: { phase: string; title: string; detail: string; date: Date | null }[] = [
+  {
+    phase: 'Late June',
+    title: 'Maintenance Cut',
+    detail: '2-guard with the grain (WTG) + a sharp line-up.',
+    date: new Date(2026, 5, 27),
+  },
+  {
+    phase: 'July',
+    title: 'Strict Wolfing',
+    detail: 'No haircuts on top all month. Edge-ups and tapers only.',
+    date: null,
+  },
+  {
+    phase: 'Mid-August',
+    title: 'Back-to-School Cut',
+    detail: '1.5- or 2-guard WTG to reveal the deep 360 pattern before classes.',
+    date: new Date(2026, 7, 15),
+  },
+]
 
 const FAQ_ITEMS = [
   {
@@ -81,31 +105,31 @@ const FAQ_ITEMS = [
   },
   {
     q: 'How often should I wash my hair?',
-    a: '1–2 times per week using sulfate-free shampoo. Over-washing strips natural oils and causes dryness that works against wave formation.',
+    a: 'Once a week — the full Sunday wash & style is a factory reset to remove product buildup. Over-washing strips natural oils and works against wave formation.',
   },
   {
     q: 'What is wolfing and should I do it?',
-    a: "Wolfing means growing your hair out 4–8 weeks between cuts to deepen waves. It's the most effective phase — resist the urge to cut early.",
+    a: "Wolfing means growing your hair out between cuts to deepen waves. It's the most effective phase — resist the urge to cut the top early.",
   },
   {
     q: 'How important is the durag?',
     a: 'Skipping the durag at night is the #1 progress killer. It compresses your wave pattern while you sleep. Always wear it every night.',
   },
   {
+    q: 'Why do my waves fork?',
+    a: 'Forks happen where waves crash into each other — usually from rushing your strokes. Slow down to one stroke per second and brush consistently in your pattern.',
+  },
+  {
     q: 'Should I brush with or without product?',
     a: 'Always brush with moisturizer or pomade applied first. Dry brushing causes breakage and friction that damages your hair cuticle.',
   },
   {
-    q: 'What if I have forks or breaks in my pattern?',
-    a: 'Stick to consistent brushing angles, increase durag compression, and use the Wash & Style method to reset. Expect 4–8 weeks to correct.',
-  },
-  {
-    q: 'How do I brush in the right direction?',
-    a: 'Start from the crown and brush outward following your natural hair growth pattern. Use a hand mirror to check your sides and back.',
+    q: 'Why use a hand mirror?',
+    a: 'Never brush blindly. A hand mirror reflecting into your bathroom mirror lets you check your sides, back, and crown so every angle gets even work.',
   },
   {
     q: 'Why is my progress slow?',
-    a: "Confirm you're hitting 60 min/day of brushing, wearing the durag every night, and moisturizing before every session. Wolf longer (6+ weeks) for deeper waves.",
+    a: 'Confirm you are hitting both daily sessions, wearing the durag every night, and moisturizing before every session. Wolf longer for deeper waves.',
   },
 ]
 
@@ -115,18 +139,21 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function formatMmSs(seconds: number) {
-  const m = Math.floor(Math.abs(seconds) / 60).toString().padStart(2, '0')
-  const s = (Math.abs(seconds) % 60).toString().padStart(2, '0')
-  return `${m}:${s}`
+function estimateSessionMins(steps: SessionStep[]): number {
+  const secs = steps.reduce((sum, step) => {
+    if (step.kind === 'timed') return sum + step.durationSecs
+    if (step.kind === 'brush') return sum + step.strokesPerAngle * 5 // 5 angles at ~1 stroke/sec
+    return sum
+  }, 0)
+  return Math.round(secs / 60)
 }
 
-function getSessionDuration(type: SessionType, settings: WavesSettings | null): number {
-  if (!settings) return SESSION_CONFIG[type].defaultDuration
-  if (type === 'morning') return settings.morning_duration_mins
-  if (type === 'afternoon') return settings.afternoon_duration_mins
-  if (type === 'evening') return settings.evening_duration_mins
-  return 30
+function buildGCalUrl(title: string, details: string, date: Date) {
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  const fmt = (d: Date) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+  const next = new Date(date)
+  next.setDate(next.getDate() + 1)
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(details)}&dates=${fmt(date)}/${fmt(next)}`
 }
 
 function getHaircutDates(lastHaircutDate: string, intervalWeeks: number, count: number) {
@@ -140,16 +167,10 @@ function getHaircutDates(lastHaircutDate: string, intervalWeeks: number, count: 
 }
 
 function getGCalUrl(date: Date, includeTrim: boolean) {
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  const fmt = (d: Date) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
-  const next = new Date(date)
-  next.setDate(next.getDate() + 1)
-  const details = encodeURIComponent(
-    includeTrim
-      ? 'Low Fade + Trim. Clean up the edges and shape-up. Trim split ends to keep hair healthy for wave progress.'
-      : 'Low Fade. Clean up the edges and shape-up. Keep enough length for wave progress — just a clean fade.',
-  )
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("Haircut @ Juve's")}&details=${details}&dates=${fmt(date)}/${fmt(next)}`
+  const details = includeTrim
+    ? 'Low Fade + Trim. Clean up the edges and shape-up. Trim split ends to keep hair healthy for wave progress.'
+    : 'Low Fade. Clean up the edges and shape-up. Keep enough length for wave progress — just a clean fade.'
+  return buildGCalUrl("Haircut @ Juve's", details, date)
 }
 
 function calculateStreak(sessions: WavesSession[]) {
@@ -182,13 +203,9 @@ export default function WavesPage() {
   const [loading, setLoading] = useState(true)
 
   const [activeSession, setActiveSession] = useState<SessionType | null>(null)
-  const [timerSeconds, setTimerSeconds] = useState(0)
-  const [targetSeconds, setTargetSeconds] = useState(0)
-  const [timerRunning, setTimerRunning] = useState(false)
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
-
   const [calMonth, setCalMonth] = useState(() => new Date())
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [mechanicsOpen, setMechanicsOpen] = useState(false)
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -231,63 +248,26 @@ export default function WavesPage() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  useEffect(() => {
-    if (!timerRunning) return
-    const interval = setInterval(() => {
-      setTimerSeconds(prev => {
-        if (prev <= 1) {
-          clearInterval(interval)
-          setTimerRunning(false)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [timerRunning])
-
-  function startSession(type: SessionType) {
-    const dur = getSessionDuration(type, settings)
-    setActiveSession(type)
-    setTargetSeconds(dur * 60)
-    setTimerSeconds(dur * 60)
-    setCompletedSteps(new Set())
-    setTimerRunning(true)
-  }
-
-  async function completeSession() {
+  async function completeSession(brushingSeconds: number, strokeLog: StrokeLog) {
     if (!activeSession) return
-    setTimerRunning(false)
-    const brushingSeconds = Math.max(targetSeconds - timerSeconds, 0)
 
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return
+    if (!session) {
+      setActiveSession(null)
+      return
+    }
 
+    const hasStrokes = Object.keys(strokeLog).length > 0
     await supabase.from('waves_sessions').insert({
       user_id: session.user.id,
       session_type: activeSession,
       brushing_seconds: brushingSeconds,
       session_date: todayStr(),
+      stroke_log: hasStrokes ? strokeLog : null,
     })
 
     setActiveSession(null)
-    setTimerSeconds(0)
     await loadData()
-  }
-
-  function cancelSession() {
-    setTimerRunning(false)
-    setActiveSession(null)
-    setTimerSeconds(0)
-    setCompletedSteps(new Set())
-  }
-
-  function toggleStep(i: number) {
-    setCompletedSteps(prev => {
-      const next = new Set(prev)
-      next.has(i) ? next.delete(i) : next.add(i)
-      return next
-    })
   }
 
   if (loading) {
@@ -315,6 +295,7 @@ export default function WavesPage() {
     20,
   )
   const upcomingHaircuts = haircutDates.filter(h => h.date >= today).slice(0, 4)
+  const upcomingRoadmap = HAIRCUT_ROADMAP.filter(m => !m.date || m.date >= today)
 
   const calYear = calMonth.getFullYear()
   const calMonthIdx = calMonth.getMonth()
@@ -328,7 +309,6 @@ export default function WavesPage() {
   }
 
   const cfg = activeSession ? SESSION_CONFIG[activeSession] : null
-  const progress = targetSeconds > 0 ? (targetSeconds - timerSeconds) / targetSeconds : 0
 
   return (
     <IvenModule
@@ -341,74 +321,15 @@ export default function WavesPage() {
       }
     >
 
-      {/* ── Active Session Overlay ── */}
+      {/* ── Active Session Runner ── */}
       {activeSession && cfg && (
-        <div className="fixed inset-0 bg-textPrimary z-50 flex flex-col">
-          <div className="flex items-center justify-between px-6 pt-14 pb-4">
-            <button onClick={cancelSession} className="text-white/50 hover:text-white transition-colors">
-              <X className="w-6 h-6" />
-            </button>
-            <div className="text-center">
-              <div className="text-3xl">{cfg.emoji}</div>
-              <div className="text-white font-playfair text-lg font-bold">{cfg.label}</div>
-            </div>
-            <div className="w-6" />
-          </div>
-
-          <div className="flex flex-col items-center px-6 pb-4">
-            <div className="font-mono text-8xl font-bold text-white tracking-tight tabular-nums">
-              {formatMmSs(timerSeconds)}
-            </div>
-            <div className="text-white/40 font-inter text-sm mt-1">
-              {getSessionDuration(activeSession, settings)} min session
-            </div>
-            <div className="w-full bg-white/10 rounded-full h-1 mt-5 mb-4">
-              <div
-                className="bg-gold h-1 rounded-full transition-all duration-1000"
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
-            <button
-              onClick={() => setTimerRunning(r => !r)}
-              className="px-8 py-2 rounded-full border border-white/20 text-white font-inter text-sm hover:bg-white/10 transition-colors"
-            >
-              {timerRunning ? 'Pause' : 'Resume'}
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-6 pt-2">
-            <div className="text-white/40 font-inter text-xs uppercase tracking-widest mb-3">Steps</div>
-            <div className="space-y-3 pb-4">
-              {cfg.steps.map((step, i) => (
-                <button
-                  key={i}
-                  onClick={() => toggleStep(i)}
-                  className="w-full flex items-start gap-3 text-left"
-                >
-                  <div className={`mt-0.5 w-5 h-5 rounded-full border flex-shrink-0 flex items-center justify-center transition-colors ${
-                    completedSteps.has(i) ? 'bg-gold border-gold' : 'border-white/30'
-                  }`}>
-                    {completedSteps.has(i) && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <span className={`font-inter text-sm leading-relaxed ${
-                    completedSteps.has(i) ? 'text-white/30 line-through' : 'text-white/80'
-                  }`}>
-                    {step}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="px-6 pb-10 pt-4">
-            <button
-              onClick={completeSession}
-              className="w-full bg-gold text-white font-inter font-semibold py-4 rounded-2xl text-base hover:bg-goldLight transition-colors"
-            >
-              Complete Session
-            </button>
-          </div>
-        </div>
+        <SessionRunner
+          emoji={cfg.emoji}
+          label={cfg.label}
+          steps={cfg.steps}
+          onCancel={() => setActiveSession(null)}
+          onComplete={completeSession}
+        />
       )}
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
@@ -426,15 +347,14 @@ export default function WavesPage() {
           <div className="text-center">
             <div className="font-playfair text-xl font-bold text-textPrimary leading-none">
               {totalBrushingMins}
-              <span className="text-xs font-inter font-normal text-textMuted">/60</span>
+              <span className="text-xs font-inter font-normal text-textMuted"> min</span>
             </div>
-            <div className="font-inter text-[11px] text-textMuted">min brushing</div>
+            <div className="font-inter text-[11px] text-textMuted">brushing today</div>
           </div>
           <div className="w-px h-10 bg-grid" />
           <div className="text-center">
             <div className="font-playfair text-xl font-bold text-textPrimary leading-none">
               {completedTypes.size}
-              <span className="text-xs font-inter font-normal text-textMuted">/3</span>
             </div>
             <div className="font-inter text-[11px] text-textMuted">sessions today</div>
           </div>
@@ -446,8 +366,8 @@ export default function WavesPage() {
           <div className="space-y-2.5">
             {(['morning', 'afternoon', 'evening'] as const).map(type => {
               const done = completedTypes.has(type)
-              const dur = getSessionDuration(type, settings)
               const c = SESSION_CONFIG[type]
+              const mins = estimateSessionMins(c.steps)
               return (
                 <div
                   key={type}
@@ -458,7 +378,9 @@ export default function WavesPage() {
                   <span className="text-2xl">{c.emoji}</span>
                   <div className="flex-1">
                     <div className="font-inter font-semibold text-textPrimary text-sm">{c.label}</div>
-                    <div className="font-inter text-xs text-textMuted">{dur} min brushing</div>
+                    <div className="font-inter text-xs text-textMuted">
+                      {type === 'afternoon' ? 'Let it rest' : `~${mins} min`}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {done && (
@@ -468,7 +390,7 @@ export default function WavesPage() {
                       </span>
                     )}
                     <button
-                      onClick={() => startSession(type)}
+                      onClick={() => setActiveSession(type)}
                       className="bg-gold text-white font-inter text-sm font-medium px-4 py-2 rounded-xl hover:bg-brownAccent transition-colors"
                     >
                       {done ? 'Again' : 'Start'}
@@ -493,7 +415,7 @@ export default function WavesPage() {
                   <span className="text-2xl">💧</span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-inter font-semibold text-textPrimary text-sm">Wash Day</span>
+                      <span className="font-inter font-semibold text-textPrimary text-sm">Wash & Style</span>
                       {isWashDay && (
                         <span className="bg-cyan-500 text-white font-inter text-[10px] font-bold px-2 py-0.5 rounded-full">
                           TODAY
@@ -501,7 +423,7 @@ export default function WavesPage() {
                       )}
                     </div>
                     <div className="font-inter text-xs text-textMuted">
-                      {isWashDay ? 'Full wash & style routine' : `Every ${washDayName}`}
+                      {isWashDay ? 'Full factory reset' : `Every ${washDayName}`}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -512,7 +434,7 @@ export default function WavesPage() {
                       </span>
                     )}
                     <button
-                      onClick={() => startSession('wash')}
+                      onClick={() => setActiveSession('wash')}
                       className={`font-inter text-sm font-medium px-4 py-2 rounded-xl transition-colors ${
                         isWashDay
                           ? 'bg-cyan-500 text-white hover:bg-cyan-600'
@@ -525,6 +447,45 @@ export default function WavesPage() {
                 </div>
               )
             })()}
+          </div>
+        </section>
+
+        {/* ── Brush Mechanics ── */}
+        <section>
+          <div className="bg-surface rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setMechanicsOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3.5 text-left"
+            >
+              <div>
+                <div className="font-playfair text-lg font-bold text-textPrimary">Brush Mechanics</div>
+                <div className="font-inter text-xs text-textMuted">Master the stroke — 1 per second, never blind</div>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-textMuted flex-shrink-0 transition-transform duration-200 ${
+                mechanicsOpen ? 'rotate-180' : ''
+              }`} />
+            </button>
+            {mechanicsOpen && (
+              <div className="px-4 pb-4 border-t border-grid/20 pt-3 space-y-3">
+                {BRUSH_MECHANICS.map(({ label, pressure, purpose }) => (
+                  <div key={label}>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-inter text-sm font-semibold text-textPrimary">{label}</span>
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-gold">{pressure}</span>
+                    </div>
+                    <p className="font-inter text-xs text-textMuted leading-relaxed">{purpose}</p>
+                  </div>
+                ))}
+                <div className="pt-2 border-t border-grid/20 space-y-1.5">
+                  <p className="font-inter text-xs text-textMuted leading-relaxed">
+                    <span className="font-semibold text-textPrimary">Speed:</span> 1 stroke per second. Slow, rhythmic, and intentional — rushing causes forks.
+                  </p>
+                  <p className="font-inter text-xs text-textMuted leading-relaxed">
+                    <span className="font-semibold text-textPrimary">Mirror:</span> Always use a hand mirror reflecting into your bathroom mirror. Never brush blindly.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -599,7 +560,7 @@ export default function WavesPage() {
             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 pt-3 border-t border-grid/20">
               {[
                 { dot: 'bg-amber-400', label: 'Morning' },
-                { dot: 'bg-orange-400', label: 'Afternoon' },
+                { dot: 'bg-orange-400', label: 'Workday' },
                 { dot: 'bg-indigo-400', label: 'Evening' },
                 { dot: 'bg-cyan-400', label: 'Wash' },
               ].map(({ dot, label }) => (
@@ -614,34 +575,68 @@ export default function WavesPage() {
             </div>
           </div>
 
+          {/* Road to August */}
+          {upcomingRoadmap.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-playfair text-lg font-bold text-textPrimary mb-2">Road to August</h3>
+              <div className="space-y-2">
+                {upcomingRoadmap.map((m, i) => (
+                  <div key={i} className="bg-surface rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-gold">{m.phase}</span>
+                        <span className="font-inter text-sm font-semibold text-textPrimary">{m.title}</span>
+                      </div>
+                      <div className="font-inter text-xs text-textMuted leading-relaxed mt-0.5">{m.detail}</div>
+                    </div>
+                    {m.date && (
+                      <a
+                        href={buildGCalUrl(`${m.title} @ Juve's`, m.detail, m.date)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-gold font-inter text-xs font-medium hover:text-brownAccent transition-colors flex-shrink-0 mt-0.5"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        Add
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Upcoming haircuts */}
           {upcomingHaircuts.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {upcomingHaircuts.map(({ date, includeTrim }, i) => {
-                const label = date.toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                })
-                const cutType = includeTrim ? 'Low Fade + Trim' : 'Low Fade'
-                return (
-                  <div key={i} className="bg-surface rounded-xl px-4 py-3 flex items-center justify-between">
-                    <div>
-                      <div className="font-inter text-sm font-medium text-textPrimary">✂ {label}</div>
-                      <div className="font-inter text-xs text-textMuted">{cutType} · Juve's</div>
+            <div className="mt-4">
+              <h3 className="font-playfair text-lg font-bold text-textPrimary mb-2">Upcoming Cuts</h3>
+              <div className="space-y-2">
+                {upcomingHaircuts.map(({ date, includeTrim }, i) => {
+                  const label = date.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                  const cutType = includeTrim ? 'Low Fade + Trim' : 'Low Fade'
+                  return (
+                    <div key={i} className="bg-surface rounded-xl px-4 py-3 flex items-center justify-between">
+                      <div>
+                        <div className="font-inter text-sm font-medium text-textPrimary">✂ {label}</div>
+                        <div className="font-inter text-xs text-textMuted">{cutType} · Juve's</div>
+                      </div>
+                      <a
+                        href={getGCalUrl(date, includeTrim)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-gold font-inter text-xs font-medium hover:text-brownAccent transition-colors"
+                      >
+                        <Calendar className="w-3.5 h-3.5" />
+                        Add
+                      </a>
                     </div>
-                    <a
-                      href={getGCalUrl(date, includeTrim)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-gold font-inter text-xs font-medium hover:text-brownAccent transition-colors"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      Add
-                    </a>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           )}
         </section>

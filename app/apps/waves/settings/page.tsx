@@ -20,12 +20,6 @@ const BackButton = (
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-const DURATION_FIELDS = [
-  { key: 'morning_duration_mins' as const, label: '🌅 Morning' },
-  { key: 'afternoon_duration_mins' as const, label: '☀️ Afternoon' },
-  { key: 'evening_duration_mins' as const, label: '🌙 Evening' },
-]
-
 export default function WavesSettingsPage() {
   const supabase = createClient()
   const [settings, setSettings] = useState<WavesSettings | null>(null)
@@ -62,9 +56,6 @@ export default function WavesSettingsPage() {
           wash_day: settings.wash_day,
           last_haircut_date: settings.last_haircut_date,
           haircut_interval_weeks: settings.haircut_interval_weeks,
-          morning_duration_mins: settings.morning_duration_mins,
-          afternoon_duration_mins: settings.afternoon_duration_mins,
-          evening_duration_mins: settings.evening_duration_mins,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', session.user.id)
@@ -91,35 +82,6 @@ export default function WavesSettingsPage() {
     <IvenModule index={5} title="Waves Settings" right={BackButton}>
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-
-        {/* Session Durations */}
-        <section>
-          <h2 className="font-playfair text-lg font-bold text-textPrimary mb-3">Session Durations</h2>
-          <div className="bg-surface rounded-2xl divide-y divide-grid/20">
-            {DURATION_FIELDS.map(({ key, label }) => (
-              <div key={key} className="flex items-center justify-between px-4 py-3.5">
-                <span className="font-inter text-sm text-textPrimary">{label}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => update(key, Math.max(5, settings[key] - 5) as WavesSettings[typeof key])}
-                    className="w-7 h-7 rounded-lg bg-beige text-textPrimary font-bold text-sm hover:bg-grid/30 transition-colors"
-                  >
-                    −
-                  </button>
-                  <span className="font-inter text-sm font-medium text-textPrimary w-14 text-center">
-                    {settings[key]} min
-                  </span>
-                  <button
-                    onClick={() => update(key, Math.min(60, settings[key] + 5) as WavesSettings[typeof key])}
-                    className="w-7 h-7 rounded-lg bg-beige text-textPrimary font-bold text-sm hover:bg-grid/30 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* Wash Day */}
         <section>
