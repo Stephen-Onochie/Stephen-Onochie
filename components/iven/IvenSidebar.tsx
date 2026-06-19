@@ -12,6 +12,7 @@ import {
   Shirt,
   MessageCircle,
   Hourglass,
+  Tv2,
   Settings,
   LogOut,
   Moon,
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { label: 'STYLEMATE', icon: Shirt, href: '/apps/stylemate' },
   { label: 'BUBBLES', icon: MessageCircle, href: '/apps/bubbles' },
   { label: 'FASTTRACK', icon: Hourglass, href: '/apps/fast' },
+  { label: 'LG REMOTE', icon: Tv2, href: '/apps/lg-remote' },
 ]
 
 export default function IvenSidebar() {
