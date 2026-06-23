@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
@@ -64,22 +65,28 @@ export default function IvenSidebar() {
         height: '100vh',
         position: 'sticky',
         top: 0,
+        // Elevate the whole sidebar above <main> so flyout labels and the
+        // settings popover are never painted over by app content (e.g. grid widgets).
+        zIndex: 50,
       }}
     >
-      {/* Brand logo */}
-      <div
-        className="flex items-center justify-center mb-5 rounded-[10px] font-playfair font-bold text-lg"
-        style={{
-          width: 40,
-          height: 40,
-          background: 'var(--iven-accent)',
-          color: '#2C1F0E',
-          letterSpacing: '-0.5px',
-          flexShrink: 0,
-        }}
+      {/* Brand logo — links back to the public site */}
+      <Link
+        href="/"
+        className="flex items-center justify-center mb-5"
+        style={{ width: 40, height: 40, flexShrink: 0 }}
+        aria-label="Back to stephenonochie.com"
+        title="Back to stephenonochie.com"
       >
-        SO
-      </div>
+        <Image
+          src="/logo-so.png"
+          alt="SO"
+          width={40}
+          height={40}
+          className="object-contain opacity-80 hover:opacity-100 transition-opacity"
+          priority
+        />
+      </Link>
 
       {/* Nav items */}
       <div className="flex flex-col items-center gap-1 flex-1">

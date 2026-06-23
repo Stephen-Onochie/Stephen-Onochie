@@ -19,6 +19,9 @@ declare module 'react-grid-layout' {
 
   export type RGLLayout = RGLItem[]
 
+  // Opaque — the app never constructs a Compactor, only passes one through.
+  export type Compactor = unknown
+
   export interface ResponsiveProps {
     className?: string
     layouts?: { [breakpoint: string]: RGLLayout }
@@ -27,6 +30,8 @@ declare module 'react-grid-layout' {
     width?: number
     rowHeight?: number
     margin?: [number, number]
+    compactor?: Compactor
+    dragConfig?: { bounded?: boolean }
     isDraggable?: boolean
     isResizable?: boolean
     draggableCancel?: string
@@ -36,6 +41,13 @@ declare module 'react-grid-layout' {
 
   export const Responsive: ComponentType<ResponsiveProps>
   export const ResponsiveGridLayout: ComponentType<ResponsiveProps>
+
+  export function getCompactor(
+    compactType: 'horizontal' | 'vertical' | 'wrap' | null,
+    allowOverlap?: boolean,
+    preventCollision?: boolean
+  ): Compactor
+  export const noCompactor: Compactor
 
   export function useContainerWidth(): {
     width: number

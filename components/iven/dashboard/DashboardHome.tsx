@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 // react-grid-layout v2: hooks-based API (no WidthProvider). The bundled v1
 // @types don't match, so this module is typed locally in types/rgl.d.ts.
-import { Responsive, useContainerWidth } from 'react-grid-layout'
+import { Responsive, useContainerWidth, getCompactor } from 'react-grid-layout'
 type Layout = { i: string; x: number; y: number; w: number; h: number }
 import { Pencil, Check, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +16,9 @@ import 'react-resizable/css/styles.css'
 const COLS = { lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }
 const ROW_HEIGHT = 70
+// Free positioning: no auto-rearrange, overlap allowed. Constructed once so
+// rgl doesn't treat a new compactor identity as a config change each render.
+const FREE_COMPACTOR = getCompactor('vertical', true, false)
 
 export default function DashboardHome() {
   const supabase = useMemo(() => createClient(), [])
@@ -117,6 +120,8 @@ export default function DashboardHome() {
         width={width}
         rowHeight={ROW_HEIGHT}
         margin={[16, 16]}
+        compactor={FREE_COMPACTOR}
+        dragConfig={{ bounded: false }}
         isDraggable={editing}
         isResizable={editing}
         onLayoutChange={onLayoutChange}

@@ -45,7 +45,7 @@ export default function HealthPage() {
   const right = <RangeToggle value={range} onChange={setRange} />
 
   return (
-    <IvenModule index={9} title="Health" right={right} dark>
+    <IvenModule index={9} title="Health" right={right}>
       <div className="flex flex-col gap-[18px] pb-8">
         <div className="font-playfair italic text-lg" style={{ color: 'var(--iven-muted)' }}>
           Weekly summary &amp; trends

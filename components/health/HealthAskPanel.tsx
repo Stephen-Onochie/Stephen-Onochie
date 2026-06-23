@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, ArrowUp } from 'lucide-react'
+import { Sparkles, ArrowUp, ChevronDown, ChevronUp } from 'lucide-react'
 
 const SUGGESTIONS = [
   'Am I at risk for knee injury?',
@@ -14,6 +14,7 @@ export default function HealthAskPanel() {
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [collapsed, setCollapsed] = useState(false)
 
   async function ask(q: string) {
     const trimmed = q.trim()
@@ -21,6 +22,7 @@ export default function HealthAskPanel() {
     setLoading(true)
     setError('')
     setAnswer('')
+    setCollapsed(false)
     try {
       const res = await fetch('/api/health-ai', {
         method: 'POST',
@@ -99,11 +101,28 @@ export default function HealthAskPanel() {
       )}
 
       {answer && (
-        <div
-          className="font-inter text-sm leading-relaxed whitespace-pre-wrap rounded-xl p-4"
-          style={{ background: 'var(--iven-bg)', border: '1px solid var(--iven-border)', color: 'var(--iven-text)' }}
-        >
-          {answer}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            className="flex items-center justify-between w-full transition-opacity hover:opacity-80"
+          >
+            <span className="font-mono text-[10px] font-semibold tracking-[2.6px] uppercase" style={{ color: 'var(--iven-muted)' }}>
+              Answer
+            </span>
+            {collapsed ? (
+              <ChevronDown size={15} style={{ color: 'var(--iven-muted)' }} />
+            ) : (
+              <ChevronUp size={15} style={{ color: 'var(--iven-muted)' }} />
+            )}
+          </button>
+          {!collapsed && (
+            <div
+              className="font-inter text-sm leading-relaxed whitespace-pre-wrap rounded-xl p-4"
+              style={{ background: 'var(--iven-bg)', border: '1px solid var(--iven-border)', color: 'var(--iven-text)' }}
+            >
+              {answer}
+            </div>
+          )}
         </div>
       )}
     </div>
