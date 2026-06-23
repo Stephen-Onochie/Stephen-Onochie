@@ -14,10 +14,32 @@ export async function POST(req: Request) {
   const auth = req.headers.get('authorization')
 
   if (!secret || !userId) {
-    return NextResponse.json({ error: 'Ingest not configured' }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Ingest not configured',
+        // TEMP DIAGNOSTIC — which env var is missing (no secret values exposed)
+        debug: { hasSecret: !!secret, hasUserId: !!userId },
+      },
+      { status: 500 }
+    )
   }
   if (auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // TEMP DIAGNOSTIC — redacted fingerprint of what arrived vs. what's expected,
+    // so we can tell "no header" from "wrong prefix" from "secret mismatch"
+    // without ever returning the actual secret. Remove once ingest works.
+    const fp = (s: string | null) =>
+      s == null ? null : { len: s.length, head: s.slice(0, 9), tail: s.slice(-4) }
+    return NextResponse.json(
+      {
+        error: 'Unauthorized',
+        debug: {
+          received: fp(auth),
+          expectedLen: `Bearer ${secret}`.length,
+          startsWithBearer: auth?.startsWith('Bearer ') ?? false,
+        },
+      },
+      { status: 401 }
+    )
   }
 
   let payload: unknown
