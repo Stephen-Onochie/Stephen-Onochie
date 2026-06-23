@@ -24,20 +24,7 @@ export async function POST(req: Request) {
   const authorized = customSecret === secret || authHeader === `Bearer ${secret}`
 
   if (!authorized) {
-    // TEMP DIAGNOSTIC — redacted fingerprints, no secret values exposed.
-    const fp = (s: string | null) =>
-      s == null ? null : { len: s.length, head: s.slice(0, 6), tail: s.slice(-4) }
-    return NextResponse.json(
-      {
-        error: 'Unauthorized',
-        debug: {
-          xHealthSecret: fp(customSecret),
-          authorization: fp(authHeader),
-          expectedSecretLen: secret.length,
-        },
-      },
-      { status: 401 }
-    )
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   let payload: unknown

@@ -8,6 +8,7 @@ export const NAME_MAP: Record<string, string> = {
   heart_rate: 'heart_rate',
   resting_heart_rate: 'resting_heart_rate',
   walking_heart_rate_average: 'walking_heart_rate',
+  walking_heart_rate: 'walking_heart_rate',
   heart_rate_variability_sdnn: 'hrv',
   heart_rate_variability: 'hrv',
   active_energy_burned: 'active_calories',
@@ -21,6 +22,7 @@ export const NAME_MAP: Record<string, string> = {
   blood_oxygen_saturation: 'spo2',
   oxygen_saturation: 'spo2',
   distance_walking_running: 'distance',
+  walking_running_distance: 'distance',
   distance_cycling: 'distance_cycling',
   flights_climbed: 'flights_climbed',
   vo2_max: 'vo2max',
@@ -43,6 +45,11 @@ export const NAME_MAP: Record<string, string> = {
   dietary_water: 'water',
   dietary_energy: 'dietary_calories',
   mindful_minutes: 'mindful_minutes',
+  // Additional metrics Health Auto Export v2 sends (kept under stable names)
+  lean_body_mass: 'lean_body_mass',
+  physical_effort: 'physical_effort',
+  time_in_daylight: 'time_in_daylight',
+  handwashing: 'handwashing',
 }
 
 export function normalizeMetricName(raw: string): string {
@@ -89,6 +96,7 @@ const DEFS: MetricDef[] = [
   def('spo2', 'Blood Oxygen', '%', 'Respiratory', 'avg', 'line'),
   // Body
   def('weight', 'Weight', 'lb', 'Body', 'last', 'line'),
+  def('lean_body_mass', 'Lean Body Mass', 'lb', 'Body', 'last', 'line'),
   def('body_fat', 'Body Fat', '%', 'Body', 'last', 'line'),
   def('bmi', 'BMI', '', 'Body', 'last', 'line'),
   def('blood_glucose', 'Blood Glucose', 'mg/dL', 'Body', 'avg', 'line'),
@@ -96,6 +104,10 @@ const DEFS: MetricDef[] = [
   // Audio
   def('env_audio_exposure', 'Environmental Audio', 'dB', 'Audio', 'avg', 'line'),
   def('headphone_audio_exposure', 'Headphone Audio', 'dB', 'Audio', 'avg', 'line'),
+  // Activity & other
+  def('physical_effort', 'Physical Effort', 'kcal/hr·kg', 'Movement', 'avg', 'line'),
+  def('time_in_daylight', 'Time in Daylight', 'min', 'Movement', 'sum', 'bar'),
+  def('handwashing', 'Handwashing Duration', 's', 'Other', 'avg', 'line'),
 ]
 
 export const METRIC_DEFS: Record<string, MetricDef> = Object.fromEntries(
