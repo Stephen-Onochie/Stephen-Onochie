@@ -5,6 +5,7 @@ import StandingTimerWidget from './StandingTimerWidget'
 import WeatherWidget from './WeatherWidget'
 import StocksWidget from './StocksWidget'
 import WavesStreakWidget from './WavesStreakWidget'
+import ReadingWidget from './ReadingWidget'
 import HealthStepsWidget from './health/HealthStepsWidget'
 import HealthRecoveryWidget from './health/HealthRecoveryWidget'
 import type { DashboardWidgetLayout } from '@/types/health'
@@ -26,6 +27,7 @@ export const WIDGETS: WidgetDef[] = [
   { id: 'standing-timer', label: 'Standing Timer', component: StandingTimerWidget, defaultLayout: { x: 7, y: 3, w: 5, h: 4 }, minW: 3, minH: 3 },
   { id: 'weather', label: 'Weather', component: WeatherWidget, defaultLayout: { x: 7, y: 7, w: 5, h: 3 }, minW: 3, minH: 2 },
   { id: 'waves', label: 'Project Waves', component: WavesStreakWidget, defaultLayout: { x: 7, y: 10, w: 5, h: 3 }, minW: 3, minH: 2 },
+  { id: 'reading', label: 'Reading', component: ReadingWidget, defaultLayout: { x: 7, y: 13, w: 5, h: 3 }, minW: 3, minH: 2 },
   { id: 'health-steps', label: 'Health · Steps', component: HealthStepsWidget, defaultLayout: { x: 0, y: 12, w: 6, h: 4 }, minW: 3, minH: 3 },
   { id: 'health-recovery', label: 'Health · Recovery', component: HealthRecoveryWidget, defaultLayout: { x: 6, y: 12, w: 6, h: 4 }, minW: 3, minH: 3 },
 ]
