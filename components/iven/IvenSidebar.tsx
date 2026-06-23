@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Hourglass,
   Tv2,
+  Activity,
   Settings,
   LogOut,
   Moon,
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { label: 'STYLEMATE', icon: Shirt, href: '/apps/stylemate' },
   { label: 'BUBBLES', icon: MessageCircle, href: '/apps/bubbles' },
   { label: 'FASTTRACK', icon: Hourglass, href: '/apps/fast' },
+  { label: 'HEALTH', icon: Activity, href: '/apps/health' },
   { label: 'LG REMOTE', icon: Tv2, href: '/apps/lg-remote' },
 ]
 

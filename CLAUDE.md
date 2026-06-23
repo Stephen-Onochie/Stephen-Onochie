@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## Project Overview
 
 Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two distinct halves:
@@ -24,10 +26,42 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 | **Standing Timer** | Stand/sit/break health cycles + stats |
 | **Bubbles** | Ephemeral auto-expiring notes |
 | **Todo** | Quick-capture tasks, natural-language due dates (`lib/todo/parse.ts`), Inbox shows all incomplete tasks (not list-scoped), browser reminders. Tables: `todo_lists`, `todos` |
-| **Project Waves** | Daily 360 waves brushing routine: 3 timed sessions (morning/afternoon/evening) + weekly Wash Day, streak tracking, hair calendar, upcoming haircut schedule with Google Calendar links. Tables: `waves_settings`, `waves_sessions` |
+| **Project Waves** | Daily 360 waves brushing routine: 3 timed sessions (morning/afternoon/evening) + weekly Wash Day, streak tracking, hair calendar, upcoming haircut schedule with Google Calendar links. Tables: `waves_settings`, `waves_sessions`, `waves_stroke_log` |
 | **FastTrack** | Intermittent fasting tracker: start/end fasts, configurable cooldown and target duration, fasting calendar, guidelines. Tables: `fast_settings`, `fast_sessions` |
+| **LG Remote** | Web UI for controlling an LG TV remotely. Requires the `lg-tv-proxy` sidecar server (see below). |
+| **Health** | Apple Watch health dashboard. Ingests Health Auto Export data (100+ metrics) into Supabase, shows 5 featured recharts charts (steps, RHR, HRV, sleep, active calories) + 4 summary stat cards, a metric search bar with generic auto-charts, and an LLM Q&A panel (OpenRouter). Tables: `health_metrics`, `health_ingest_log`. See "Health Dashboard" below. |
 
-Planned apps: business dashboard (agency/startup stats), health dashboard (Apple Health data).
+Planned apps: business dashboard (agency/startup stats).
+
+## LG TV Proxy
+
+`lg-tv-proxy/` is a **separate Node.js server** (not part of the Next.js app) that exposes the LG TV's WebSocket API over HTTPS via a Cloudflare tunnel. It must be running independently for the LG Remote app to work.
+
+- Start locally: `./start.sh` (runs on `localhost:3001`)
+- Public tunnel: `./tunnel.sh` (Cloudflare, required for remote access from Vercel deploy)
+- Config: `lg-tv-proxy/.env` — set `TV_IP`, `API_TOKEN`, `PORT`, `ALLOWED_ORIGINS`
+- See `lg-tv-proxy/GUIDE.md` for full setup
+
+## Health Dashboard
+
+`/apps/health` — Apple Watch data via Health Auto Export → Supabase → recharts.
+
+- **Ingest:** `app/api/health-ingest/route.ts` (POST). The iPhone app POSTs with no browser session, so this is the **only** route using the **service-role** Supabase client (`lib/supabase/admin.ts`) — it bypasses RLS. Auth is a shared bearer secret (`HEALTH_INGEST_SECRET`); every row is stamped with `HEALTH_USER_ID`. Idempotent upsert on `(user_id, metric_type, recorded_at)` so re-pushes don't duplicate.
+- **Metric registry:** `lib/health/metrics.ts` — `NAME_MAP` translates Health Auto Export names (`step_count`→`steps`, `heart_rate_variability_sdnn`→`hrv`, etc.); unmapped metrics pass through under their own name so all 100+ land. `METRIC_DEFS` carries charting hints (aggregation: sum/avg/last, chart: bar/line). `FEATURED_METRICS` = the 5 hero charts.
+- **Parsing:** `lib/health/parse.ts` — `sleep_analysis` arrives as intervals; normalized to hours/night.
+- **Aggregation:** `lib/health/aggregate.ts` — daily rollup per metric's aggregation mode + 7-day rolling average. Read API: `app/api/health-data/route.ts` (featured mode, `?metric=` single mode, `?list=1` available-metrics mode) using the user's RLS-scoped server client.
+- **LLM Q&A:** `app/api/health-ai/route.ts` — OpenRouter with a `get_metric` tool loop; the model requests the metrics it needs (keeps tokens bounded). Model via `OPENROUTER_MODEL` env (defaults `openai/gpt-4o-mini`). No medical disclaimer by design.
+- **Charts:** recharts, themed via `--iven-*` tokens. Because recharts writes concrete colors into SVG, `components/health/useIvenColors.ts` resolves CSS vars off the live DOM (re-reads on theme toggle) — pass resolved colors, not `var(--iven-*)`, into chart fills/strokes.
+- **Seed/test:** insert rows directly via the Supabase MCP for the user `8c08ce23-f5d6-4f78-9193-ef9191b2975c`; the page is OAuth-gated so it can't be screenshotted headlessly.
+
+## Customizable Dashboard
+
+The IVEN home (`/apps`, `components/iven/dashboard/DashboardHome.tsx`) is a **draggable react-grid-layout grid**, not the old hardcoded flexbox.
+
+- **Widget registry:** `components/iven/dashboard/registry.tsx` lists every widget (id, label, component, default grid geometry). Add a widget by adding a registry entry; widgets self-fetch their own data.
+- **Persistence:** layout + enabled-widget set saved (debounced) to the `dashboard_layouts` table per user; `lib/dashboard/layout.ts` loads/reconciles (drops removed widgets, slots new ones). `DEFAULT_ENABLED` reproduces the original arrangement so nothing regresses before the user edits.
+- **Edit mode:** "Edit Layout" toggle enables drag/resize + an Add-widget picker + per-widget remove. While editing, widget `pointerEvents` are disabled so drags don't trigger clicks.
+- **react-grid-layout is v2** (hooks API: `Responsive` + `useContainerWidth`, no `WidthProvider`). The published `@types/react-grid-layout` target v1 and don't match, so the module is typed locally in `types/rgl.d.ts`. Import its CSS (`react-grid-layout/css/styles.css` + `react-resizable/css/styles.css`).
 
 ## IVEN
 
@@ -46,11 +80,12 @@ IVEN is the live private app shell — a JARVIS-style personal OS replacing the 
 
 ## Key Conventions
 
-- Run dev server with `npm run dev`
+- Run dev server with `npm run dev`; build with `npm run build`; lint with `npm run lint`. No test suite exists.
 - UI components come from shadcn/ui — add via `npx shadcn@latest add <component>`
-- Supabase client helpers live in `lib/supabase/`
-- App-specific types in `/types/<app-name>.ts`
+- Supabase client helpers live in `lib/supabase/`; browser client in `client.ts`, server client in `server.ts`
+- App-specific types in `/types/<app-name>.ts`; app-specific Supabase helpers in `lib/<app-name>/supabase.ts`
 - Dialogs/modals that use Radix portals: scope CSS theme variables to the portal root, not just the trigger, to avoid transparent/unstyled overlays
+- Supabase MCP is configured in `.mcp.json` — use it for schema inspection and running migrations during development
 
 ## What to Avoid
 
