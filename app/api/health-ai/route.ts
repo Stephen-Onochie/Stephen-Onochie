@@ -62,9 +62,10 @@ export async function POST(request: Request) {
   if (!question) return NextResponse.json({ error: 'question is required' }, { status: 400 })
 
   // Give the model the menu of metrics the user actually has data for.
-  const { data: typeRows } = await supabase.from('health_metrics').select('metric_type')
-  const availableTypes = Array.from(new Set((typeRows ?? []).map(r => r.metric_type as string)))
-  const menu = availableTypes.map(t => `${t} (${getMetricDef(t).label}, ${getMetricDef(t).unit})`).join(', ')
+  // Use the RPC (distinct in the DB) so it isn't truncated by the 1000-row cap.
+  const { data: typeRows } = await supabase.rpc('distinct_health_metric_types')
+  const availableTypes = (typeRows ?? []).map((r: { metric_type: string }) => r.metric_type)
+  const menu = availableTypes.map((t: string) => `${t} (${getMetricDef(t).label}, ${getMetricDef(t).unit})`).join(', ')
 
   const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL
   const messages: any[] = [

@@ -27,14 +27,12 @@ export async function GET(request: Request) {
   const metric = searchParams.get('metric')
 
   // List mode — distinct metric_types present in the user's data, with defs,
-  // so the search bar only offers metrics that actually have rows.
+  // so the search bar only offers metrics that actually have rows. Uses the RPC
+  // (distinct in the DB) so it isn't truncated by the 1000-row response cap.
   if (searchParams.get('list') === '1') {
-    const { data } = await supabase
-      .from('health_metrics')
-      .select('metric_type')
-      .order('metric_type', { ascending: true })
-    const types = Array.from(new Set((data ?? []).map(r => r.metric_type as string)))
-    return NextResponse.json({ metrics: types.map(t => getMetricDef(t)) })
+    const { data } = await supabase.rpc('distinct_health_metric_types')
+    const types = (data ?? []).map((r: { metric_type: string }) => r.metric_type)
+    return NextResponse.json({ metrics: types.map((t: string) => getMetricDef(t)) })
   }
 
   // Single-metric mode (search bar / generic chart).
