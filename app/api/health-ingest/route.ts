@@ -11,31 +11,29 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: Request) {
   const secret = process.env.HEALTH_INGEST_SECRET
   const userId = process.env.HEALTH_USER_ID
-  const auth = req.headers.get('authorization')
 
   if (!secret || !userId) {
-    return NextResponse.json(
-      {
-        error: 'Ingest not configured',
-        // TEMP DIAGNOSTIC — which env var is missing (no secret values exposed)
-        debug: { hasSecret: !!secret, hasUserId: !!userId },
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Ingest not configured' }, { status: 500 })
   }
-  if (auth !== `Bearer ${secret}`) {
-    // TEMP DIAGNOSTIC — redacted fingerprint of what arrived vs. what's expected,
-    // so we can tell "no header" from "wrong prefix" from "secret mismatch"
-    // without ever returning the actual secret. Remove once ingest works.
+
+  // Health Auto Export (and/or the Vercel edge) drops the standard `Authorization`
+  // header in transit, so the primary auth path is a custom header carrying the
+  // raw secret. `Authorization: Bearer <secret>` is still accepted as a fallback.
+  const customSecret = req.headers.get('x-health-secret')
+  const authHeader = req.headers.get('authorization')
+  const authorized = customSecret === secret || authHeader === `Bearer ${secret}`
+
+  if (!authorized) {
+    // TEMP DIAGNOSTIC — redacted fingerprints, no secret values exposed.
     const fp = (s: string | null) =>
-      s == null ? null : { len: s.length, head: s.slice(0, 9), tail: s.slice(-4) }
+      s == null ? null : { len: s.length, head: s.slice(0, 6), tail: s.slice(-4) }
     return NextResponse.json(
       {
         error: 'Unauthorized',
         debug: {
-          received: fp(auth),
-          expectedLen: `Bearer ${secret}`.length,
-          startsWithBearer: auth?.startsWith('Bearer ') ?? false,
+          xHealthSecret: fp(customSecret),
+          authorization: fp(authHeader),
+          expectedSecretLen: secret.length,
         },
       },
       { status: 401 }
