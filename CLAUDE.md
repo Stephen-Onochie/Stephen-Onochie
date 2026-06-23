@@ -80,6 +80,7 @@ IVEN is the live private app shell — a JARVIS-style personal OS replacing the 
 
 ## Key Conventions
 
+- **Package manager is pnpm.** Vercel deploys with `pnpm install --frozen-lockfile`, which fails the build if `pnpm-lock.yaml` is out of sync with `package.json`. **Always add/remove deps with `pnpm add` / `pnpm remove`** (or run `pnpm install --lockfile-only` after editing `package.json`) and commit the updated `pnpm-lock.yaml`. Do NOT use `npm install` — it only updates `package-lock.json`, leaving the pnpm lockfile stale and breaking the deploy. (Both lockfiles are currently tracked; the pnpm one is the source of truth for CI.)
 - Run dev server with `npm run dev`; build with `npm run build`; lint with `npm run lint`. No test suite exists.
 - UI components come from shadcn/ui — add via `npx shadcn@latest add <component>`
 - Supabase client helpers live in `lib/supabase/`; browser client in `client.ts`, server client in `server.ts`
