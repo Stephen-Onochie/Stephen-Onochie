@@ -5,10 +5,15 @@ import { createClient } from '@/lib/supabase/client'
 import type { ReadingSession } from '@/types/reading'
 import Link from 'next/link'
 
+// Local calendar date — see app/apps/reading/page.tsx for why toISOString is
+// avoided (UTC rollover misaligns with the stored local session_date).
+function localDateStr(d: Date) {
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 function todayStr() {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d.toISOString().slice(0, 10)
+  return localDateStr(new Date())
 }
 
 function computeStreak(dates: string[]): number {
@@ -16,14 +21,14 @@ function computeStreak(dates: string[]): number {
   if (!set.size) return 0
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const todayS = today.toISOString().slice(0, 10)
+  const todayS = localDateStr(today)
   const yest = new Date(today)
   yest.setDate(today.getDate() - 1)
-  const yestS = yest.toISOString().slice(0, 10)
+  const yestS = localDateStr(yest)
   if (!set.has(todayS) && !set.has(yestS)) return 0
   let streak = 0
   const cursor = new Date(set.has(todayS) ? today : yest)
-  while (set.has(cursor.toISOString().slice(0, 10))) {
+  while (set.has(localDateStr(cursor))) {
     streak++
     cursor.setDate(cursor.getDate() - 1)
   }
