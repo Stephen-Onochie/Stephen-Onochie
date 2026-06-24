@@ -64,3 +64,35 @@ html {
 .portfolio-ticker:hover {
   animation-play-state: paused;
 }
+
+/* Indeterminate loading bar — a gold segment sweeps left→right. Used by the
+   branded loading state (e.g. Health) while data is being fetched. */
+@keyframes iven-indeterminate {
+  0% {
+    left: -40%;
+    width: 40%;
+  }
+  50% {
+    width: 55%;
+  }
+  100% {
+    left: 100%;
+    width: 40%;
+  }
+}
+
+.iven-indeterminate-track {
+  position: relative;
+  overflow: hidden;
+  background: var(--iven-grid);
+}
+
+.iven-indeterminate-track::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: var(--iven-accent);
+  animation: iven-indeterminate 1.15s ease-in-out infinite;
+}

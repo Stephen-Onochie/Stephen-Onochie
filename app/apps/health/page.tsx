@@ -8,6 +8,7 @@ import RangeToggle from '@/components/health/RangeToggle'
 import SummaryCards from '@/components/health/SummaryCards'
 import MetricSearch from '@/components/health/MetricSearch'
 import HealthAskPanel from '@/components/health/HealthAskPanel'
+import HealthLoading from '@/components/health/HealthLoading'
 import { average, peak } from '@/lib/health/stats'
 import type { DateRange, FeaturedSeries } from '@/types/health'
 
@@ -50,6 +51,8 @@ export default function HealthPage() {
         <div className="font-playfair italic text-lg" style={{ color: 'var(--iven-muted)' }}>
           Weekly summary &amp; trends
         </div>
+
+        {loading && !data && <HealthLoading />}
 
         {!hasData && !loading && (
           <div

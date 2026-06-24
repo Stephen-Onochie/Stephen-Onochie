@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import IvenModule from '@/components/iven/IvenModule'
 import Link from 'next/link'
@@ -79,6 +79,7 @@ export default function ReadingPage() {
   const [activeSession, setActiveSession] = useState<ReadingSession | null>(null)
   const [starting, setStarting] = useState(false)
   const [startBookId, setStartBookId] = useState<string>('')
+  const [startError, setStartError] = useState('')
 
   // Stop / notes modal
   const [stopOpen, setStopOpen] = useState(false)
@@ -89,8 +90,9 @@ export default function ReadingPage() {
   // Add book
   const [addOpen, setAddOpen] = useState(false)
 
-  // Book detail
-  const [detailBook, setDetailBook] = useState<ReadingBook | null>(null)
+  // Book detail — store the id, resolve the live row on render so the open
+  // drawer re-syncs after loadData() (shelf bubble / public toggle update live).
+  const [detailBookId, setDetailBookId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -145,27 +147,38 @@ export default function ReadingPage() {
   }, [books])
 
   const activeBook = activeSession ? booksById[activeSession.book_id] : null
+  const detailBook = detailBookId ? booksById[detailBookId] ?? null : null
 
-  // Default the "start" picker to a currently-reading book.
+  // Keep the "start" picker pointed at a real book. Re-fire when the current
+  // selection no longer exists in the books list (e.g. it was deleted), so a
+  // stale id can't be inserted (would fail the book_id foreign key).
   useEffect(() => {
-    if (startBookId || activeSession) return
+    if (activeSession) return
+    if (startBookId && booksById[startBookId]) return
     const firstReading = books.find(b => b.shelf === 'reading') ?? books[0]
-    if (firstReading) setStartBookId(firstReading.id)
-  }, [books, startBookId, activeSession])
+    setStartBookId(firstReading?.id ?? '')
+  }, [books, booksById, startBookId, activeSession])
 
   async function startSession() {
-    if (starting || activeSession || !startBookId || !userId) return
-    setStarting(true)
+    if (starting || activeSession || !userId) return
     const book = booksById[startBookId]
+    if (!book) { setStartError('Pick a book to read first.'); return }
+    setStarting(true)
+    setStartError('')
     const { error } = await supabase.from('reading_sessions').insert({
       user_id: userId,
-      book_id: startBookId,
+      book_id: book.id,
       started_at: new Date().toISOString(),
-      start_page: book?.current_page ?? null,
+      start_page: book.current_page ?? null,
     })
-    if (error) console.error('start session failed:', error)
+    if (error) {
+      console.error('start session failed:', error)
+      setStartError('Could not start the session. Please try again.')
+      setStarting(false)
+      return
+    }
     // Move the book onto the Currently Reading shelf if it isn't already.
-    if (book && book.shelf !== 'reading') {
+    if (book.shelf !== 'reading') {
       await supabase
         .from('reading_books')
         .update({ shelf: 'reading', started_at: book.started_at ?? todayStr(), updated_at: new Date().toISOString() })
@@ -240,7 +253,7 @@ export default function ReadingPage() {
 
   async function deleteBook(book: ReadingBook) {
     await supabase.from('reading_books').delete().eq('id', book.id)
-    setDetailBook(null)
+    setDetailBookId(null)
     await loadData()
   }
 
@@ -347,6 +360,9 @@ export default function ReadingPage() {
               >
                 {starting ? 'Starting…' : 'Start Reading Session'}
               </button>
+              {startError && (
+                <div className="font-inter text-xs text-red-600 mt-3 text-center">{startError}</div>
+              )}
             </>
           )}
         </section>
@@ -390,7 +406,7 @@ export default function ReadingPage() {
                 ) : (
                   <div className="space-y-2">
                     {shelfBooks.map(book => (
-                      <BookRow key={book.id} book={book} onOpen={() => setDetailBook(book)} />
+                      <BookRow key={book.id} book={book} onOpen={() => setDetailBookId(book.id)} />
                     ))}
                   </div>
                 )}
@@ -470,7 +486,7 @@ export default function ReadingPage() {
       <BookDetailDrawer
         book={detailBook}
         sessions={detailBook ? sessions.filter(s => s.book_id === detailBook.id && s.ended_at) : []}
-        onClose={() => setDetailBook(null)}
+        onClose={() => setDetailBookId(null)}
         onMove={moveShelf}
         onTogglePublic={setPublicCurrent}
         onDelete={deleteBook}
@@ -723,7 +739,34 @@ function BookDetailDrawer({
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => { setReflection(''); setError('') }, [book?.id])
+  // Drag-anywhere: an offset added on top of the centering transform. Starting a
+  // drag on an interactive element or inside a scroll region is ignored so
+  // buttons, text selection, and scrolling still work.
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
+
+  useEffect(() => { setReflection(''); setError(''); setOffset({ x: 0, y: 0 }) }, [book?.id])
+
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      const d = dragRef.current
+      if (!d) return
+      setOffset({ x: d.baseX + (e.clientX - d.startX), y: d.baseY + (e.clientY - d.startY) })
+    }
+    function onUp() { dragRef.current = null }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [])
+
+  function onPointerDown(e: React.PointerEvent) {
+    const el = e.target as HTMLElement
+    if (el.closest('button, a, input, textarea, select, [data-no-drag]')) return
+    dragRef.current = { startX: e.clientX, startY: e.clientY, baseX: offset.x, baseY: offset.y }
+  }
 
   if (!book) return null
 
@@ -751,7 +794,11 @@ function BookDetailDrawer({
     <Dialog.Root open={!!book} onOpenChange={o => !o && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Dialog.Content className="fixed bottom-0 left-0 right-0 bg-beige rounded-t-3xl p-6 z-[70] max-w-2xl mx-auto max-h-[88vh] overflow-y-auto shadow-xl">
+        <Dialog.Content
+          onPointerDown={onPointerDown}
+          style={{ transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`, touchAction: 'none' }}
+          className="fixed top-1/2 left-1/2 bg-beige rounded-2xl p-6 z-[70] w-[min(92vw,560px)] max-h-[88vh] overflow-y-auto shadow-xl cursor-grab active:cursor-grabbing"
+        >
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex gap-3 min-w-0">
               <div className="w-14 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-grid/30 flex items-center justify-center">
@@ -799,7 +846,7 @@ function BookDetailDrawer({
               }`}
             >
               <Globe className="w-3 h-3" />
-              {book.is_public_current ? 'Public' : 'Show publicly'}
+              {book.is_public_current ? 'Public' : 'Private'}
             </button>
           </div>
 
@@ -821,7 +868,7 @@ function BookDetailDrawer({
             )}
             {error && <div className="font-inter text-sm text-red-600">{error}</div>}
             {reflection && (
-              <div className="bg-surface rounded-xl p-4 font-inter text-sm text-textPrimary leading-relaxed whitespace-pre-wrap">
+              <div data-no-drag className="bg-surface rounded-xl p-4 font-inter text-sm text-textPrimary leading-relaxed whitespace-pre-wrap select-text">
                 {reflection}
               </div>
             )}
@@ -833,7 +880,7 @@ function BookDetailDrawer({
             {noteCount === 0 ? (
               <div className="font-inter text-sm text-textMuted/70 italic">No notes yet.</div>
             ) : (
-              <div className="space-y-2">
+              <div data-no-drag className="space-y-2 select-text">
                 {sessions.filter(s => s.notes?.trim()).map(s => (
                   <div key={s.id} className="bg-surface rounded-xl p-3">
                     <div className="flex items-center justify-between mb-1">
