@@ -6,17 +6,28 @@ export function defaultConfig(): DashboardLayoutConfig {
   return { widgets: DEFAULT_ENABLED, layout: defaultLayoutFor(DEFAULT_ENABLED) }
 }
 
+// Legacy react-grid-layout configs stored w/h in grid units (≤12). The absolute
+// layout uses pixels, so a tiny width means a stale config that must be reset.
+function isLegacyGridLayout(config: DashboardLayoutConfig): boolean {
+  return config.layout.some(l => l.w <= 12 && l.h <= 12)
+}
+
 // Reconcile a stored config against the current registry: drop widgets that no
 // longer exist, and give any enabled-but-unplaced widget a default slot.
 export function reconcile(config: DashboardLayoutConfig): DashboardLayoutConfig {
+  if (isLegacyGridLayout(config)) {
+    const widgets = config.widgets.filter(id => WIDGET_MAP[id])
+    return { widgets, layout: defaultLayoutFor(widgets) }
+  }
   const widgets = config.widgets.filter(id => WIDGET_MAP[id])
   const placed = new Map(config.layout.filter(l => WIDGET_MAP[l.i]).map(l => [l.i, l]))
-  let nextY = Math.max(0, ...Array.from(placed.values()).map(l => l.y + l.h))
+  // New widgets get parked in a stack below everything currently placed.
+  let nextY = Math.max(0, ...Array.from(placed.values()).map(l => l.y + l.h)) + 16
   for (const id of widgets) {
     if (!placed.has(id)) {
       const def = WIDGET_MAP[id]
-      placed.set(id, { i: id, ...def.defaultLayout, y: nextY })
-      nextY += def.defaultLayout.h
+      placed.set(id, { i: id, ...def.defaultLayout, x: 0, y: nextY })
+      nextY += def.defaultLayout.h + 16
     }
   }
   return { widgets, layout: Array.from(placed.values()) }

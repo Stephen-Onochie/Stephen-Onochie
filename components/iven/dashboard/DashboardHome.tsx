@@ -1,32 +1,33 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-// react-grid-layout v2: hooks-based API (no WidthProvider). The bundled v1
-// @types don't match, so this module is typed locally in types/rgl.d.ts.
-import { Responsive, useContainerWidth, getCompactor } from 'react-grid-layout'
-type Layout = { i: string; x: number; y: number; w: number; h: number }
 import { Pencil, Check, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { WIDGETS, WIDGET_MAP } from './registry'
 import { loadLayout, saveLayout, reconcile } from '@/lib/dashboard/layout'
-import type { DashboardLayoutConfig } from '@/types/health'
-import 'react-grid-layout/css/styles.css'
-import 'react-resizable/css/styles.css'
+import type { DashboardLayoutConfig, DashboardWidgetLayout } from '@/types/health'
 
-const COLS = { lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }
-const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }
-const ROW_HEIGHT = 70
-// Free positioning: no auto-rearrange, overlap allowed. Constructed once so
-// rgl doesn't treat a new compactor identity as a config change each render.
-const FREE_COMPACTOR = getCompactor('vertical', true, false)
+// Absolute drag-and-move dashboard. Each widget is positioned by pixel x/y/w/h
+// (same native-pointer-event scheme as the Reading app's draggable book popup).
+// Drag and resize are gated behind Edit Layout; outside edit mode widgets are
+// static and fully interactive.
+
+type DragSession = {
+  i: string
+  mode: 'move' | 'resize'
+  startX: number
+  startY: number
+  base: DashboardWidgetLayout
+}
 
 export default function DashboardHome() {
   const supabase = useMemo(() => createClient(), [])
-  const { width, containerRef, mounted } = useContainerWidth()
   const [config, setConfig] = useState<DashboardLayoutConfig | null>(null)
   const [editing, setEditing] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const drag = useRef<DragSession | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadLayout(supabase).then(setConfig)
@@ -38,12 +39,55 @@ export default function DashboardHome() {
     saveTimer.current = setTimeout(() => saveLayout(supabase, next), 700)
   }
 
-  function onLayoutChange(layout: Layout[]) {
-    if (!config || !editing) return
-    const merged = layout
-      .filter(l => WIDGET_MAP[l.i])
-      .map(l => ({ i: l.i, x: l.x, y: l.y, w: l.w, h: l.h }))
-    persist({ ...config, layout: merged })
+  // Live drag/resize. We mutate React state on every pointermove so the widget
+  // tracks the cursor; the debounced persist() handles the eventual save.
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      const d = drag.current
+      if (!d) return
+      const dx = e.clientX - d.startX
+      const dy = e.clientY - d.startY
+      setConfig(prev => {
+        if (!prev) return prev
+        const def = WIDGET_MAP[d.i]
+        const layout = prev.layout.map(l => {
+          if (l.i !== d.i) return l
+          if (d.mode === 'move') {
+            return { ...l, x: Math.max(0, d.base.x + dx), y: Math.max(0, d.base.y + dy) }
+          }
+          return {
+            ...l,
+            w: Math.max(def?.minW ?? 200, d.base.w + dx),
+            h: Math.max(def?.minH ?? 140, d.base.h + dy),
+          }
+        })
+        return { ...prev, layout }
+      })
+    }
+    function onUp() {
+      if (!drag.current) return
+      drag.current = null
+      // Commit whatever the live state currently holds.
+      setConfig(prev => {
+        if (prev) {
+          if (saveTimer.current) clearTimeout(saveTimer.current)
+          saveTimer.current = setTimeout(() => saveLayout(supabase, prev), 300)
+        }
+        return prev
+      })
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [supabase])
+
+  function startDrag(e: React.PointerEvent, l: DashboardWidgetLayout, mode: 'move' | 'resize') {
+    if (!editing) return
+    e.preventDefault()
+    drag.current = { i: l.i, mode, startX: e.clientX, startY: e.clientY, base: l }
   }
 
   function addWidget(id: string) {
@@ -64,9 +108,12 @@ export default function DashboardHome() {
   }
 
   const available = WIDGETS.filter(w => !config.widgets.includes(w.id))
+  const byId = new Map(config.layout.map(l => [l.i, l]))
+  // Size the canvas to fit the lowest/right-most widget so it scrolls cleanly.
+  const canvasHeight = Math.max(0, ...config.layout.map(l => l.y + l.h)) + (editing ? 120 : 24)
 
   return (
-    <div className="p-7" ref={containerRef}>
+    <div className="p-7">
       <div className="flex justify-end mb-3 gap-2">
         {editing && available.length > 0 && (
           <button
@@ -111,46 +158,71 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {mounted && (
-      <Responsive
-        className="layout"
-        layouts={{ lg: config.layout, md: config.layout }}
-        breakpoints={BREAKPOINTS}
-        cols={COLS}
-        width={width}
-        rowHeight={ROW_HEIGHT}
-        margin={[16, 16]}
-        compactor={FREE_COMPACTOR}
-        dragConfig={{ bounded: false }}
-        isDraggable={editing}
-        isResizable={editing}
-        onLayoutChange={onLayoutChange}
-        draggableCancel=".widget-remove"
+      <div
+        ref={containerRef}
+        className="relative w-full"
+        style={{ height: canvasHeight }}
       >
         {config.widgets.map(id => {
           const def = WIDGET_MAP[id]
-          if (!def) return null
+          const l = byId.get(id)
+          if (!def || !l) return null
           const Widget = def.component
           return (
-            <div key={id} data-grid={{ ...def.defaultLayout, i: id, minW: def.minW, minH: def.minH }} style={{ position: 'relative' }}>
+            <div
+              key={id}
+              onPointerDown={editing ? e => startDrag(e, l, 'move') : undefined}
+              className="absolute"
+              style={{
+                left: l.x,
+                top: l.y,
+                width: l.w,
+                height: l.h,
+                touchAction: editing ? 'none' : undefined,
+                cursor: editing ? 'grab' : undefined,
+                outline: editing ? '1px dashed var(--iven-border)' : undefined,
+                borderRadius: 12,
+              }}
+            >
               {editing && (
                 <button
+                  onPointerDown={e => e.stopPropagation()}
                   onClick={() => removeWidget(id)}
-                  className="widget-remove absolute -top-2 -right-2 z-10 rounded-full p-1"
+                  className="absolute -top-2 -right-2 z-20 rounded-full p-1"
                   style={{ background: '#B5532E', color: '#fff' }}
                   aria-label={`Remove ${def.label}`}
                 >
                   <X size={12} />
                 </button>
               )}
-              <div className="h-full" style={{ pointerEvents: editing ? 'none' : 'auto' }}>
+              <div
+                className="h-full w-full overflow-hidden"
+                style={{ pointerEvents: editing ? 'none' : 'auto', borderRadius: 12 }}
+              >
                 <Widget />
               </div>
+              {editing && (
+                <div
+                  onPointerDown={e => {
+                    e.stopPropagation()
+                    startDrag(e, l, 'resize')
+                  }}
+                  className="absolute bottom-0 right-0 z-20"
+                  style={{
+                    width: 16,
+                    height: 16,
+                    cursor: 'nwse-resize',
+                    background: 'var(--iven-accent)',
+                    borderRadius: '3px 0 12px 0',
+                    touchAction: 'none',
+                  }}
+                  aria-label={`Resize ${def.label}`}
+                />
+              )}
             </div>
           )
         })}
-      </Responsive>
-      )}
+      </div>
     </div>
   )
 }

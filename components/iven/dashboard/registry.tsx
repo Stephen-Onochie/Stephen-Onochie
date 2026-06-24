@@ -14,22 +14,24 @@ export interface WidgetDef {
   id: string
   label: string
   component: ComponentType
-  // Default grid geometry (12-col grid, row height ~70px).
+  // Default absolute geometry in pixels: x/y top-left, w/h size.
   defaultLayout: Omit<DashboardWidgetLayout, 'i'>
   minW: number
   minH: number
 }
 
+// Pixel-based defaults laid out edge-to-edge with no gaps. Two columns of
+// ~636px on a ~1288px canvas, full-width hero on top.
 export const WIDGETS: WidgetDef[] = [
-  { id: 'clock', label: 'Clock', component: ClockHeroWidget, defaultLayout: { x: 0, y: 0, w: 12, h: 3 }, minW: 4, minH: 2 },
-  { id: 'todo', label: 'Todo', component: TodoWidget, defaultLayout: { x: 0, y: 3, w: 7, h: 5 }, minW: 3, minH: 3 },
-  { id: 'stocks', label: 'Markets', component: StocksWidget, defaultLayout: { x: 0, y: 8, w: 7, h: 4 }, minW: 3, minH: 3 },
-  { id: 'standing-timer', label: 'Standing Timer', component: StandingTimerWidget, defaultLayout: { x: 7, y: 3, w: 5, h: 4 }, minW: 3, minH: 3 },
-  { id: 'weather', label: 'Weather', component: WeatherWidget, defaultLayout: { x: 7, y: 7, w: 5, h: 3 }, minW: 3, minH: 2 },
-  { id: 'waves', label: 'Project Waves', component: WavesStreakWidget, defaultLayout: { x: 7, y: 10, w: 5, h: 3 }, minW: 3, minH: 2 },
-  { id: 'reading', label: 'Reading', component: ReadingWidget, defaultLayout: { x: 7, y: 13, w: 5, h: 3 }, minW: 3, minH: 2 },
-  { id: 'health-steps', label: 'Health · Steps', component: HealthStepsWidget, defaultLayout: { x: 0, y: 12, w: 6, h: 4 }, minW: 3, minH: 3 },
-  { id: 'health-recovery', label: 'Health · Recovery', component: HealthRecoveryWidget, defaultLayout: { x: 6, y: 12, w: 6, h: 4 }, minW: 3, minH: 3 },
+  { id: 'clock', label: 'Clock', component: ClockHeroWidget, defaultLayout: { x: 0, y: 0, w: 1288, h: 220 }, minW: 280, minH: 140 },
+  { id: 'todo', label: 'Todo', component: TodoWidget, defaultLayout: { x: 0, y: 236, w: 636, h: 372 }, minW: 240, minH: 200 },
+  { id: 'stocks', label: 'Markets', component: StocksWidget, defaultLayout: { x: 0, y: 624, w: 636, h: 300 }, minW: 240, minH: 200 },
+  { id: 'standing-timer', label: 'Standing Timer', component: StandingTimerWidget, defaultLayout: { x: 652, y: 236, w: 636, h: 300 }, minW: 240, minH: 200 },
+  { id: 'weather', label: 'Weather', component: WeatherWidget, defaultLayout: { x: 652, y: 552, w: 636, h: 220 }, minW: 240, minH: 140 },
+  { id: 'waves', label: 'Project Waves', component: WavesStreakWidget, defaultLayout: { x: 652, y: 788, w: 636, h: 220 }, minW: 240, minH: 140 },
+  { id: 'reading', label: 'Reading', component: ReadingWidget, defaultLayout: { x: 0, y: 940, w: 636, h: 220 }, minW: 240, minH: 140 },
+  { id: 'health-steps', label: 'Health · Steps', component: HealthStepsWidget, defaultLayout: { x: 652, y: 1024, w: 636, h: 300 }, minW: 240, minH: 200 },
+  { id: 'health-recovery', label: 'Health · Recovery', component: HealthRecoveryWidget, defaultLayout: { x: 0, y: 1176, w: 636, h: 300 }, minW: 240, minH: 200 },
 ]
 
 export const WIDGET_MAP: Record<string, WidgetDef> = Object.fromEntries(
