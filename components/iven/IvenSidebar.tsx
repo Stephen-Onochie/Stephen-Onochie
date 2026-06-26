@@ -16,6 +16,7 @@ import {
   Tv2,
   Activity,
   BookOpen,
+  Briefcase,
   Settings,
   LogOut,
   Moon,
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { label: 'BUBBLES', icon: MessageCircle, href: '/apps/bubbles' },
   { label: 'FASTTRACK', icon: Hourglass, href: '/apps/fast' },
   { label: 'READING', icon: BookOpen, href: '/apps/reading' },
+  { label: 'INTERNSHIP', icon: Briefcase, href: '/apps/internship' },
   { label: 'HEALTH', icon: Activity, href: '/apps/health' },
   { label: 'LG REMOTE', icon: Tv2, href: '/apps/lg-remote' },
 ]
