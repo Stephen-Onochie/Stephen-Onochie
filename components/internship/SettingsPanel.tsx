@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { Check, Loader2, Plus, Send } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { upsertWeeklyGoal, updateSettings } from '@/lib/internship/supabase'
 import type { WeeklyGoal, InternshipSettings } from '@/types/internship'
-import { formatShortDate, currentWeekStart } from '@/lib/internship/dates'
+import { formatShortDate, currentWeekStart, mondayOf } from '@/lib/internship/dates'
 import { Field, TextInput, Button } from './ui'
 
 // Bookmarklet: opens the tracker's quick-add prefilled with the current page URL.
@@ -28,18 +29,55 @@ export default function SettingsPanel({
 }) {
   const [emailEnabled, setEmailEnabled] = useState(settings.email_nudges_enabled)
   const [digestEmail, setDigestEmail] = useState(settings.digest_email ?? '')
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [testState, setTestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [testMsg, setTestMsg] = useState('')
+  const [newWeek, setNewWeek] = useState('')
   const supabase = createClient()
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://stephenonochie.com'
   const thisWeek = currentWeekStart()
 
-  // Show current + future weeks only.
-  const upcoming = weeklyGoals.filter(g => g.week_start >= thisWeek).slice(0, 16)
+  // Show current + future weeks only, sorted by date.
+  const upcoming = weeklyGoals
+    .filter(g => g.week_start >= thisWeek)
+    .sort((a, b) => (a.week_start < b.week_start ? -1 : 1))
 
   async function saveEmail() {
+    setSaveState('saving')
     const patch = { email_nudges_enabled: emailEnabled, digest_email: digestEmail.trim() || null }
     await updateSettings(supabase, patch)
     onSettingsChange({ ...settings, ...patch })
+    setSaveState('saved')
+    setTimeout(() => setSaveState('idle'), 1800)
+  }
+
+  async function sendTest() {
+    setTestState('sending')
+    setTestMsg('')
+    try {
+      // Persist the current email first so the test goes where the field shows.
+      if ((settings.digest_email ?? '') !== digestEmail.trim()) {
+        await updateSettings(supabase, { digest_email: digestEmail.trim() || null })
+        onSettingsChange({ ...settings, digest_email: digestEmail.trim() || null })
+      }
+      const res = await fetch('/api/internship/test-digest', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setTestState('sent')
+        setTestMsg(`Sent to ${data.to}`)
+      } else {
+        setTestState('error')
+        setTestMsg(data.error ?? 'Send failed')
+      }
+    } catch {
+      setTestState('error')
+      setTestMsg('Send failed')
+    }
+    setTimeout(() => {
+      setTestState('idle')
+      setTestMsg('')
+    }, 4000)
   }
 
   async function saveGoal(weekStart: string, value: number) {
@@ -49,6 +87,15 @@ export default function SettingsPanel({
         ? weeklyGoals.map(g => (g.week_start === weekStart ? { ...g, target_apps: value } : g))
         : [...weeklyGoals, { id: weekStart, user_id: settings.user_id, week_start: weekStart, target_apps: value, created_at: '' }]
     )
+  }
+
+  async function addWeek() {
+    if (!newWeek) return
+    // Snap the picked date to its Monday so it matches the goal week_start key.
+    const [y, m, d] = newWeek.split('-').map(Number)
+    const weekStart = mondayOf(new Date(y, m - 1, d))
+    await saveGoal(weekStart, 5)
+    setNewWeek('')
   }
 
   return (
@@ -67,8 +114,45 @@ export default function SettingsPanel({
               <TextInput value={digestEmail} onChange={e => setDigestEmail(e.target.value)} placeholder="you@example.com" />
             </Field>
           </div>
-          <Button onClick={saveEmail}>Save</Button>
+          <Button
+            onClick={saveEmail}
+            disabled={saveState === 'saving'}
+            style={
+              saveState === 'saved'
+                ? { background: '#7C8C5A', color: '#fff', transform: 'scale(1.04)' }
+                : undefined
+            }
+          >
+            {saveState === 'saving' ? (
+              <span className="flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" /> Saving</span>
+            ) : saveState === 'saved' ? (
+              <span className="flex items-center gap-1.5"><Check size={13} /> Saved</span>
+            ) : (
+              'Save'
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={sendTest}
+            disabled={testState === 'sending' || !digestEmail.trim()}
+            title="Send a test digest to the address above"
+          >
+            {testState === 'sending' ? (
+              <span className="flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" /> Sending</span>
+            ) : (
+              <span className="flex items-center gap-1.5"><Send size={12} /> Test Send</span>
+            )}
+          </Button>
         </div>
+        {testMsg && (
+          <div
+            className="text-[12px] mt-2 flex items-center gap-1.5"
+            style={{ color: testState === 'error' ? '#A8743B' : '#7C8C5A' }}
+          >
+            {testState === 'sent' && <Check size={13} />}
+            {testMsg}
+          </div>
+        )}
       </Section>
 
       {/* Weekly goals */}
@@ -94,8 +178,23 @@ export default function SettingsPanel({
             </div>
           ))}
           {upcoming.length === 0 && (
-            <div className="text-[13px]" style={{ color: 'var(--iven-muted)' }}>No upcoming weeks seeded.</div>
+            <div className="text-[13px]" style={{ color: 'var(--iven-muted)' }}>No upcoming weeks set.</div>
           )}
+        </div>
+
+        {/* Add a week */}
+        <div
+          className="flex items-end gap-2 mt-4 pt-4"
+          style={{ borderTop: '1px solid var(--iven-grid)' }}
+        >
+          <div className="flex-1 max-w-[220px]">
+            <Field label="Add a week (any date in it)">
+              <TextInput type="date" value={newWeek} onChange={e => setNewWeek(e.target.value)} />
+            </Field>
+          </div>
+          <Button onClick={addWeek} disabled={!newWeek}>
+            <span className="flex items-center gap-1.5"><Plus size={13} /> Add Week</span>
+          </Button>
         </div>
       </Section>
 
