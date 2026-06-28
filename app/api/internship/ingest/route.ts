@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
+import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { dedupeKey, computePriority } from '@/lib/internship/ingest'
+import { buildIngestEmail } from '@/lib/internship/ingest-email'
 import { daysUntil } from '@/lib/internship/dates'
 import type {
   IngestRequest,
@@ -146,5 +148,38 @@ export async function POST(req: Request) {
     capped,
     deadline_alerts: deadlineAlerts,
   }
+
+  // Proof-of-life email — sent only on the day's first scan (routine sets
+  // first_run=true on its 08:00 run). Best-effort: never fail ingestion on it.
+  if (body.first_run) {
+    await sendProofOfLife(supabase, userId, response, body.run_at)
+  }
+
   return NextResponse.json(response)
+}
+
+async function sendProofOfLife(
+  supabase: ReturnType<typeof createAdminClient>,
+  userId: string,
+  summary: IngestResponse,
+  runAt?: string
+) {
+  try {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) return
+
+    const { data: settings } = await supabase
+      .from('internship_settings')
+      .select('digest_email')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const to = settings?.digest_email
+    if (!to) return
+
+    const from = process.env.INTERNSHIP_DIGEST_FROM ?? 'Internship Tracker <onboarding@resend.dev>'
+    const email = buildIngestEmail(summary, runAt ? new Date(runAt) : new Date())
+    await new Resend(apiKey).emails.send({ from, to, subject: email.subject, html: email.html })
+  } catch {
+    // Swallow — the email is a nicety, not part of the ingestion contract.
+  }
 }

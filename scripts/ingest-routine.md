@@ -28,20 +28,30 @@ created from the repo).
 
 ---
 
-## Create the routine
+## The routine (already created)
 
-At **claude.ai/code/routines → New routine → Remote**:
+Created via the `/schedule` skill as a remote cloud routine:
 
+- **Routine ID:** `trig_0179ApZ9ED79xq4yntWe8hkY`
+  (manage: https://claude.ai/code/routines/trig_0179ApZ9ED79xq4yntWe8hkY)
 - **Repo:** `Stephen-Onochie`
-- **Schedule:** twice daily — **08:00** and **18:00** America/Indiana/Indianapolis.
-- **Connectors:** none (network + env only).
-- **Environment variables:**
-  - `INGEST_API_URL` = `https://stephenonochie.com/api/internship/ingest`
-  - `TARGETS_API_URL` = `https://stephenonochie.com/api/internship/ingest/targets`
-  - `INGEST_SECRET` = (same value as the server)
-- **Network access:** allow outbound to `raw.githubusercontent.com`,
-  `boards-api.greenhouse.io`, `api.lever.co`, `api.ashbyhq.com`, and
-  `stephenonochie.com`.
+- **Cron:** `0 12,22 * * *` (UTC) = **08:00 / 18:00 EDT** (07:00 / 17:00 once Indiana
+  switches to EST — fixed-offset UTC cron).
+- **Model:** `claude-sonnet-4-6`.
+- The API URLs and `INGEST_SECRET` are baked into the prompt (cloud routines have no
+  separate secret store — the prompt carries them). Network access is open by default;
+  no allowlist needed.
+
+> ⚠ **Secret coupling:** if you rotate `INGEST_SECRET` on Vercel, you MUST update the
+> routine prompt to match (via the /schedule skill's update action or the web UI), or
+> every run will 401.
+
+### Daily proof-of-life email
+The ingest API sends a personal-website-branded email (to `internship_settings.digest_email`)
+whenever the routine posts with `first_run=true`. The routine sets `first_run=true` only on
+the day's first scan (12:00 UTC / 08:00 Indiana), so exactly one email arrives per day showing
+the run's counts. Reuses `RESEND_API_KEY` + `INTERNSHIP_DIGEST_FROM` (already in prod). Builder:
+`lib/internship/ingest-email.ts`. The send is best-effort and never fails ingestion.
 
 ### ⚠ Verify before first run
 The three community `listings.json` raw URLs in `scripts/ingest-sources.ts` roll
