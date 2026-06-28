@@ -30,6 +30,7 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 | **FastTrack** | Intermittent fasting tracker: start/end fasts, configurable cooldown and target duration, fasting calendar, guidelines. Tables: `fast_settings`, `fast_sessions` |
 | **LG Remote** | Web UI for controlling an LG TV remotely. Requires the `lg-tv-proxy` sidecar server (see below). |
 | **Health** | Apple Watch health dashboard. Ingests Health Auto Export data (100+ metrics) into Supabase, shows 5 featured recharts charts (steps, RHR, HRV, sleep, active calories) + 4 summary stat cards, a metric search bar with generic auto-charts, and an LLM Q&A panel (OpenRouter). Tables: `health_metrics`, `health_ingest_log`. See "Health Dashboard" below. |
+| **Internship Tracker** | Huntr-replacement: Kanban board, referral CRM, interviews, analytics, weekly goals, Sunday Resend digest. Plus an automated ingestion system (see below). Tables: `internship_applications`, `internship_contacts`, `internship_interviews`, `internship_activity_events`, `internship_documents`, `internship_tasks`, `internship_weekly_goals`, `internship_settings`, `internship_targets`. |
 
 Planned apps: business dashboard (agency/startup stats).
 
@@ -53,6 +54,17 @@ Planned apps: business dashboard (agency/startup stats).
 - **LLM Q&A:** `app/api/health-ai/route.ts` — OpenRouter with a `get_metric` tool loop; the model requests the metrics it needs (keeps tokens bounded). Model via `OPENROUTER_MODEL` env (defaults `openai/gpt-4o-mini`). No medical disclaimer by design.
 - **Charts:** recharts, themed via `--iven-*` tokens. Because recharts writes concrete colors into SVG, `components/health/useIvenColors.ts` resolves CSS vars off the live DOM (re-reads on theme toggle) — pass resolved colors, not `var(--iven-*)`, into chart fills/strokes.
 - **Seed/test:** insert rows directly via the Supabase MCP for the user `8c08ce23-f5d6-4f78-9193-ef9191b2975c`; the page is OAuth-gated so it can't be screenshotted headlessly.
+
+## Internship Ingestion
+
+Automated Summer 2027 internship discovery for the Internship Tracker. Split into two halves: a scheduled **Claude cloud routine** (the intelligence — fetches sources, classifies postings) and a site **ingestion API** (the persistence — dedupes, inserts, holds secrets). All dedupe state lives in the DB so the stateless routine needs no memory.
+
+- **Ingest API:** `app/api/internship/ingest/route.ts` (POST) — bearer auth (`INGEST_SECRET`), service-role admin client, stamps rows with `INTERNSHIP_USER_ID`. Season guard (`INGEST_ACTIVE_SEASON`, default `summer_2027`), URL-first dedupe with `company+role_title+location` fallback (helpers in `lib/internship/ingest.ts`), server-computed priority matrix (lane1/indy→high, chicago/austin/remote→medium, else low — never trust priority sent by the routine), 50-row cap freshest-first. Inserts as `stage='wishlist'`, `created_via='ingestion'`. Returns `{inserted, skipped_duplicates, skipped_season, capped, deadline_alerts}`.
+- **Targets API:** `app/api/internship/ingest/targets/route.ts` (GET, same bearer) — serves active ATS targets from `internship_targets` (`ats_platform`/`ats_slug`); adding a row auto-expands the scraper.
+- **Source fetcher:** `scripts/ingest-sources.ts` — deterministic fetch/normalize, run by the routine via `npx tsx`. vanshb03 publishes `listings.json`; **sndsh404 has no JSON — it's parsed from its README markdown table**. Plus Greenhouse/Lever/Ashby public boards by slug. Failed sources are reported, not fatal. Community `listings.json` URLs roll over by cycle and need verifying at setup (Simplify currently omitted).
+- **Daily proof-of-life email:** the API sends a personal-website-branded email (`lib/internship/ingest-email.ts`) only when the routine posts `first_run=true` (the routine sets this on the 12:00 UTC run only → one email/day). Reuses `RESEND_API_KEY`/`INTERNSHIP_DIGEST_FROM`; best-effort, never fails ingestion.
+- **Digest fold-in:** `lib/internship/digest.ts` (the Sunday digest) has a "Newly discovered" section (ingestion rows, last 7 days) + Lane 1 deadline-pounce (≤7 days). The ingest API itself sends no digest.
+- **Routine:** twice-daily cloud routine `trig_0179ApZ9ED79xq4yntWe8hkY` (`0 12,22 * * *` UTC = 08:00/18:00 Indiana). Prompt + setup in `scripts/ingest-routine.md`. **Secret coupling:** `INGEST_SECRET` must match in two places — Vercel env AND the routine prompt — or every run 401s.
 
 ## Customizable Dashboard
 
