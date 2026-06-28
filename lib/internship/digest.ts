@@ -1,12 +1,17 @@
 import type { Application, Contact, Interview } from '@/types/internship'
-import { INTERVIEW_TYPE_LABELS } from '@/types/internship'
+import {
+  INTERVIEW_TYPE_LABELS,
+  LANE_LABELS,
+  CITY_LABELS,
+  PRIORITY_LABELS,
+} from '@/types/internship'
 import {
   weeklyProgress,
   thisWeek,
   staleWishlist,
   type ReminderData,
 } from './reminders'
-import { formatShortDate, formatDateTime } from './dates'
+import { formatShortDate, formatDateTime, daysUntil } from './dates'
 
 export interface Digest {
   subject: string
@@ -27,10 +32,36 @@ function list(title: string, items: string[]): string {
   </div>`
 }
 
+function applyLink(a: Application, text: string): string {
+  return a.job_url
+    ? `<a href="${a.job_url}" style="color:#2C1F0E;">${text}</a>`
+    : text
+}
+
+/** Ingestion rows added in the last 7 days, grouped by lane then city. */
+function newlyDiscovered(data: ReminderData, now: Date): Application[] {
+  return data.applications.filter(
+    a => a.created_via === 'ingestion' && daysUntil(a.created_at, now) > -7
+  )
+}
+
+/** Lane 1 program deadlines closing within 7 days (deadline-pounce). */
+function lane1Pounce(data: ReminderData, now: Date): Application[] {
+  return data.applications
+    .filter(a => {
+      if (a.lane !== 'lane1_program' || !a.deadline || a.stage === 'closed') return false
+      const d = daysUntil(a.deadline, now)
+      return d >= 0 && d <= 7
+    })
+    .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
+}
+
 export function buildDigest(data: ReminderData, now = new Date()): Digest {
   const wp = weeklyProgress(data, now)
   const tw = thisWeek(data, now)
   const stale = staleWishlist(data, now)
+  const discovered = newlyDiscovered(data, now)
+  const pounce = lane1Pounce(data, now)
 
   const deadlineItems = tw.deadlines.map(
     (a: Application) => `<strong>${a.company}</strong> — ${a.role_title} · due ${a.deadline ? formatShortDate(a.deadline) : ''}`
@@ -44,11 +75,26 @@ export function buildDigest(data: ReminderData, now = new Date()): Digest {
   })
   const staleItems = stale.map(a => `<strong>${a.company}</strong> — sitting in Wishlist`)
 
+  const discoveredItems = discovered.map(a => {
+    const where = `${LANE_LABELS[a.lane]} · ${CITY_LABELS[a.city_tag]}`
+    const loc = a.location ? ` · ${a.location}` : ''
+    const head = applyLink(a, `<strong>${a.company}</strong> — ${a.role_title}`)
+    return `${head}${loc} · ${where} · ${PRIORITY_LABELS[a.priority]}`
+  })
+
+  const pounceItems = pounce.map(a => {
+    const d = daysUntil(a.deadline!, now)
+    const days = d === 0 ? 'today' : d === 1 ? '1 day left' : `${d} days left`
+    return `${applyLink(a, `<strong>${a.company}</strong>`)} — ${a.role_title} · ${days}`
+  })
+
   const hasContent =
     deadlineItems.length > 0 ||
     contactItems.length > 0 ||
     interviewItems.length > 0 ||
-    staleItems.length > 0
+    staleItems.length > 0 ||
+    discoveredItems.length > 0 ||
+    pounceItems.length > 0
 
   const html = `<!DOCTYPE html>
 <html><body style="margin:0;padding:0;background:#F5F0E8;font-family:Inter,Helvetica,Arial,sans-serif;">
@@ -65,6 +111,8 @@ export function buildDigest(data: ReminderData, now = new Date()): Digest {
       </table>
     </div>
 
+    ${list('⚠ Lane 1 deadlines closing within 7 days', pounceItems)}
+    ${list('Newly discovered', discoveredItems)}
     ${list('Lane 1 deadlines', deadlineItems)}
     ${list('Overdue follow-ups', contactItems)}
     ${list('Interviews this week', interviewItems)}

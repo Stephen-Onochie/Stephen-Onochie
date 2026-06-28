@@ -14,6 +14,9 @@ export type Stage = 'wishlist' | 'applied' | 'oa' | 'interview' | 'offer' | 'clo
 export type ClosedReason = 'rejected' | 'withdrawn' | 'ghosted' | 'accepted_other'
 export type Priority = 'high' | 'medium' | 'low'
 export type ReferralStatus = 'none' | 'seeking' | 'secured'
+export type CreatedVia = 'manual' | 'ingestion'
+
+export type AtsPlatform = 'greenhouse' | 'lever' | 'ashby'
 
 export type ContactSource = 'purdue' | 'nsbe' | 'career_fair' | 'cold' | 'event' | 'other'
 export type PipelineState = 'contacted' | 'replied' | 'call_done' | 'referred' | 'dormant'
@@ -130,6 +133,10 @@ export interface Application {
   referral_status: ReferralStatus
   notes: string | null
   sort_order: number
+  season: string | null
+  work_auth_flag: boolean
+  created_via: CreatedVia
+  source: string | null
   created_at: string
   updated_at: string
 }
@@ -226,4 +233,49 @@ export type ContactInsert = Partial<
   Omit<Contact, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 > & {
   name: string
+}
+
+// ── Ingestion ───────────────────────────────────────────────────────────────
+export interface Target {
+  id: string
+  user_id: string
+  company: string
+  ats_platform: AtsPlatform | null
+  ats_slug: string | null
+  careers_url: string | null
+  active: boolean
+  created_at: string
+}
+
+/** A classified posting the routine POSTs to /api/internship/ingest. The API
+ *  ignores any priority sent and computes it from the lane/city matrix. */
+export interface IngestCandidate {
+  company: string
+  role_title: string
+  job_url?: string | null
+  location?: string | null
+  city_tag?: CityTag
+  lane?: Lane
+  role_type?: RoleType
+  season?: string
+  is_paid_confirmed?: boolean
+  work_auth_flag?: boolean
+  deadline?: string | null
+  source?: string | null
+  /** Posting date, used only to order the 50-row cap (freshest first). */
+  posted_at?: string | null
+}
+
+export interface IngestRequest {
+  run_at?: string
+  first_run?: boolean
+  candidates: IngestCandidate[]
+}
+
+export interface IngestResponse {
+  inserted: number
+  skipped_duplicates: number
+  skipped_season: number
+  capped: boolean
+  deadline_alerts: number
 }
