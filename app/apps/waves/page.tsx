@@ -7,6 +7,7 @@ import SessionRunner from '@/components/iven/waves/SessionRunner'
 import Link from 'next/link'
 import { Settings, ChevronLeft, ChevronRight, Check, Calendar, ChevronDown } from 'lucide-react'
 import type { WavesSession, WavesSettings, SessionType, SessionStep, StrokeLog, BrushType } from '@/types/waves'
+import { easternDateStr, addDaysToDateStr } from '@/lib/dates'
 
 // ─── Config ───────────────────────────────────────────────────────
 
@@ -136,7 +137,16 @@ const FAQ_ITEMS = [
 // ─── Helpers ──────────────────────────────────────────────────────
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  return easternDateStr(new Date())
+}
+
+// Y-M-D for a Date that already represents a calendar cell (built from local
+// wall-clock components). Matches the session_date keys without re-zoning.
+function cellDateStr(d: Date) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function estimateSessionMins(steps: SessionStep[]): number {
@@ -175,13 +185,11 @@ function getGCalUrl(date: Date, includeTrim: boolean) {
 
 function calculateStreak(sessions: WavesSession[]) {
   const dates = new Set(sessions.map(s => s.session_date))
-  const cursor = new Date()
+  let cursor = easternDateStr(new Date())
   let streak = 0
-  while (true) {
-    const str = cursor.toISOString().slice(0, 10)
-    if (!dates.has(str)) break
+  while (dates.has(cursor)) {
     streak++
-    cursor.setDate(cursor.getDate() - 1)
+    cursor = addDaysToDateStr(cursor, -1)
   }
   return streak
 }
@@ -240,7 +248,7 @@ export default function WavesPage() {
       .from('waves_sessions')
       .select('*')
       .eq('user_id', session.user.id)
-      .gte('session_date', since.toISOString().slice(0, 10))
+      .gte('session_date', easternDateStr(since))
     setRecentSessions(recentData ?? [])
 
     setLoading(false)
@@ -526,7 +534,7 @@ export default function WavesPage() {
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const dayNum = i + 1
                 const dayDate = new Date(calYear, calMonthIdx, dayNum)
-                const dateStr = dayDate.toISOString().slice(0, 10)
+                const dateStr = cellDateStr(dayDate)
                 const isToday = isSameDay(dayDate, today)
                 const daySessions = sessionsByDate[dateStr]
                 const haircut = haircutDates.find(h => isSameDay(h.date, dayDate))

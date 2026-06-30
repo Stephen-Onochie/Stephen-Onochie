@@ -1,4 +1,5 @@
 import PortfolioFonts from '@/components/portfolio/PortfolioFonts'
+import PublicSettingsProvider from '@/components/portfolio/PublicSettingsProvider'
 import SiteHeader from '@/components/portfolio/SiteHeader'
 import Hero from '@/components/portfolio/Hero'
 import GridMatrix from '@/components/portfolio/GridMatrix'
@@ -10,15 +11,17 @@ import Footer from '@/components/portfolio/Footer'
 export default function Home() {
   return (
     <PortfolioFonts>
-      <SiteHeader />
-      <main>
-        <Hero />
-        <GridMatrix />
-        <CurrentlyReadingCard />
-        <GitHubSection />
-        <ResumeCTA />
-      </main>
-      <Footer />
+      <PublicSettingsProvider>
+        <SiteHeader />
+        <main>
+          <Hero />
+          <GridMatrix />
+          <CurrentlyReadingCard />
+          <GitHubSection />
+          <ResumeCTA />
+        </main>
+        <Footer />
+      </PublicSettingsProvider>
     </PortfolioFonts>
   )
 }

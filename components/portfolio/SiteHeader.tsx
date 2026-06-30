@@ -1,11 +1,6 @@
 import Link from 'next/link'
 import AppsLogoLink from '@/components/auth/AppsLogoLink'
-
-const socialLinks = [
-  { label: 'GitHub', href: 'https://github.com/Stephen-Onochie' },
-  { label: 'LinkedIn', href: 'https://linkedin.com/in/stephen-onochie-305760235' },
-  { label: 'Instagram', href: 'https://www.instagram.com/stephenconochie/' },
-] as const
+import SocialNav from './SocialNav'
 
 const ticker =
   'COMPUTER ENGINEER · PURDUE · SBS DIGITAL LLC · AUTOMATION · FULL-STACK · EMBEDDED SYSTEMS · '
@@ -29,22 +24,7 @@ export default function SiteHeader() {
         </div>
 
         <div className="flex items-stretch">
-          <nav
-            className="hidden sm:flex items-stretch border-r border-grid"
-            aria-label="Social links"
-          >
-            {socialLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center px-3 md:px-4 text-[10px] uppercase tracking-[0.2em] text-textMuted border-r border-grid last:border-r-0 hover:text-gold hover:bg-surface transition-colors duration-200"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
+          <SocialNav variant="desktop" />
 
           <div className="flex items-center gap-0 pl-2 pr-2 md:pr-3">
             <AppsLogoLink />
@@ -52,22 +32,7 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      <nav
-        className="sm:hidden flex border-t border-grid"
-        aria-label="Social links mobile"
-      >
-        {socialLinks.map((link) => (
-          <a
-            key={link.label}
-            href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 text-center py-2 text-[10px] uppercase tracking-[0.2em] text-textMuted border-r border-grid last:border-r-0 hover:text-gold hover:bg-surface transition-colors duration-200"
-          >
-            {link.label}
-          </a>
-        ))}
-      </nav>
+      <SocialNav variant="mobile" />
     </header>
   )
 }

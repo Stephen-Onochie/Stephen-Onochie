@@ -216,6 +216,7 @@ export interface WeeklyGoal {
 export interface InternshipSettings {
   user_id: string
   email_nudges_enabled: boolean
+  email_subscribed: boolean
   digest_email: string | null
   created_at: string
   updated_at: string

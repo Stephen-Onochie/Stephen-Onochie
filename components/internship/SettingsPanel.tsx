@@ -29,6 +29,7 @@ export default function SettingsPanel({
 }) {
   const [emailEnabled, setEmailEnabled] = useState(settings.email_nudges_enabled)
   const [digestEmail, setDigestEmail] = useState(settings.digest_email ?? '')
+  const [subscribed, setSubscribed] = useState(settings.email_subscribed)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [testState, setTestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [testMsg, setTestMsg] = useState('')
@@ -50,6 +51,13 @@ export default function SettingsPanel({
     onSettingsChange({ ...settings, ...patch })
     setSaveState('saved')
     setTimeout(() => setSaveState('idle'), 1800)
+  }
+
+  async function toggleSubscribed() {
+    const next = !subscribed
+    setSubscribed(next)
+    await updateSettings(supabase, { email_subscribed: next })
+    onSettingsChange({ ...settings, email_subscribed: next })
   }
 
   async function sendTest() {
@@ -153,6 +161,20 @@ export default function SettingsPanel({
             {testMsg}
           </div>
         )}
+
+        <div
+          className="flex items-center justify-between mt-4 pt-3"
+          style={{ borderTop: '1px solid var(--iven-grid)' }}
+        >
+          <span className="text-[12px]" style={{ color: 'var(--iven-muted)' }}>
+            {subscribed
+              ? 'Subscribed to internship emails (digest + daily discovery).'
+              : 'Unsubscribed — no internship emails will be sent.'}
+          </span>
+          <Button variant="ghost" onClick={toggleSubscribed}>
+            {subscribed ? 'Unsubscribe' : 'Re-subscribe'}
+          </Button>
+        </div>
       </Section>
 
       {/* Weekly goals */}

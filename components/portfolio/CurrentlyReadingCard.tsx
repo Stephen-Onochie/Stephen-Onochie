@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import type { PublicCurrentBook } from '@/types/reading'
+import { usePublicSettings } from './PublicSettingsProvider'
 
 export default function CurrentlyReadingCard() {
+  const { showCurrentlyReading } = usePublicSettings()
   const [book, setBook] = useState<PublicCurrentBook | null>(null)
   const [loaded, setLoaded] = useState(false)
 
@@ -15,8 +17,8 @@ export default function CurrentlyReadingCard() {
       .finally(() => setLoaded(true))
   }, [])
 
-  // Nothing to show until the owner flags a public book.
-  if (!loaded || !book) return null
+  // Hidden by the owner, or nothing flagged as a public book yet.
+  if (!showCurrentlyReading || !loaded || !book) return null
 
   const pct = book.totalPages
     ? Math.min(Math.round((book.currentPage / book.totalPages) * 100), 100)

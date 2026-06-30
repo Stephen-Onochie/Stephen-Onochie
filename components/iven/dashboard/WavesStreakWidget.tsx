@@ -3,47 +3,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { WavesSession } from '@/types/waves'
+import { easternDateStr, addDaysToDateStr } from '@/lib/dates'
 import Link from 'next/link'
 
 function computeStreak(sessions: WavesSession[]): number {
-  const dateSet: Record<string, boolean> = {}
-  sessions.forEach(s => { dateSet[s.session_date] = true })
-  const dates = Object.keys(dateSet).sort().reverse()
-  if (!dates.length) return 0
+  const dateSet = new Set(sessions.map(s => s.session_date))
+  if (!dateSet.size) return 0
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().slice(0, 10)
-
-  const yesterday = new Date(today)
-  yesterday.setDate(today.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().slice(0, 10)
-
-  if (dates[0] !== todayStr && dates[0] !== yesterdayStr) return 0
+  const todayStr = easternDateStr(new Date())
+  const yesterdayStr = addDaysToDateStr(todayStr, -1)
+  if (!dateSet.has(todayStr) && !dateSet.has(yesterdayStr)) return 0
 
   let streak = 0
-  let cursor = new Date(today)
-  if (dates[0] === yesterdayStr) cursor = new Date(yesterday)
-
-  for (const date of dates) {
-    const curStr = cursor.toISOString().slice(0, 10)
-    if (date === curStr) {
-      streak++
-      cursor.setDate(cursor.getDate() - 1)
-    } else {
-      break
-    }
+  let cursor = dateSet.has(todayStr) ? todayStr : yesterdayStr
+  while (dateSet.has(cursor)) {
+    streak++
+    cursor = addDaysToDateStr(cursor, -1)
   }
   return streak
 }
 
 function last14Bars(sessions: WavesSession[]) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const todayStr = easternDateStr(new Date())
   return Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() - (13 - i))
-    const dateStr = d.toISOString().slice(0, 10)
+    const dateStr = addDaysToDateStr(todayStr, -(13 - i))
     const count = sessions.filter(s => s.session_date === dateStr).length
     return { dateStr, count, isToday: i === 13 }
   })

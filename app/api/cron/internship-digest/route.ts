@@ -26,11 +26,13 @@ export async function GET(request: Request) {
 
   const supabase = createAdminClient()
 
-  // Single-user app: read every internship_settings row with nudges on.
+  // Single-user app: read every internship_settings row with nudges on and the
+  // recipient still subscribed.
   const { data: settingsRows, error: settingsErr } = await supabase
     .from('internship_settings')
     .select('*')
     .eq('email_nudges_enabled', true)
+    .eq('email_subscribed', true)
   if (settingsErr) {
     return NextResponse.json({ error: settingsErr.message }, { status: 500 })
   }
@@ -66,7 +68,7 @@ export async function GET(request: Request) {
       interviews: (interviews.data as Interview[]) ?? [],
       tasks: (tasks.data as Task[]) ?? [],
       weeklyGoals: (goals.data as WeeklyGoal[]) ?? [],
-    })
+    }, s.user_id)
 
     await resend.emails.send({
       from,

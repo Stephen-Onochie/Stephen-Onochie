@@ -63,7 +63,7 @@ export async function POST() {
     interviews: (interviews.data as Interview[]) ?? [],
     tasks: (tasks.data as Task[]) ?? [],
     weeklyGoals: (goals.data as WeeklyGoal[]) ?? [],
-  })
+  }, user.id)
 
   const resend = new Resend(apiKey)
   const { error } = await resend.emails.send({

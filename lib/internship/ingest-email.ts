@@ -4,6 +4,7 @@
 // branding: warm beige/gold theme, Playfair heading.
 
 import type { IngestResponse } from '@/types/internship'
+import { unsubscribeUrl } from './unsubscribe'
 
 export interface IngestEmail {
   subject: string
@@ -17,7 +18,7 @@ function stat(label: string, value: string): string {
   </tr>`
 }
 
-export function buildIngestEmail(summary: IngestResponse, runAt: Date = new Date()): IngestEmail {
+export function buildIngestEmail(summary: IngestResponse, userId: string, runAt: Date = new Date()): IngestEmail {
   const when = runAt.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -46,9 +47,11 @@ export function buildIngestEmail(summary: IngestResponse, runAt: Date = new Date
       <a href="https://stephenonochie.com/apps/internship" style="display:inline-block;background:#C9A84C;color:#2C1F0E;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-decoration:none;padding:10px 20px;border-radius:8px;">Open Tracker</a>
     </div>
 
-    <p style="color:#A89A82;font-size:11px;text-align:center;margin-top:24px;">
+    <p style="color:#A89A82;font-size:11px;text-align:center;margin-top:24px;border-top:1px solid #E0D6C2;padding-top:16px;">
       You're getting this once a day because the discovery routine is running. New
       finds and closing Lane 1 deadlines appear in the Sunday review.
+      <br>
+      <a href="${unsubscribeUrl(userId)}" style="color:#A89A82;text-decoration:underline;">Unsubscribe</a>
     </p>
   </div>
 </body></html>`

@@ -9,12 +9,13 @@ import {
   staleWishlist,
   type ReminderData,
 } from '@/lib/internship/reminders'
-import { isSunday, toLocalDateString } from '@/lib/internship/dates'
+import { isSunday } from '@/lib/internship/dates'
+import { easternDateStr } from '@/lib/dates'
 
 // Sunday review is dismissible for the day; persisted in localStorage so it
 // doesn't re-nag after acknowledging.
 function dismissedKey(): string {
-  return `internship-sunday-dismissed-${toLocalDateString(new Date())}`
+  return `internship-sunday-dismissed-${easternDateStr(new Date())}`
 }
 
 export default function ReminderBanners({

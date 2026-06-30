@@ -30,7 +30,8 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 | **FastTrack** | Intermittent fasting tracker: start/end fasts, configurable cooldown and target duration, fasting calendar, guidelines. Tables: `fast_settings`, `fast_sessions` |
 | **LG Remote** | Web UI for controlling an LG TV remotely. Requires the `lg-tv-proxy` sidecar server (see below). |
 | **Health** | Apple Watch health dashboard. Ingests Health Auto Export data (100+ metrics) into Supabase, shows 5 featured recharts charts (steps, RHR, HRV, sleep, active calories) + 4 summary stat cards, a metric search bar with generic auto-charts, and an LLM Q&A panel (OpenRouter). Tables: `health_metrics`, `health_ingest_log`. See "Health Dashboard" below. |
-| **Internship Tracker** | Huntr-replacement: Kanban board, referral CRM, interviews, analytics, weekly goals, Sunday Resend digest. Plus an automated ingestion system (see below). Tables: `internship_applications`, `internship_contacts`, `internship_interviews`, `internship_activity_events`, `internship_documents`, `internship_tasks`, `internship_weekly_goals`, `internship_settings`, `internship_targets`. |
+| **Internship Tracker** | Huntr-replacement: Kanban board, referral CRM, interviews, analytics, weekly goals, Sunday Resend digest. Plus an automated ingestion system (see below). One-click email unsubscribe (`email_subscribed` flag, signed-token route `app/api/internship/unsubscribe`); honored by the digest cron + ingestion email, with a toggle in SettingsPanel. Tables: `internship_applications`, `internship_contacts`, `internship_interviews`, `internship_activity_events`, `internship_documents`, `internship_tasks`, `internship_weekly_goals`, `internship_settings`, `internship_targets`. |
+| **Public View** | Owner-only settings (`/apps/public-view`) that drive the public portfolio: resume link URL + heading/blurb, show/hide Currently Reading, and GitHub/LinkedIn/Instagram links. The public site reads them via `app/api/public/public-view` (service-role, no-store, scoped to `HEALTH_USER_ID`) through `components/portfolio/PublicSettingsProvider`. Table: `public_view_settings` (column defaults reproduce the old hardcoded values, so the site is unchanged until edited). |
 
 Planned apps: business dashboard (agency/startup stats).
 
@@ -97,6 +98,7 @@ IVEN is the live private app shell — a JARVIS-style personal OS replacing the 
 - UI components come from shadcn/ui — add via `npx shadcn@latest add <component>`
 - Supabase client helpers live in `lib/supabase/`; browser client in `client.ts`, server client in `server.ts`
 - App-specific types in `/types/<app-name>.ts`; app-specific Supabase helpers in `lib/<app-name>/supabase.ts`
+- **Dates are Eastern.** The whole site treats "today" as `America/New_York` so late-night entries land on the right calendar day. For any date-only `YYYY-MM-DD` string (e.g. `session_date`) use `easternDateStr`/`todayEastern` from `lib/dates.ts` — never `new Date().toISOString().slice(0,10)` (that's UTC and rolls over in the evening). Full timestamps (`started_at`, `ended_at`, `updated_at`, `recorded_at`) stay UTC via `new Date().toISOString()`. Date strings built from local wall-clock parts (calendar cells) use a plain local `YYYY-MM-DD` formatter, not the instant-zoning helper.
 - Dialogs/modals that use Radix portals: scope CSS theme variables to the portal root, not just the trigger, to avoid transparent/unstyled overlays
 - Supabase MCP is configured in `.mcp.json` — use it for schema inspection and running migrations during development
 

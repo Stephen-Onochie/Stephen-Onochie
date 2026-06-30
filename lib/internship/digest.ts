@@ -12,6 +12,7 @@ import {
   type ReminderData,
 } from './reminders'
 import { formatShortDate, formatDateTime, daysUntil } from './dates'
+import { unsubscribeFooterHtml } from './unsubscribe'
 
 export interface Digest {
   subject: string
@@ -56,7 +57,7 @@ function lane1Pounce(data: ReminderData, now: Date): Application[] {
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
 }
 
-export function buildDigest(data: ReminderData, now = new Date()): Digest {
+export function buildDigest(data: ReminderData, userId: string, now = new Date()): Digest {
   const wp = weeklyProgress(data, now)
   const tw = thisWeek(data, now)
   const stale = staleWishlist(data, now)
@@ -121,6 +122,7 @@ export function buildDigest(data: ReminderData, now = new Date()): Digest {
     <div style="margin-top:28px;text-align:center;">
       <a href="https://stephenonochie.com/apps/internship" style="display:inline-block;background:#C9A84C;color:#2C1F0E;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-decoration:none;padding:10px 20px;border-radius:8px;">Open Tracker</a>
     </div>
+    ${unsubscribeFooterHtml(userId)}
   </div>
 </body></html>`
 

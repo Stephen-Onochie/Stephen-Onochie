@@ -17,6 +17,7 @@ import {
   Activity,
   BookOpen,
   Briefcase,
+  Globe,
   Settings,
   LogOut,
   Moon,
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
   { label: 'INTERNSHIP', icon: Briefcase, href: '/apps/internship' },
   { label: 'HEALTH', icon: Activity, href: '/apps/health' },
   { label: 'LG REMOTE', icon: Tv2, href: '/apps/lg-remote' },
+  { label: 'PUBLIC VIEW', icon: Globe, href: '/apps/public-view' },
 ]
 
 export default function IvenSidebar() {

@@ -1,6 +1,9 @@
 // Week math for the tracker. Weeks start Monday (matches the seeded week_start
-// dates). All "local date" helpers use the runtime's local timezone, consistent
-// with how the rest of the private apps stamp session_date.
+// dates). "Today"/"this week" resolve in Eastern time (the whole site is pinned
+// to America/New_York via lib/dates.ts), while the date-math helpers operate on
+// the wall-clock parts of whatever Date they're handed.
+
+import { easternMonday, easternWeekday } from '@/lib/dates'
 
 export function toLocalDateString(d: Date): string {
   const y = d.getFullYear()
@@ -9,7 +12,7 @@ export function toLocalDateString(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-/** Monday (local) of the week containing `d`, as a YYYY-MM-DD string. */
+/** Monday of the week containing `d`, as a YYYY-MM-DD string. */
 export function mondayOf(d: Date): string {
   const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate())
   const dow = copy.getDay() // 0=Sun..6=Sat
@@ -18,8 +21,9 @@ export function mondayOf(d: Date): string {
   return toLocalDateString(copy)
 }
 
+/** Monday (Eastern) of the current week, as a YYYY-MM-DD string. */
 export function currentWeekStart(now: Date = new Date()): string {
-  return mondayOf(now)
+  return easternMonday(now)
 }
 
 /** Whole days from now until `iso` (negative = overdue). */
@@ -34,9 +38,9 @@ export function isOverdue(iso: string | null, now: Date = new Date()): boolean {
   return new Date(iso).getTime() < now.getTime()
 }
 
-/** Inclusive [start, end] of the current local week (Mon 00:00 → next Mon 00:00). */
+/** Inclusive [start, end] of the current Eastern week (Mon 00:00 → next Mon 00:00). */
 export function currentWeekRange(now: Date = new Date()): { start: Date; end: Date } {
-  const monStr = mondayOf(now)
+  const monStr = easternMonday(now)
   const [y, m, d] = monStr.split('-').map(Number)
   const start = new Date(y, m - 1, d, 0, 0, 0, 0)
   const end = new Date(start)
@@ -45,7 +49,7 @@ export function currentWeekRange(now: Date = new Date()): { start: Date; end: Da
 }
 
 export function isSunday(now: Date = new Date()): boolean {
-  return now.getDay() === 0
+  return easternWeekday(now) === 0
 }
 
 export function formatShortDate(iso: string): string {

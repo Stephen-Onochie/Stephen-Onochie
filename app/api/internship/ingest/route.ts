@@ -170,14 +170,14 @@ async function sendProofOfLife(
 
     const { data: settings } = await supabase
       .from('internship_settings')
-      .select('digest_email')
+      .select('digest_email, email_subscribed')
       .eq('user_id', userId)
       .maybeSingle()
     const to = settings?.digest_email
-    if (!to) return
+    if (!to || settings?.email_subscribed === false) return
 
     const from = process.env.INTERNSHIP_DIGEST_FROM ?? 'Internship Tracker <onboarding@resend.dev>'
-    const email = buildIngestEmail(summary, runAt ? new Date(runAt) : new Date())
+    const email = buildIngestEmail(summary, userId, runAt ? new Date(runAt) : new Date())
     await new Resend(apiKey).emails.send({ from, to, subject: email.subject, html: email.html })
   } catch {
     // Swallow — the email is a nicety, not part of the ingestion contract.

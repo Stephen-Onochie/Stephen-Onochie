@@ -12,19 +12,12 @@ import {
 import type {
   ReadingBook, ReadingSession, ReadingSettings, Shelf, BookSearchResult,
 } from '@/types/reading'
+import { easternDateStr, addDaysToDateStr } from '@/lib/dates'
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-// Local calendar date as YYYY-MM-DD. Built from local Y/M/D parts (NOT
-// toISOString, which converts to UTC and can roll to the next day in the
-// evening for users west of UTC) so it matches the session_date we store.
-function localDateStr(d: Date) {
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
 function todayStr() {
-  return localDateStr(new Date())
+  return easternDateStr(new Date())
 }
 
 function formatElapsed(totalSeconds: number) {
@@ -45,19 +38,15 @@ function formatDate(iso: string) {
 function computeStreak(dates: string[]): number {
   const set = new Set(dates)
   if (!set.size) return 0
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const todayS = localDateStr(today)
-  const yest = new Date(today)
-  yest.setDate(today.getDate() - 1)
-  const yestS = localDateStr(yest)
+  const todayS = easternDateStr(new Date())
+  const yestS = addDaysToDateStr(todayS, -1)
   if (!set.has(todayS) && !set.has(yestS)) return 0
 
   let streak = 0
-  const cursor = new Date(set.has(todayS) ? today : yest)
-  while (set.has(localDateStr(cursor))) {
+  let cursor = set.has(todayS) ? todayS : yestS
+  while (set.has(cursor)) {
     streak++
-    cursor.setDate(cursor.getDate() - 1)
+    cursor = addDaysToDateStr(cursor, -1)
   }
   return streak
 }
