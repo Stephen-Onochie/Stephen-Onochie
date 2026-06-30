@@ -18,7 +18,6 @@ import {
   sessionDurationSeconds,
 } from '@/lib/standing-timer/stats'
 import {
-  completeInterval,
   completeSession,
   createInterval,
   createSession,
@@ -33,11 +32,11 @@ import {
   updateTimerState,
 } from '@/lib/standing-timer/supabase'
 import {
-  advanceCycle,
   computeRemainingSeconds,
   getPlannedSecondsForState,
   idleStateDefaults,
 } from '@/lib/standing-timer/timer-engine'
+import { advanceInterval } from '@/lib/standing-timer/advance'
 import type {
   IntervalCompleteAlert,
   PeriodStats,
@@ -247,30 +246,20 @@ export function useStandingTimer() {
     completingRef.current = true
 
     try {
-      const actualSeconds = interval.planned_seconds
-      await completeInterval(supabase, interval.id, actualSeconds, true)
-
-      const { nextMode, nextCycleIndex, nextPlannedSeconds } = advanceCycle(
-        currentState.cycle_index,
-        currentSettings
-      )
-
-      const nextInterval = await createInterval(
+      const outcome = await advanceInterval(
         supabase,
         userId,
-        currentState.session_id,
-        nextMode,
-        nextPlannedSeconds
+        currentState,
+        currentSettings,
+        interval
       )
 
-      const now = new Date().toISOString()
-      const nextState = await updateTimerState(supabase, userId, {
-        current_mode: nextMode,
-        cycle_index: nextCycleIndex,
-        remaining_seconds: nextPlannedSeconds,
-        mode_started_at: now,
-        status: 'running',
-      })
+      // The shell-wide engine may have won the compare-and-set first; if so the
+      // realtime UPDATE will sync our state and play the alert there.
+      if (!outcome) return
+
+      const { nextState, nextInterval, completedMode, actualSeconds } = outcome
+      const nextMode = nextState.current_mode
 
       setOpenInterval(nextInterval)
       setState(nextState)
@@ -278,7 +267,6 @@ export function useStandingTimer() {
       setSessionIntervalCount((c) => c + 1)
       setSessionElapsedSeconds((s) => s + actualSeconds)
 
-      const completedMode = interval.mode
       setAlert({
         completedMode,
         nextMode,

@@ -7,3 +7,11 @@ node_modules
 /cache/
 /docs/
 .vercel
+
+# Agent skills (installed locally via `npx skills add`)
+.agents/
+
+# Local agent / tooling state (Claude Code, lavish review artifacts)
+.claude/
+.lavish/
+skills-lock.json

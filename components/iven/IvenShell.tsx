@@ -2,9 +2,12 @@
 
 import { useIvenDarkMode } from './IvenDarkModeContext'
 import IvenSidebar from './IvenSidebar'
+import StandingTimerEventToast from './StandingTimerEventToast'
+import { useStandingTimerEngine } from '@/hooks/useStandingTimerEngine'
 
 export default function IvenShell({ children }: { children: React.ReactNode }) {
   const { dark } = useIvenDarkMode()
+  useStandingTimerEngine()
 
   return (
     <div
@@ -16,6 +19,7 @@ export default function IvenShell({ children }: { children: React.ReactNode }) {
       <main className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>
         {children}
       </main>
+      <StandingTimerEventToast />
     </div>
   )
 }

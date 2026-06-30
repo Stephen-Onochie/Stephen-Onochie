@@ -65,6 +65,18 @@ html {
   animation-play-state: paused;
 }
 
+/* Standing Timer event toast — slides in from the top-right edge. */
+@keyframes iven-toast-in {
+  0% {
+    opacity: 0;
+    transform: translateX(16px) translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
 /* Indeterminate loading bar — a gold segment sweeps left→right. Used by the
    branded loading state (e.g. Health) while data is being fetched. */
 @keyframes iven-indeterminate {
