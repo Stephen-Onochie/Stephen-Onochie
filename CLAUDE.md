@@ -67,6 +67,15 @@ Automated Summer 2027 internship discovery for the Internship Tracker. Split int
 - **Digest fold-in:** `lib/internship/digest.ts` (the Sunday digest) has a "Newly discovered" section (ingestion rows, last 7 days) + Lane 1 deadline-pounce (≤7 days). The ingest API itself sends no digest.
 - **Routine:** twice-daily cloud routine `trig_0179ApZ9ED79xq4yntWe8hkY` (`0 12,22 * * *` UTC = 08:00/18:00 Indiana). Prompt + setup in `scripts/ingest-routine.md`. **Secret coupling:** `INGEST_SECRET` must match in two places — Vercel env AND the routine prompt — or every run 401s.
 
+## Hevy MCP Server
+
+`app/api/mcp/route.ts` exposes a remote MCP (Model Context Protocol) server wrapping the Hevy workout-tracking API (`api.hevyapp.com`), for use as a Custom Connector in claude.ai chat/mobile — not a private app in the IVEN sense, just an API bridge.
+
+- **Client:** `lib/hevy/client.ts` — thin fetch wrapper, reads `HEVY_API_KEY` server-side, never sent to the client. `searchExerciseTemplates` caches the full ~460-template list per warm lambda instance (1hr TTL) since Hevy paginates 10/page with no search endpoint.
+- **Tools:** get/create/update routines, get/create routine folders, get workouts (read-only), search exercise templates.
+- **Auth:** claude.ai's custom-connector UI only takes a URL, no custom headers, so the shared secret (`MCP_HEVY_SECRET`) is passed as a query param on the connector URL: `https://stephenonochie.com/api/mcp?key=<secret>`. Wrong/missing key → 404 (not 401, to avoid confirming the route exists).
+- Register in claude.ai under Settings → Connectors → Add custom connector with that URL.
+
 ## Customizable Dashboard
 
 The IVEN home (`/apps`, `components/iven/dashboard/DashboardHome.tsx`) is a **draggable react-grid-layout grid**, not the old hardcoded flexbox.
