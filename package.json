@@ -30,6 +30,7 @@
     "recharts": "^3.8.1",
     "resend": "^6.16.0",
     "tailwind-merge": "^2.5.4",
+    "three": "0.158.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

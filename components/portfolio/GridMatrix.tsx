@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import LinkedInCard from '@/components/portfolio/LinkedInCard'
 
 const stackGroups = [
@@ -116,6 +117,23 @@ export default function GridMatrix() {
           <LinkedInCard />
         </div>
       </div>
+
+      <Link
+        href="/playground"
+        className="group flex items-center justify-between border-t border-grid px-6 md:px-8 py-4 hover:bg-surface transition-colors duration-200"
+      >
+        <div className="flex min-w-0 items-baseline gap-4">
+          <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-gold">
+            Playground
+          </span>
+          <span className="hidden sm:inline font-mono text-xs text-textMuted truncate">
+            Dorm OS · my Wiley Hall room in spinnable 3D
+          </span>
+        </div>
+        <span className="flex-none font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted group-hover:text-gold transition-colors duration-200">
+          Enter →
+        </span>
+      </Link>
     </section>
   )
 }
