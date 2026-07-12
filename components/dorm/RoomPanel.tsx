@@ -165,7 +165,8 @@ export default function RoomPanel({
       className={
         isMobile
           ? cn(
-              'fixed inset-x-0 bottom-0 z-30 max-h-[62vh] overflow-y-auto rounded-t-[20px] border-t px-4 pb-6 shadow-[0_-10px_34px_rgba(44,31,14,0.18)]',
+              // left-[70px] clears the IVEN sidebar, which paints above z-30
+              'fixed bottom-0 left-[70px] right-0 z-30 max-h-[62vh] overflow-y-auto rounded-t-[20px] border-t px-4 pb-6 shadow-[0_-10px_34px_rgba(44,31,14,0.18)]',
               'transition-[transform,visibility] duration-[250ms] motion-reduce:transition-none',
               night ? 'border-[#4A3D2A] bg-[#14100C]' : 'border-grid bg-beige',
               panelOpen

@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import RoomPanel from './RoomPanel'
@@ -109,32 +108,12 @@ export default function RoomExperience() {
   return (
     <div
       className={cn(
-        'flex h-dvh flex-col overflow-hidden transition-colors duration-300',
-        night ? 'bg-[#14100C] text-[#F5F0E8]' : 'bg-beige text-textPrimary'
+        'relative flex min-h-[420px] flex-1 overflow-hidden rounded-2xl border transition-colors duration-300',
+        night
+          ? 'border-[#4A3D2A] bg-[#14100C] text-[#F5F0E8]'
+          : 'border-grid bg-beige text-textPrimary'
       )}
     >
-      <header className="flex-none px-6 pb-4 pt-5 md:px-7">
-        <Link
-          href="/playground"
-          className="font-mono text-[10px] font-medium uppercase tracking-[0.25em] text-textMuted transition-colors duration-200 hover:text-gold"
-        >
-          ← Playground / Dorm OS
-        </Link>
-        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-3.5 gap-y-1">
-          <h1 className="font-playfair text-3xl font-semibold leading-tight">Dorm OS</h1>
-          <p className="font-inter text-sm text-textMuted">
-            Stephen&rsquo;s Wiley Hall room · spin it, poke it.
-          </p>
-        </div>
-        <div
-          className={cn(
-            'mt-4 h-px transition-colors duration-300',
-            night ? 'bg-[#4A3D2A]' : 'bg-grid'
-          )}
-        />
-      </header>
-
-      <div className="relative flex min-h-0 flex-1">
         <div
           ref={stageRef}
           role="img"
@@ -195,7 +174,6 @@ export default function RoomExperience() {
           onResetView={() => roomElRef.current?.resetView()}
           onTogglePanel={() => setPanelOpen((open) => !open)}
         />
-      </div>
     </div>
   )
 }

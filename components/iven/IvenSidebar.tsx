@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Hourglass,
   Tv2,
+  Sofa,
   Activity,
   BookOpen,
   Briefcase,
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { label: 'INTERNSHIP', icon: Briefcase, href: '/apps/internship' },
   { label: 'HEALTH', icon: Activity, href: '/apps/health' },
   { label: 'LG REMOTE', icon: Tv2, href: '/apps/lg-remote' },
+  { label: 'DORM OS', icon: Sofa, href: '/apps/dorm' },
   { label: 'PUBLIC VIEW', icon: Globe, href: '/apps/public-view' },
 ]
 

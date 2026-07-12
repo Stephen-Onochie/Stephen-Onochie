@@ -24,12 +24,6 @@ export default function SiteHeader() {
         </div>
 
         <div className="flex items-stretch">
-          <Link
-            href="/playground"
-            className="hidden sm:flex items-center px-3 md:px-4 text-[10px] uppercase tracking-[0.2em] text-textMuted border-r border-grid hover:text-gold hover:bg-surface transition-colors duration-200"
-          >
-            Playground
-          </Link>
           <SocialNav variant="desktop" />
 
           <div className="flex items-center gap-0 pl-2 pr-2 md:pr-3">
