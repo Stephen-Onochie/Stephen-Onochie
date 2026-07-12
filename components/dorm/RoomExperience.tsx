@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { cn } from '@/lib/utils'
 import RoomPanel from './RoomPanel'
+import EditBanner from './EditBanner'
+import AddItemDialog, { type AddItemInput } from './AddItemDialog'
 
 const ROOM_DEFAULTS: DormRoomState = {
   mode: 'day',
@@ -32,32 +34,112 @@ const DormStage = dynamic(() => import('./DormStage'), {
   loading: () => <StageSkeleton />,
 })
 
+interface ServerData {
+  layout: DormLayout
+  state: DormRoomState | null
+  items: DormCustomItem[]
+}
+
+interface GenPreview {
+  tempId: string
+  spec: DormItemSpec
+  input: AddItemInput
+}
+
 export default function RoomExperience() {
   const [room, setRoom] = useState<DormRoomState>(ROOM_DEFAULTS)
   const [editMode, setEditMode] = useState(false)
   const [autoSpin, setAutoSpin] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [panelOpen, setPanelOpen] = useState(true)
+  const [selected, setSelected] = useState<DormSelection | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [regenInput, setRegenInput] = useState<AddItemInput | null>(null)
+  const [preview, setPreview] = useState<GenPreview | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [accepting, setAccepting] = useState(false)
 
   const stageRef = useRef<HTMLDivElement>(null)
   const roomElRef = useRef<DormRoomElement | null>(null)
   const uiRef = useRef({ editMode: false, autoSpin: false })
   const mobileInitRef = useRef(false)
+  const hydratedRef = useRef(false)
+  const serverDataRef = useRef<ServerData | null>(null)
+  const snapshotRef = useRef<{ json: string; layout: DormLayout } | null>(null)
+  const stateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const hydrateIfReady = useCallback(() => {
+    const el = roomElRef.current
+    const data = serverDataRef.current
+    if (!el || !data || hydratedRef.current) return
+    hydratedRef.current = true
+    for (const item of data.items) {
+      el.addCustomItem(`custom:${item.id}`, { ...item.spec, name: item.name })
+    }
+    el.applyLayout(data.layout)
+    if (data.state) el.setRoomState(data.state)
+    setRoom(el.getRoomState())
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const safe = async <T,>(url: string, fallback: T): Promise<T> => {
+      try {
+        const res = await fetch(url)
+        if (!res.ok) return fallback
+        return (await res.json()) as T
+      } catch {
+        return fallback
+      }
+    }
+    Promise.all([
+      safe<{ layout: DormLayout }>('/api/dorm/layout', { layout: {} }),
+      safe<{ state: DormRoomState | null }>('/api/dorm/state', { state: null }),
+      safe<{ items: DormCustomItem[] }>('/api/dorm/items', { items: [] }),
+    ]).then(([l, s, it]) => {
+      if (cancelled) return
+      serverDataRef.current = { layout: l.layout ?? {}, state: s.state, items: it.items ?? [] }
+      hydrateIfReady()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [hydrateIfReady])
 
   useEffect(() => {
     const node = stageRef.current
     if (!node) return
-    const onState = (e: Event) => setRoom((e as CustomEvent<DormRoomState>).detail)
+    const onState = (e: Event) => {
+      const detail = (e as CustomEvent<DormRoomState>).detail
+      setRoom(detail)
+      // Auto-save room toggles, but never before the saved state has been
+      // applied (or the defaults would clobber it).
+      if (hydratedRef.current) {
+        if (stateSaveTimer.current) clearTimeout(stateSaveTimer.current)
+        stateSaveTimer.current = setTimeout(() => {
+          fetch('/api/dorm/state', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ state: detail }),
+          }).catch(() => {})
+        }, 800)
+      }
+    }
+    const onSelect = (e: Event) => setSelected((e as CustomEvent<DormSelection | null>).detail)
     node.addEventListener('roomstate', onState)
-    return () => node.removeEventListener('roomstate', onState)
+    node.addEventListener('editselect', onSelect)
+    return () => {
+      node.removeEventListener('roomstate', onState)
+      node.removeEventListener('editselect', onSelect)
+      if (stateSaveTimer.current) clearTimeout(stateSaveTimer.current)
+    }
   }, [])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 859px)')
     const apply = () => {
       setIsMobile(mq.matches)
-      // On first entry into mobile widths, collapse the panel so the room is
-      // fully visible (matches the prototype's one-time auto-collapse).
       if (mq.matches && !mobileInitRef.current) {
         mobileInitRef.current = true
         setPanelOpen(false)
@@ -68,24 +150,93 @@ export default function RoomExperience() {
     return () => mq.removeEventListener('change', apply)
   }, [])
 
-  const handleElement = useCallback((el: DormRoomElement | null) => {
-    roomElRef.current = el
-    if (!el) return
-    // The engine treats undefined _autoRotate as "spin after 6s idle"; the
-    // Auto Spin switch starts off, so the real value must be pushed on mount.
-    el._autoRotate = uiRef.current.autoSpin
-    el.setEditMode(uiRef.current.editMode)
-    setRoom(el.getRoomState())
-  }, [])
+  const handleElement = useCallback(
+    (el: DormRoomElement | null) => {
+      roomElRef.current = el
+      if (!el) return
+      // The engine treats undefined _autoRotate as "spin after 6s idle"; the
+      // Auto Spin switch starts off, so the real value must be pushed on mount.
+      el._autoRotate = uiRef.current.autoSpin
+      el.setEditMode(uiRef.current.editMode)
+      setRoom(el.getRoomState())
+      hydrateIfReady()
+    },
+    [hydrateIfReady]
+  )
 
   const send = (partial: Partial<DormRoomState>) => {
     roomElRef.current?.setRoomState(partial)
   }
 
+  /* ---------- edit mode with save/discard confirmation ---------- */
+
+  const takeSnapshot = () => {
+    const el = roomElRef.current
+    if (!el) return
+    const layout = el.getLayout()
+    snapshotRef.current = { json: JSON.stringify(layout), layout }
+  }
+
+  const enterEdit = () => {
+    uiRef.current.editMode = true
+    setEditMode(true)
+    roomElRef.current?.setEditMode(true)
+    takeSnapshot()
+  }
+
+  const finishEdit = () => {
+    uiRef.current.editMode = false
+    setEditMode(false)
+    setSelected(null)
+    setConfirmOpen(false)
+    roomElRef.current?.setEditMode(false)
+  }
+
+  const saveLayout = async () => {
+    const el = roomElRef.current
+    if (!el) return
+    setSaving(true)
+    try {
+      await fetch('/api/dorm/layout', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ layout: el.getLayout() }),
+      })
+    } catch {
+      /* best-effort; the layout still lives in the engine */
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const requestEditExit = () => {
+    const el = roomElRef.current
+    if (!el || !snapshotRef.current) {
+      finishEdit()
+      return
+    }
+    if (JSON.stringify(el.getLayout()) === snapshotRef.current.json) {
+      finishEdit()
+      return
+    }
+    setConfirmOpen(true)
+  }
+
+  const confirmSave = async () => {
+    await saveLayout()
+    finishEdit()
+  }
+
+  const confirmDiscard = () => {
+    const el = roomElRef.current
+    if (el && snapshotRef.current) el.applyLayout(snapshotRef.current.layout)
+    finishEdit()
+  }
+
   const handleEditMode = (on: boolean) => {
-    uiRef.current.editMode = on
-    setEditMode(on)
-    roomElRef.current?.setEditMode(on)
+    if (on === uiRef.current.editMode) return
+    if (on) enterEdit()
+    else requestEditExit()
   }
 
   const handleAutoSpin = () => {
@@ -93,6 +244,79 @@ export default function RoomExperience() {
     uiRef.current.autoSpin = next
     setAutoSpin(next)
     if (roomElRef.current) roomElRef.current._autoRotate = next
+  }
+
+  const handleResetLayout = () => {
+    roomElRef.current?.resetLayout()
+  }
+
+  /* ---------- custom item flow ---------- */
+
+  const handleGenerated = (spec: DormItemSpec, input: AddItemInput) => {
+    const el = roomElRef.current
+    if (!el) return
+    const tempId = `custom:temp-${crypto.randomUUID()}`
+    el.addCustomItem(tempId, spec)
+    setPreview({ tempId, spec, input })
+    setAddOpen(false)
+    setRegenInput(null)
+  }
+
+  const acceptPreview = async () => {
+    const el = roomElRef.current
+    if (!el || !preview) return
+    setAccepting(true)
+    try {
+      const res = await fetch('/api/dorm/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: preview.input.name,
+          dims: preview.input.dims,
+          spec: preview.spec,
+          image: preview.input.image,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Save failed')
+      const placement = el.getLayout()[preview.tempId]
+      el.removeCustomItem(preview.tempId)
+      el.addCustomItem(`custom:${json.id}`, { ...preview.spec, name: preview.input.name }, placement)
+      // Accepting an item is an intentional commit: persist the layout now and
+      // fold it into the edit-session snapshot so Discard keeps it.
+      await saveLayout()
+      takeSnapshot()
+      setPreview(null)
+    } catch {
+      // keep the preview so the user can retry
+    } finally {
+      setAccepting(false)
+    }
+  }
+
+  const regeneratePreview = () => {
+    const el = roomElRef.current
+    if (!el || !preview) return
+    el.removeCustomItem(preview.tempId)
+    setRegenInput({ ...preview.input, feedback: preview.input.feedback ?? '' })
+    setPreview(null)
+    setAddOpen(true)
+  }
+
+  const cancelPreview = () => {
+    const el = roomElRef.current
+    if (el && preview) el.removeCustomItem(preview.tempId)
+    setPreview(null)
+  }
+
+  const deleteSelected = async () => {
+    const el = roomElRef.current
+    if (!el || !selected?.custom) return
+    const itemId = selected.id.replace(/^custom:/, '')
+    el.removeCustomItem(selected.id)
+    setSelected(null)
+    takeSnapshot()
+    fetch(`/api/dorm/items?id=${encodeURIComponent(itemId)}`, { method: 'DELETE' }).catch(() => {})
   }
 
   const night = room.mode === 'night'
@@ -114,66 +338,151 @@ export default function RoomExperience() {
           : 'border-grid bg-beige text-textPrimary'
       )}
     >
-        <div
-          ref={stageRef}
-          role="img"
-          aria-label={STAGE_ARIA_LABEL}
-          className="relative min-w-0 flex-1"
-        >
-          <DormStage onElement={handleElement} />
+      <div
+        ref={stageRef}
+        role="img"
+        aria-label={STAGE_ARIA_LABEL}
+        className="relative min-w-0 flex-1"
+      >
+        <DormStage onElement={handleElement} />
 
-          <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => roomElRef.current?.zoomBy(0.8)}
-              aria-label="Zoom in"
-              className={zoomButton}
-            >
-              +
-            </button>
-            <button
-              type="button"
-              onClick={() => roomElRef.current?.zoomBy(1.25)}
-              aria-label="Zoom out"
-              className={zoomButton}
-            >
-              &minus;
-            </button>
-          </div>
+        {editMode && (
+          <EditBanner
+            night={night}
+            selected={selected}
+            preview={preview ? { name: preview.input.name } : null}
+            saving={saving}
+            accepting={accepting}
+            onAddItem={() => {
+              setRegenInput(null)
+              setAddOpen(true)
+            }}
+            onDone={requestEditExit}
+            onRotate={(deg) => selected && roomElRef.current?.rotateItem(selected.id, deg)}
+            onResetItem={() => selected && roomElRef.current?.resetItem(selected.id)}
+            onDeleteItem={deleteSelected}
+            onDeselect={() => roomElRef.current?.clearSelection()}
+            onAcceptPreview={acceptPreview}
+            onRegeneratePreview={regeneratePreview}
+            onCancelPreview={cancelPreview}
+          />
+        )}
 
-          {isMobile && !panelOpen && (
-            <button
-              type="button"
-              onClick={() => setPanelOpen(true)}
-              aria-label="Show controls"
-              className="absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-goldLight bg-gold px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-textPrimary shadow-[0_2px_8px_rgba(44,31,14,0.18)]"
-            >
-              Controls
-            </button>
-          )}
-
-          {!isMobile && (
-            <p className="pointer-events-none absolute bottom-3.5 left-4 font-mono text-[10px] uppercase tracking-[0.22em] text-textMuted">
-              {editMode
-                ? 'Edit mode · Drag furniture to rearrange'
-                : 'Drag to orbit · Scroll to zoom · Click objects'}
-            </p>
-          )}
+        <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => roomElRef.current?.zoomBy(0.8)}
+            aria-label="Zoom in"
+            className={zoomButton}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => roomElRef.current?.zoomBy(1.25)}
+            aria-label="Zoom out"
+            className={zoomButton}
+          >
+            &minus;
+          </button>
         </div>
 
-        <RoomPanel
-          room={room}
-          night={night}
-          editMode={editMode}
-          autoSpin={autoSpin}
-          isMobile={isMobile}
-          panelOpen={panelOpen}
-          onSend={send}
-          onSetEditMode={handleEditMode}
-          onToggleAutoSpin={handleAutoSpin}
-          onResetView={() => roomElRef.current?.resetView()}
-          onTogglePanel={() => setPanelOpen((open) => !open)}
-        />
+        {isMobile && !panelOpen && (
+          <button
+            type="button"
+            onClick={() => setPanelOpen(true)}
+            aria-label="Show controls"
+            className="absolute bottom-4 left-4 z-10 flex items-center gap-2 rounded-xl border border-goldLight bg-gold px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-textPrimary shadow-[0_2px_8px_rgba(44,31,14,0.18)]"
+          >
+            Controls
+          </button>
+        )}
+
+        {!isMobile && !editMode && (
+          <p className="pointer-events-none absolute bottom-3.5 left-4 font-mono text-[10px] uppercase tracking-[0.22em] text-textMuted">
+            Drag to orbit · Scroll to zoom · Click objects
+          </p>
+        )}
+      </div>
+
+      <RoomPanel
+        room={room}
+        night={night}
+        editMode={editMode}
+        autoSpin={autoSpin}
+        isMobile={isMobile}
+        panelOpen={panelOpen}
+        onSend={send}
+        onSetEditMode={handleEditMode}
+        onToggleAutoSpin={handleAutoSpin}
+        onResetView={() => roomElRef.current?.resetView()}
+        onResetLayout={handleResetLayout}
+        onTogglePanel={() => setPanelOpen((open) => !open)}
+      />
+
+      <AddItemDialog
+        open={addOpen}
+        night={night}
+        initial={regenInput}
+        onClose={() => {
+          setAddOpen(false)
+          setRegenInput(null)
+        }}
+        onGenerated={handleGenerated}
+      />
+
+      {confirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#2C1F0E]/50" />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Save layout changes"
+            className={cn(
+              'relative w-full max-w-sm rounded-2xl border p-5 shadow-[0_12px_40px_rgba(44,31,14,0.35)]',
+              night ? 'border-[#4A3D2A] bg-[#221A12] text-[#F5F0E8]' : 'border-goldLight bg-surface text-textPrimary'
+            )}
+          >
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-textMuted">
+              Leaving edit mode
+            </p>
+            <p className="mt-2 font-inter text-sm leading-relaxed">
+              You moved things around. Save this layout?
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={confirmSave}
+                disabled={saving}
+                className="rounded-lg bg-gold py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.22em] text-textPrimary transition-colors duration-200 hover:bg-brownAccent hover:text-beige disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDiscard}
+                disabled={saving}
+                className={cn(
+                  'rounded-lg border py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors duration-200',
+                  night
+                    ? 'border-[#4A3D2A] text-[#F5F0E8] hover:border-gold hover:text-gold'
+                    : 'border-grid text-textPrimary hover:border-gold hover:text-gold'
+                )}
+              >
+                Discard changes
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                disabled={saving}
+                className="py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted transition-colors duration-200 hover:text-gold"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

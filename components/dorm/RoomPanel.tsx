@@ -30,6 +30,7 @@ interface RoomPanelProps {
   onSetEditMode: (on: boolean) => void
   onToggleAutoSpin: () => void
   onResetView: () => void
+  onResetLayout: () => void
   onTogglePanel: () => void
 }
 
@@ -148,6 +149,7 @@ export default function RoomPanel({
   onSetEditMode,
   onToggleAutoSpin,
   onResetView,
+  onResetLayout,
   onTogglePanel,
 }: RoomPanelProps) {
   const segmentedRow = cn(
@@ -245,6 +247,22 @@ export default function RoomPanel({
         >
           Reset View
         </button>
+
+        {editMode && (
+          <button
+            type="button"
+            onClick={onResetLayout}
+            className={cn(
+              'mt-2 block w-full rounded-lg border py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.22em] transition-colors duration-200',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
+              night
+                ? 'border-[#4A3D2A] text-[#F5F0E8] hover:border-gold hover:text-gold'
+                : 'border-grid text-textPrimary hover:border-gold hover:text-gold'
+            )}
+          >
+            Reset Layout
+          </button>
+        )}
       </section>
 
       <section
