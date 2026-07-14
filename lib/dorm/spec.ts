@@ -3,15 +3,23 @@ import { z } from 'zod'
 // Primitive-assembly spec for AI-generated furniture. Units are feet; the
 // engine's _buildSpec renders exactly this shape. Bounds are generous but
 // capped so a bad generation can't fill the room.
+const deg = z.number().min(-360).max(360)
+const scaleAxis = z.number().min(0.1).max(4)
+
 export const specPartSchema = z
   .object({
-    shape: z.enum(['box', 'cylinder']),
+    shape: z.enum(['box', 'cylinder', 'sphere', 'capsule', 'torus']),
     size: z.tuple([z.number().positive().max(10), z.number().positive().max(10), z.number().positive().max(10)]).optional(),
     radius: z.number().positive().max(5).optional(),
     radiusTop: z.number().min(0).max(5).optional(),
     height: z.number().positive().max(10).optional(),
+    tube: z.number().positive().max(3).optional(),
     position: z.tuple([z.number().min(-10).max(10), z.number().min(-2).max(10), z.number().min(-10).max(10)]),
-    rotationY: z.number().min(-360).max(360).optional(),
+    // Squash/stretch lets spheres become blobs and cushions become ovals.
+    scale: z.tuple([scaleAxis, scaleAxis, scaleAxis]).optional(),
+    rotationX: deg.optional(),
+    rotationY: deg.optional(),
+    rotationZ: deg.optional(),
     // Optional: the engine falls back to a wood tone. Kept lenient because
     // vision models return colors in many shapes; normalizeSpecCandidate
     // coerces what it can before validation.
@@ -19,9 +27,25 @@ export const specPartSchema = z
     roughness: z.number().min(0).max(1).optional(),
     metalness: z.number().min(0).max(1).optional(),
   })
-  .refine((p) => (p.shape === 'box' ? !!p.size : p.radius != null && p.height != null), {
-    message: 'box parts need size; cylinder parts need radius and height',
-  })
+  .refine(
+    (p) => {
+      switch (p.shape) {
+        case 'box':
+          return !!p.size
+        case 'cylinder':
+        case 'capsule':
+          return p.radius != null && p.height != null
+        case 'sphere':
+          return p.radius != null
+        case 'torus':
+          return p.radius != null && p.tube != null
+      }
+    },
+    {
+      message:
+        'box needs size; cylinder/capsule need radius and height; sphere needs radius; torus needs radius and tube',
+    }
+  )
 
 export const itemSpecSchema = z.object({
   name: z.string().min(1).max(60).optional(),

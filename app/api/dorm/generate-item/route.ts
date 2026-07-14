@@ -9,16 +9,25 @@ const DEFAULT_MODEL = 'openai/gpt-4o-mini'
 
 function systemPrompt(name: string, wFt: number, dFt: number, hFt: number) {
   return (
-    `You convert a photo of one piece of furniture into a low-poly 3D "primitive assembly" for a stylized, Sims-like dorm room. ` +
-    `Respond with STRICT JSON only, no markdown fences, matching: {"parts":[Part,...]}. ` +
-    `Part fields: "shape": "box" or "cylinder". Boxes need "size": [width,height,depth] in feet. ` +
-    `Cylinders need "radius" and "height" in feet (optional "radiusTop" for taper; cylinders stand upright on Y). ` +
-    `Every part needs "position": [x,y,z] = the part's CENTER, with y measured up from the floor (floor is y=0). ` +
-    `Optional: "rotationY" in degrees, "roughness" 0-1, "metalness" 0-1. Every part needs "color" as a 6-digit hex STRING ` +
-    `like "#8a6647" (never a color name, never rgb()), sampled from the photo and slightly warmed to sit well in a cozy beige/wood-toned room. ` +
+    `You convert a photo of one piece of furniture into a charming low-poly 3D "primitive assembly" for a stylized, cozy, Sims-like dorm room. ` +
+    `Respond with STRICT JSON only, no markdown fences, matching: {"parts":[Part,...]}. All lengths are in feet.\n` +
+    `Shapes:\n` +
+    `- "box": needs "size": [width,height,depth]\n` +
+    `- "cylinder": needs "radius" and "height" (optional "radiusTop" for taper); stands upright on Y\n` +
+    `- "sphere": needs "radius"; combine with "scale" for ellipsoids and soft blobs\n` +
+    `- "capsule": needs "radius" and "height" (the straight mid-section); upright on Y unless rotated; ideal for cushions, pillows, padded arms\n` +
+    `- "torus": needs "radius" and "tube"; ring lies vertical facing z unless rotated; use thin ones for piping, rims, seams\n` +
+    `Every part needs "position": [x,y,z] = the part's CENTER before scaling, with y measured up from the floor (floor is y=0). ` +
+    `Any part may also have "scale": [sx,sy,sz] (0.1-4, squash or stretch), "rotationX"/"rotationY"/"rotationZ" in degrees, ` +
+    `"roughness" 0-1, "metalness" 0-1, and needs "color" as a 6-digit hex STRING like "#8a6647" (never a color name, never rgb()).\n` +
+    `Style rules, in priority order:\n` +
+    `1. Soft things must LOOK soft. Bean bags, cushions, pillows, and upholstered seats are squashed spheres and capsules, never bare boxes. Overlap two or three blobs so the form slumps naturally.\n` +
+    `2. Suggest texture with geometry: a row of small spheres for tufting, thin boxes or tori for seams and piping, a slightly rotated part so nothing feels machine-stiff.\n` +
+    `3. Use 2 to 4 related colors sampled from the photo (base tone, a darker shadow tone, an accent), slightly warmed to sit well in a beige/wood-toned room. Never one flat color for the whole item.\n` +
+    `4. Add 1 to 3 small, fitting accents that make it feel lived-in: a throw pillow on seating, a folded blanket, a book or mug on a flat surface, a knob or handle where the real item has one. Accents sit inside the bounding box.\n` +
     `The item is "${name}" and must fit a bounding box exactly ${wFt.toFixed(2)} ft wide (x), ${dFt.toFixed(2)} ft deep (z), ${hFt.toFixed(2)} ft tall (y). ` +
     `Center the footprint at x=0, z=0; the lowest part must rest on the floor. ` +
-    `Use 4 to 24 parts. Capture the silhouette and key features (legs, shelves, cushions, frames, handles) with chunky, readable primitives. ` +
+    `Use 6 to 28 parts. Capture the silhouette first, then the key features, then the accents. ` +
     `No part may extend past the bounding box by more than 10%.`
   )
 }

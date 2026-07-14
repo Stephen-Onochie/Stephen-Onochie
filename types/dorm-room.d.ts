@@ -54,13 +54,17 @@ interface DormSelection {
 }
 
 interface DormSpecPart {
-  shape: 'box' | 'cylinder'
+  shape: 'box' | 'cylinder' | 'sphere' | 'capsule' | 'torus'
   size?: [number, number, number]
   radius?: number
   radiusTop?: number
   height?: number
+  tube?: number
   position: [number, number, number]
+  scale?: [number, number, number]
+  rotationX?: number
   rotationY?: number
+  rotationZ?: number
   color?: string
   roughness?: number
   metalness?: number

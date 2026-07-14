@@ -912,16 +912,29 @@
       var group = new T.Group();
       var parts = (spec && spec.parts) ? spec.parts.slice(0, 40) : [];
       var minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, maxY = 0;
+      var D2R = Math.PI / 180;
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
-        var geo, hw, hd;
+        var geo, hw, hh, hd, rMax;
         if (p.shape === 'cylinder') {
           var rTop = typeof p.radiusTop === 'number' ? p.radiusTop : p.radius;
           geo = new T.CylinderGeometry(rTop, p.radius, p.height, 16);
-          hw = Math.max(rTop, p.radius); hd = hw;
+          rMax = Math.max(rTop, p.radius);
+          hw = rMax; hh = p.height / 2; hd = rMax;
+        } else if (p.shape === 'sphere') {
+          geo = new T.SphereGeometry(p.radius, 14, 12);
+          hw = p.radius; hh = p.radius; hd = p.radius;
+        } else if (p.shape === 'capsule') {
+          geo = new T.CapsuleGeometry(p.radius, p.height, 6, 14);
+          hw = p.radius; hh = p.height / 2 + p.radius; hd = p.radius;
+        } else if (p.shape === 'torus') {
+          geo = new T.TorusGeometry(p.radius, p.tube, 10, 20);
+          rMax = p.radius + p.tube;
+          // rotation makes exact torus bounds messy; the generous cube is fine
+          hw = rMax; hh = rMax; hd = rMax;
         } else {
           geo = new T.BoxGeometry(p.size[0], p.size[1], p.size[2]);
-          hw = p.size[0] / 2; hd = p.size[2] / 2;
+          hw = p.size[0] / 2; hh = p.size[1] / 2; hd = p.size[2] / 2;
         }
         var mat = this._mat(p.color || '#C79A5E', {
           roughness: Math.max(0.3, Math.min(1, typeof p.roughness === 'number' ? p.roughness : 0.92)),
@@ -929,13 +942,22 @@
         });
         var mesh = new T.Mesh(geo, mat);
         mesh.position.set(p.position[0], p.position[1], p.position[2]);
-        if (p.rotationY) mesh.rotation.y = p.rotationY * Math.PI / 180;
+        if (p.rotationX) mesh.rotation.x = p.rotationX * D2R;
+        if (p.rotationY) mesh.rotation.y = p.rotationY * D2R;
+        if (p.rotationZ) mesh.rotation.z = p.rotationZ * D2R;
+        var sx = 1, sy = 1, sz = 1;
+        if (p.scale && p.scale.length === 3) { sx = p.scale[0]; sy = p.scale[1]; sz = p.scale[2]; }
+        mesh.scale.set(sx, sy, sz);
         mesh.castShadow = mesh.receiveShadow = true;
         group.add(mesh);
-        var ph = p.shape === 'cylinder' ? p.height / 2 : p.size[1] / 2;
-        minX = Math.min(minX, p.position[0] - hw); maxX = Math.max(maxX, p.position[0] + hw);
-        minZ = Math.min(minZ, p.position[2] - hd); maxZ = Math.max(maxZ, p.position[2] + hd);
-        maxY = Math.max(maxY, p.position[1] + ph);
+        // Approximate bounds: scale applied, rotations ignored except that a
+        // tilted part never exceeds its largest half-extent in any axis.
+        var tilted = !!(p.rotationX || p.rotationZ);
+        var ex = hw * sx, ey = hh * sy, ez = hd * sz;
+        if (tilted) { var em = Math.max(ex, ey, ez); ex = em; ey = em; ez = em; }
+        minX = Math.min(minX, p.position[0] - ex); maxX = Math.max(maxX, p.position[0] + ex);
+        minZ = Math.min(minZ, p.position[2] - ez); maxZ = Math.max(maxZ, p.position[2] + ez);
+        maxY = Math.max(maxY, p.position[1] + ey);
       }
       if (!parts.length) { minX = -0.5; maxX = 0.5; minZ = -0.5; maxZ = 0.5; maxY = 1; }
       /* recentre horizontally so the group origin is the footprint center */
