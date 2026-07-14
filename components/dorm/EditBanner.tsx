@@ -8,6 +8,11 @@ interface EditBannerProps {
   preview: { name: string } | null
   saving: boolean
   accepting: boolean
+  storedItems: DormMovableInfo[]
+  storageOpen: boolean
+  onToggleStorage: () => void
+  onRestoreItem: (id: string) => void
+  onStoreItem: () => void
   onAddItem: () => void
   onDone: () => void
   onRotate: (deltaDeg: number) => void
@@ -57,6 +62,11 @@ export default function EditBanner({
   preview,
   saving,
   accepting,
+  storedItems,
+  storageOpen,
+  onToggleStorage,
+  onRestoreItem,
+  onStoreItem,
   onAddItem,
   onDone,
   onRotate,
@@ -67,6 +77,10 @@ export default function EditBanner({
   onRegeneratePreview,
   onCancelPreview,
 }: EditBannerProps) {
+  const subCardCls = cn(
+    'pointer-events-auto flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 rounded-xl border px-3 py-1.5 shadow-[0_2px_12px_rgba(44,31,14,0.2)]',
+    night ? 'border-[#4A3D2A] bg-[#221A12] text-[#F5F0E8]' : 'border-grid bg-beige text-textPrimary'
+  )
   return (
     <div className="pointer-events-none absolute left-1/2 top-3 z-20 flex w-[min(94%,640px)] -translate-x-1/2 flex-col items-center gap-2">
       <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-xl border border-goldLight bg-gold px-3.5 py-2 text-textPrimary shadow-[0_2px_12px_rgba(44,31,14,0.25)]">
@@ -79,17 +93,34 @@ export default function EditBanner({
         </span>
         <span className="flex items-center gap-1.5">
           <Chip onClick={onAddItem}>+ Add Item</Chip>
+          <Chip onClick={onToggleStorage}>
+            Storage ({storedItems.length})
+          </Chip>
           <Chip onClick={onDone}>{saving ? 'Saving…' : 'Done'}</Chip>
         </span>
       </div>
 
-      {selected && !preview && (
-        <div
-          className={cn(
-            'pointer-events-auto flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 rounded-xl border px-3 py-1.5 shadow-[0_2px_12px_rgba(44,31,14,0.2)]',
-            night ? 'border-[#4A3D2A] bg-[#221A12] text-[#F5F0E8]' : 'border-grid bg-beige text-textPrimary'
+      {storageOpen && (
+        <div className={subCardCls}>
+          <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.2em] text-textMuted">
+            Furniture Storage
+          </span>
+          {storedItems.length === 0 ? (
+            <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-textMuted">
+              Empty · select an item and hit Store
+            </span>
+          ) : (
+            storedItems.map((item) => (
+              <Chip key={item.id} onClick={() => onRestoreItem(item.id)} ariaLabel={`Place ${item.label} back in the room`}>
+                ↩ {item.label}
+              </Chip>
+            ))
           )}
-        >
+        </div>
+      )}
+
+      {selected && !preview && (
+        <div className={subCardCls}>
           <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em]">
             {selected.label}
           </span>
@@ -107,6 +138,9 @@ export default function EditBanner({
               Drag between walls · red = not on a wall
             </span>
           )}
+          <Chip onClick={onStoreItem} ariaLabel={`Move ${selected.label} to furniture storage`}>
+            Store
+          </Chip>
           <Chip onClick={onResetItem}>Reset</Chip>
           {selected.custom && (
             <Chip onClick={onDeleteItem} tone="danger">

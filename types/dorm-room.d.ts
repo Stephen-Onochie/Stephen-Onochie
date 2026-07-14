@@ -24,6 +24,7 @@ interface DormFloorPlacement {
   x: number
   z: number
   rotY: number
+  stored?: boolean
 }
 
 interface DormWallPlacement {
@@ -31,6 +32,15 @@ interface DormWallPlacement {
   wall: DormWall
   u: number
   y: number
+  stored?: boolean
+}
+
+interface DormMovableInfo {
+  id: string
+  label: string
+  custom: boolean
+  kind: 'floor' | 'wall'
+  stored: boolean
 }
 
 type DormPlacement = DormFloorPlacement | DormWallPlacement
@@ -81,6 +91,9 @@ interface DormRoomElement extends HTMLElement {
   resetLayout(): void
   rotateItem(id: string, deltaDeg: number): void
   resetItem(id: string): void
+  storeItem(id: string): void
+  restoreItem(id: string): void
+  listMovables(): DormMovableInfo[]
   addCustomItem(id: string, spec: DormItemSpec, placement?: DormPlacement): DormPlacement
   removeCustomItem(id: string): void
   clearSelection(): void

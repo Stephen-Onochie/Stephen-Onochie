@@ -118,6 +118,32 @@
       this._place(e);
       this._emitLayout();
     }
+    storeItem(id) {
+      var e = this.movables[id];
+      if (!e || e.cur.stored) return;
+      if (this._selected === e) this._select(null);
+      if (this._dragObj === e) this._dragObj = null;
+      if (this._floatingEntry === e) this._settleFloating(e);
+      e.cur.stored = true;
+      this._place(e);
+      this._emitLayout();
+    }
+    restoreItem(id) {
+      var e = this.movables[id];
+      if (!e || !e.cur.stored) return;
+      e.cur.stored = false;
+      this._place(e);
+      if (this._editMode) this._select(e);
+      this._emitLayout();
+    }
+    listMovables() {
+      var out = [];
+      for (var id in this.movables) {
+        var e = this.movables[id];
+        out.push({ id: e.id, label: e.label, custom: !!e.custom, kind: e.kind, stored: !!e.cur.stored });
+      }
+      return out;
+    }
     resetItem(id) {
       var e = this.movables[id];
       if (!e) return;
@@ -310,6 +336,7 @@
       return e;
     }
     _place(e) {
+      e.group.visible = !e.cur.stored;
       if (e.kind === 'floor') {
         var hw = e.w / 2, hd = e.d / 2;
         e.cur.x = Math.max(-7 + hw, Math.min(7 - hw, e.cur.x));
@@ -339,6 +366,7 @@
         if (typeof p.u === 'number') out.u = p.u;
         if (typeof p.y === 'number') out.y = p.y;
       }
+      out.stored = !!p.stored;
       return out;
     }
     _clampWestU(u, hw) { return Math.max(-7.7 + hw, Math.min(7.9 - hw, u)); }
@@ -1027,12 +1055,25 @@
       }
     }
 
+    /* three's raycaster ignores object.visible, so stored (hidden) items must
+       be filtered out by walking the parent chain */
+    _firstVisibleHit(hits) {
+      for (var i = 0; i < hits.length; i++) {
+        var o = hits[i].object, vis = true;
+        while (o) {
+          if (o.visible === false) { vis = false; break; }
+          o = o.parent;
+        }
+        if (vis) return hits[i];
+      }
+      return null;
+    }
+
     _pick(e) {
       var r = this.renderer.domElement.getBoundingClientRect();
       this.pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       this.raycaster.setFromCamera(this.pointer, this.camera);
-      var hits = this.raycaster.intersectObjects(this.hitMeshes, false);
-      return hits.length ? hits[0] : null;
+      return this._firstVisibleHit(this.raycaster.intersectObjects(this.hitMeshes, false));
     }
 
     _pickDrag(e) {
@@ -1040,8 +1081,7 @@
       var r = this.renderer.domElement.getBoundingClientRect();
       this.pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       this.raycaster.setFromCamera(this.pointer, this.camera);
-      var hits = this.raycaster.intersectObjects(this.proxyMeshes, false);
-      return hits.length ? hits[0] : null;
+      return this._firstVisibleHit(this.raycaster.intersectObjects(this.proxyMeshes, false));
     }
 
     _planePoint(e) {

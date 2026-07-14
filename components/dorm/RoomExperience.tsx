@@ -59,6 +59,8 @@ export default function RoomExperience() {
   const [preview, setPreview] = useState<GenPreview | null>(null)
   const [saving, setSaving] = useState(false)
   const [accepting, setAccepting] = useState(false)
+  const [movables, setMovables] = useState<DormMovableInfo[]>([])
+  const [storageOpen, setStorageOpen] = useState(false)
 
   const stageRef = useRef<HTMLDivElement>(null)
   const roomElRef = useRef<DormRoomElement | null>(null)
@@ -68,6 +70,11 @@ export default function RoomExperience() {
   const serverDataRef = useRef<ServerData | null>(null)
   const snapshotRef = useRef<{ json: string; layout: DormLayout } | null>(null)
   const stateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const refreshMovables = useCallback(() => {
+    const el = roomElRef.current
+    if (el) setMovables(el.listMovables())
+  }, [])
 
   const hydrateIfReady = useCallback(() => {
     const el = roomElRef.current
@@ -80,7 +87,8 @@ export default function RoomExperience() {
     el.applyLayout(data.layout)
     if (data.state) el.setRoomState(data.state)
     setRoom(el.getRoomState())
-  }, [])
+    refreshMovables()
+  }, [refreshMovables])
 
   useEffect(() => {
     let cancelled = false
@@ -127,14 +135,17 @@ export default function RoomExperience() {
       }
     }
     const onSelect = (e: Event) => setSelected((e as CustomEvent<DormSelection | null>).detail)
+    const onLayout = () => refreshMovables()
     node.addEventListener('roomstate', onState)
     node.addEventListener('editselect', onSelect)
+    node.addEventListener('layoutchange', onLayout)
     return () => {
       node.removeEventListener('roomstate', onState)
       node.removeEventListener('editselect', onSelect)
+      node.removeEventListener('layoutchange', onLayout)
       if (stateSaveTimer.current) clearTimeout(stateSaveTimer.current)
     }
-  }, [])
+  }, [refreshMovables])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 859px)')
@@ -279,14 +290,21 @@ export default function RoomExperience() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Save failed')
-      const placement = el.getLayout()[preview.tempId]
       el.removeCustomItem(preview.tempId)
-      el.addCustomItem(`custom:${json.id}`, { ...preview.spec, name: preview.input.name }, placement)
-      // Accepting an item is an intentional commit: persist the layout now and
-      // fold it into the edit-session snapshot so Discard keeps it.
+      // Accepted items land in Furniture Storage first; place them from the
+      // Storage tray when ready.
+      el.addCustomItem(
+        `custom:${json.id}`,
+        { ...preview.spec, name: preview.input.name },
+        { kind: 'floor', x: 0.5, z: 4.8, rotY: 0, stored: true }
+      )
+      // Accepting is an intentional commit: persist the layout now and fold it
+      // into the edit-session snapshot so Discard keeps it.
       await saveLayout()
       takeSnapshot()
+      refreshMovables()
       setPreview(null)
+      setStorageOpen(true)
     } catch {
       // keep the preview so the user can retry
     } finally {
@@ -316,7 +334,18 @@ export default function RoomExperience() {
     el.removeCustomItem(selected.id)
     setSelected(null)
     takeSnapshot()
+    refreshMovables()
     fetch(`/api/dorm/items?id=${encodeURIComponent(itemId)}`, { method: 'DELETE' }).catch(() => {})
+  }
+
+  const storeSelected = () => {
+    if (!selected) return
+    roomElRef.current?.storeItem(selected.id)
+    setStorageOpen(true)
+  }
+
+  const restoreFromStorage = (id: string) => {
+    roomElRef.current?.restoreItem(id)
   }
 
   const night = room.mode === 'night'
@@ -353,6 +382,11 @@ export default function RoomExperience() {
             preview={preview ? { name: preview.input.name } : null}
             saving={saving}
             accepting={accepting}
+            storedItems={movables.filter((m) => m.stored)}
+            storageOpen={storageOpen}
+            onToggleStorage={() => setStorageOpen((open) => !open)}
+            onRestoreItem={restoreFromStorage}
+            onStoreItem={storeSelected}
             onAddItem={() => {
               setRegenInput(null)
               setAddOpen(true)

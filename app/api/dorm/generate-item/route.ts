@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { itemSpecSchema, itemDimsSchema, type ItemSpec } from '@/lib/dorm/spec'
+import { itemSpecSchema, itemDimsSchema, normalizeSpecCandidate, type ItemSpec } from '@/lib/dorm/spec'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -14,8 +14,8 @@ function systemPrompt(name: string, wFt: number, dFt: number, hFt: number) {
     `Part fields: "shape": "box" or "cylinder". Boxes need "size": [width,height,depth] in feet. ` +
     `Cylinders need "radius" and "height" in feet (optional "radiusTop" for taper; cylinders stand upright on Y). ` +
     `Every part needs "position": [x,y,z] = the part's CENTER, with y measured up from the floor (floor is y=0). ` +
-    `Optional: "rotationY" in degrees, "roughness" 0-1, "metalness" 0-1. Required: "color" as 6-digit hex sampled from the photo, ` +
-    `slightly warmed to sit well in a cozy beige/wood-toned room. ` +
+    `Optional: "rotationY" in degrees, "roughness" 0-1, "metalness" 0-1. Every part needs "color" as a 6-digit hex STRING ` +
+    `like "#8a6647" (never a color name, never rgb()), sampled from the photo and slightly warmed to sit well in a cozy beige/wood-toned room. ` +
     `The item is "${name}" and must fit a bounding box exactly ${wFt.toFixed(2)} ft wide (x), ${dFt.toFixed(2)} ft deep (z), ${hFt.toFixed(2)} ft tall (y). ` +
     `Center the footprint at x=0, z=0; the lowest part must rest on the floor. ` +
     `Use 4 to 24 parts. Capture the silhouette and key features (legs, shelves, cushions, frames, handles) with chunky, readable primitives. ` +
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     } catch (e) {
       return { error: `JSON parse failed: ${e instanceof Error ? e.message : 'unknown'}` }
     }
-    const result = itemSpecSchema.safeParse(parsed)
+    const result = itemSpecSchema.safeParse(normalizeSpecCandidate(parsed))
     if (!result.success) return { error: result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') }
     return result.data
   }

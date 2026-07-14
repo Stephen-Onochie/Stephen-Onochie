@@ -221,7 +221,8 @@ export default function AddItemDialog({ open, night, initial, onClose, onGenerat
           </button>
           <p className="font-inter text-[11px] leading-relaxed text-textMuted">
             The photo and dimensions are sent to a vision model that builds a low-poly
-            version in the room&rsquo;s style. You can regenerate before accepting.
+            version in the room&rsquo;s style. You can regenerate before accepting;
+            accepted items land in Furniture Storage.
           </p>
         </div>
       </div>
