@@ -100,7 +100,7 @@
         this._editMode = false;
         this._tween = null;
         // spawn just inside the door, facing into the room
-        this._walk = { on: true, x: 0.5, z: 5.8, yaw: 0, pitch: -0.06, jumpY: 0, vy: 0, keys: {} };
+        this._walk = { on: true, x: 0.5, z: 5.8, yaw: 0, pitch: -0.06, jumpY: 0, vy: 0, eyeBase: 5.0, seated: false, keys: {} };
         this._fovPrev = this.camera.fov;
         this.camera.fov = 65;
         this.camera.updateProjectionMatrix();
@@ -943,6 +943,20 @@
       this._registerWall('corkboard', cork, 2.6, 1.8, 'Corkboard', { kind: 'wall', wall: 'west', u: -5.8, y: 5.0 });
       this._place(this.movables.corkboard);
 
+      /* ---- posters: plain palette colors, defaulting to the east wall ---- */
+      var posterDefs = [
+        { id: 'poster1', label: 'Cream poster', color: '#F7F2E8', u: -3.2 },
+        { id: 'poster2', label: 'Camel poster', color: '#C9A874', u: 0 },
+        { id: 'poster3', label: 'Gold poster', color: '#E2C97E', u: 3.2 }
+      ];
+      for (var pi2 = 0; pi2 < posterDefs.length; pi2++) {
+        var pd = posterDefs[pi2];
+        var pg = new T.Group(); room.add(pg);
+        this._box(1.5, 2.0, 0.06, this._mat(pd.color, { roughness: 0.85 }), 0, 0, 0, pg);
+        this._registerWall(pd.id, pg, 1.5, 2.0, pd.label, { kind: 'wall', wall: 'east', u: pd.u, y: 5.0 });
+        this._place(this.movables[pd.id]);
+      }
+
       /* ================= FIXED ENTRY WALL ================= */
       var STUB = 4.6;
       var CW = 4, CD = 1.6;
@@ -1387,7 +1401,22 @@
           wk.vy -= 30 * dt;
           if (wk.jumpY <= 0) { wk.jumpY = 0; wk.vy = 0; }
         }
-        var eye = 5.2 + wk.jumpY;
+        /* walking onto the sofa sits you down (seat top ~1.2 + seated torso);
+           works wherever the sofa has been moved or rotated */
+        var seated = false;
+        var sofaE = this.movables.sofa;
+        if (sofaE && !sofaE.cur.stored) {
+          var sdx = wk.x - sofaE.cur.x, sdz = wk.z - sofaE.cur.z;
+          var sr = sofaE.cur.rotY || 0;
+          var slx = sdx * Math.cos(sr) - sdz * Math.sin(sr);
+          var slz = sdx * Math.sin(sr) + sdz * Math.cos(sr);
+          seated = Math.abs(slx) < 1.5 && Math.abs(slz) < 1.25;
+        }
+        if (seated && !wk.seated && !this.reduced) this._sofaVel = 2.6; // cushion squish on plop
+        wk.seated = seated;
+        /* 5'9" standing eye line; damp makes sitting/standing feel physical */
+        wk.eyeBase = damp(wk.eyeBase, seated ? 3.65 : 5.0, 8, dt);
+        var eye = wk.eyeBase + wk.jumpY;
         var wcp = Math.cos(wk.pitch);
         this.camera.position.set(wk.x, eye, wk.z);
         this.camera.lookAt(wk.x + wfx * wcp, eye + Math.sin(wk.pitch), wk.z + wfz * wcp);
