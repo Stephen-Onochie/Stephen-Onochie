@@ -17,9 +17,10 @@ interface DormRoomState {
   fansOn: boolean
   labelsOn: boolean
   measurementsOn: boolean
+  eastWallOn: boolean
 }
 
-type DormWall = 'north' | 'west'
+type DormWall = 'north' | 'west' | 'east'
 
 interface DormFloorPlacement {
   kind: 'floor'
@@ -100,6 +101,7 @@ interface DormRoomElement extends HTMLElement {
   storeItem(id: string): void
   restoreItem(id: string): void
   listMovables(): DormMovableInfo[]
+  setWalkMode(on: boolean): void
   addCustomItem(id: string, spec: DormItemSpec, placement?: DormPlacement): DormPlacement
   removeCustomItem(id: string): void
   clearSelection(): void

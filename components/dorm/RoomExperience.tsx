@@ -16,6 +16,7 @@ const ROOM_DEFAULTS: DormRoomState = {
   fansOn: false,
   labelsOn: false,
   measurementsOn: false,
+  eastWallOn: false,
 }
 
 const STAGE_ARIA_LABEL =
@@ -51,6 +52,7 @@ interface GenPreview {
 export default function RoomExperience() {
   const [room, setRoom] = useState<DormRoomState>(ROOM_DEFAULTS)
   const [editMode, setEditMode] = useState(false)
+  const [walkMode, setWalkMode] = useState(false)
   const [autoSpin, setAutoSpin] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [panelOpen, setPanelOpen] = useState(true)
@@ -72,6 +74,7 @@ export default function RoomExperience() {
   const serverDataRef = useRef<ServerData | null>(null)
   const snapshotRef = useRef<{ json: string; layout: DormLayout } | null>(null)
   const stateSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingWalkRef = useRef(false)
 
   const refreshMovables = useCallback(() => {
     const el = roomElRef.current
@@ -138,13 +141,16 @@ export default function RoomExperience() {
     }
     const onSelect = (e: Event) => setSelected((e as CustomEvent<DormSelection | null>).detail)
     const onLayout = () => refreshMovables()
+    const onWalk = (e: Event) => setWalkMode((e as CustomEvent<{ on: boolean }>).detail.on)
     node.addEventListener('roomstate', onState)
     node.addEventListener('editselect', onSelect)
     node.addEventListener('layoutchange', onLayout)
+    node.addEventListener('walkmode', onWalk)
     return () => {
       node.removeEventListener('roomstate', onState)
       node.removeEventListener('editselect', onSelect)
       node.removeEventListener('layoutchange', onLayout)
+      node.removeEventListener('walkmode', onWalk)
       if (stateSaveTimer.current) clearTimeout(stateSaveTimer.current)
     }
   }, [refreshMovables])
@@ -203,6 +209,10 @@ export default function RoomExperience() {
     setSelected(null)
     setConfirmOpen(false)
     roomElRef.current?.setEditMode(false)
+    if (pendingWalkRef.current) {
+      pendingWalkRef.current = false
+      roomElRef.current?.setWalkMode(true)
+    }
   }
 
   const saveLayout = async () => {
@@ -246,10 +256,23 @@ export default function RoomExperience() {
     finishEdit()
   }
 
-  const handleEditMode = (on: boolean) => {
-    if (on === uiRef.current.editMode) return
-    if (on) enterEdit()
-    else requestEditExit()
+  const handleInteract = (mode: 'view' | 'edit' | 'walk') => {
+    if (mode === 'walk') {
+      if (walkMode) return
+      if (uiRef.current.editMode) {
+        pendingWalkRef.current = true
+        requestEditExit()
+        return
+      }
+      roomElRef.current?.setWalkMode(true)
+    } else if (mode === 'edit') {
+      if (uiRef.current.editMode) return
+      if (walkMode) roomElRef.current?.setWalkMode(false)
+      enterEdit()
+    } else {
+      if (walkMode) roomElRef.current?.setWalkMode(false)
+      if (uiRef.current.editMode) requestEditExit()
+    }
   }
 
   const handleAutoSpin = () => {
@@ -404,6 +427,13 @@ export default function RoomExperience() {
           />
         )}
 
+        {walkMode && (
+          <p className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-goldLight bg-[#2C1F0E]/80 px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.2em] text-beige">
+            WASD move · Mouse look · Space jump · Esc exit
+          </p>
+        )}
+
+        {!walkMode && (
         <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
           <button
             type="button"
@@ -422,6 +452,7 @@ export default function RoomExperience() {
             &minus;
           </button>
         </div>
+        )}
 
         {isMobile && !panelOpen && (
           <button
@@ -434,7 +465,7 @@ export default function RoomExperience() {
           </button>
         )}
 
-        {!isMobile && !editMode && (
+        {!isMobile && !editMode && !walkMode && (
           <p className="pointer-events-none absolute bottom-3.5 left-4 font-mono text-[10px] uppercase tracking-[0.22em] text-textMuted">
             Drag to orbit · Scroll to zoom · Click objects
           </p>
@@ -444,12 +475,13 @@ export default function RoomExperience() {
       <RoomPanel
         room={room}
         night={night}
-        editMode={editMode}
+        interact={walkMode ? 'walk' : editMode ? 'edit' : 'view'}
+        showWalk={!isMobile}
         autoSpin={autoSpin}
         isMobile={isMobile}
         panelOpen={panelOpen}
         onSend={send}
-        onSetEditMode={handleEditMode}
+        onInteract={handleInteract}
         onToggleAutoSpin={handleAutoSpin}
         onResetView={() => roomElRef.current?.resetView()}
         onResetLayout={handleResetLayout}
@@ -509,7 +541,10 @@ export default function RoomExperience() {
               </button>
               <button
                 type="button"
-                onClick={() => setConfirmOpen(false)}
+                onClick={() => {
+                  pendingWalkRef.current = false
+                  setConfirmOpen(false)
+                }}
                 disabled={saving}
                 className="py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted transition-colors duration-200 hover:text-gold"
               >

@@ -17,19 +17,23 @@ const LIVE_TOGGLES = [
   { key: 'tvOn', label: 'TV' },
   { key: 'curtainsOpen', label: 'Curtains', onWord: 'Open', offWord: 'Closed' },
   { key: 'fansOn', label: 'Fans' },
+  { key: 'eastWallOn', label: 'East Wall', onWord: 'Up', offWord: 'Open' },
   { key: 'labelsOn', label: 'Item Labels' },
   { key: 'measurementsOn', label: 'Measurements' },
 ] as const
 
+type DormInteract = 'view' | 'edit' | 'walk'
+
 interface RoomPanelProps {
   room: DormRoomState
   night: boolean
-  editMode: boolean
+  interact: DormInteract
+  showWalk: boolean
   autoSpin: boolean
   isMobile: boolean
   panelOpen: boolean
   onSend: (partial: Partial<DormRoomState>) => void
-  onSetEditMode: (on: boolean) => void
+  onInteract: (mode: DormInteract) => void
   onToggleAutoSpin: () => void
   onResetView: () => void
   onResetLayout: () => void
@@ -143,17 +147,19 @@ function ToggleRow({
 export default function RoomPanel({
   room,
   night,
-  editMode,
+  interact,
+  showWalk,
   autoSpin,
   isMobile,
   panelOpen,
   onSend,
-  onSetEditMode,
+  onInteract,
   onToggleAutoSpin,
   onResetView,
   onResetLayout,
   onTogglePanel,
 }: RoomPanelProps) {
+  const editMode = interact === 'edit'
   const segmentedRow = cn(
     'flex items-center justify-between gap-2.5 border-b py-2.5',
     night ? 'border-[#4A3D2A]' : 'border-grid'
@@ -205,10 +211,13 @@ export default function RoomPanel({
           <span className={segmentedLabel}>Interact</span>
           <Segmented
             night={night}
-            ariaLabel="View or edit mode"
+            ariaLabel="View, edit, or walk mode"
             options={[
-              { label: 'View', active: !editMode, onClick: () => onSetEditMode(false) },
-              { label: 'Edit', active: editMode, onClick: () => onSetEditMode(true) },
+              { label: 'View', active: interact === 'view', onClick: () => onInteract('view') },
+              { label: 'Edit', active: interact === 'edit', onClick: () => onInteract('edit') },
+              ...(showWalk
+                ? [{ label: 'Walk', active: interact === 'walk', onClick: () => onInteract('walk') }]
+                : []),
             ]}
           />
         </div>

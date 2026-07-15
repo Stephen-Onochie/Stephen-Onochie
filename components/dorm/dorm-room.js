@@ -23,11 +23,13 @@
     curtainsOpen: true,
     fansOn: false,
     labelsOn: false,
-    measurementsOn: false
+    measurementsOn: false,
+    eastWallOn: false
   };
 
   var WEST_X = -6.85;   // resting plane for west-wall hung items
   var NORTH_Z = -7.85;  // resting plane for north-wall hung items
+  var EAST_X = 6.85;    // resting plane for east-wall hung items (toggleable wall)
   var GOLD = 0xC9A84C;
   var RED = 0xE5484D;
 
@@ -71,7 +73,10 @@
       this._emit();
     }
     getRoomState() { return Object.assign({}, this.state); }
-    resetView() { this._tweenCamera(); this._idleT = 0; }
+    resetView() {
+      if (this._walk && this._walk.on) this.setWalkMode(false);
+      this._tweenCamera(); this._idleT = 0;
+    }
     setEditMode(on) {
       this._editMode = !!on;
       if (!on) {
@@ -81,8 +86,88 @@
       }
       if (this.renderer) this.renderer.domElement.style.cursor = 'grab';
     }
-    zoomBy(factor) { this._tween = null; this._idleT = 0; this.orbit.radius = Math.max(13, Math.min(40, this.orbit.radius * factor)); this._applyOrbit(); }
+    zoomBy(factor) { if (this._walk && this._walk.on) return; this._tween = null; this._idleT = 0; this.orbit.radius = Math.max(13, Math.min(40, this.orbit.radius * factor)); this._applyOrbit(); }
     clearSelection() { this._select(null); }
+
+    /* ---------- public API: first-person walk mode ---------- */
+    setWalkMode(on) {
+      on = !!on;
+      var cur = !!(this._walk && this._walk.on);
+      if (on === cur) return;
+      var self = this;
+      if (on) {
+        this._select(null);
+        this._editMode = false;
+        this._tween = null;
+        // spawn just inside the door, facing into the room
+        this._walk = { on: true, x: 0.5, z: 5.8, yaw: 0, pitch: -0.06, jumpY: 0, vy: 0, keys: {} };
+        this._fovPrev = this.camera.fov;
+        this.camera.fov = 65;
+        this.camera.updateProjectionMatrix();
+        if (!this._onWalkKey) {
+          this._onWalkKey = function (e) {
+            var wk = self._walk;
+            if (!wk || !wk.on) return;
+            if (e.type === 'keydown') {
+              if (e.code === 'Escape') { self.setWalkMode(false); return; }
+              if (e.code === 'Space') {
+                e.preventDefault();
+                if (wk.jumpY === 0 && wk.vy === 0) wk.vy = 9.5;
+                return;
+              }
+              wk.keys[e.code] = true;
+            } else {
+              wk.keys[e.code] = false;
+            }
+          };
+          this._onWalkLook = function (e) {
+            var wk = self._walk;
+            if (!wk || !wk.on) return;
+            wk.yaw -= (e.movementX || 0) * 0.0022;
+            wk.pitch = Math.max(-1.45, Math.min(1.45, wk.pitch - (e.movementY || 0) * 0.0022));
+          };
+          this._onLockChange = function () {
+            if (document.pointerLockElement !== self.renderer.domElement && self._walk && self._walk.on) {
+              self.setWalkMode(false);
+            }
+          };
+        }
+        window.addEventListener('keydown', this._onWalkKey);
+        window.addEventListener('keyup', this._onWalkKey);
+        this.renderer.domElement.addEventListener('mousemove', this._onWalkLook);
+        document.addEventListener('pointerlockchange', this._onLockChange);
+        try {
+          // returns a promise in modern Chrome; swallow rejection (e.g. no
+          // pointer-lock support) — mouse look still works via movementX/Y
+          var lockReq = this.renderer.domElement.requestPointerLock();
+          if (lockReq && typeof lockReq.catch === 'function') lockReq.catch(function () {});
+        } catch (e) {}
+        if (!this.cross) {
+          this.cross = document.createElement('div');
+          this.cross.style.cssText = 'position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;' +
+            'border-radius:50%;border:1.5px solid rgba(245,240,232,0.9);box-shadow:0 0 3px rgba(44,31,14,0.6);' +
+            'pointer-events:none;z-index:6;display:none';
+          this.appendChild(this.cross);
+        }
+        this.cross.style.display = 'block';
+      } else {
+        window.removeEventListener('keydown', this._onWalkKey);
+        window.removeEventListener('keyup', this._onWalkKey);
+        this.renderer.domElement.removeEventListener('mousemove', this._onWalkLook);
+        document.removeEventListener('pointerlockchange', this._onLockChange);
+        if (document.pointerLockElement === this.renderer.domElement && document.exitPointerLock) {
+          document.exitPointerLock();
+        }
+        this._walk.on = false;
+        if (this.cross) this.cross.style.display = 'none';
+        this.tip.style.display = 'none';
+        this.camera.fov = this._fovPrev || 38;
+        this.camera.updateProjectionMatrix();
+        this._idleT = 0;
+        this._applyOrbit();
+      }
+      this.dispatchEvent(new CustomEvent('walkmode', { detail: { on: on }, bubbles: true }));
+    }
 
     /* ---------- public API: layout ---------- */
     getLayout() {
@@ -346,7 +431,9 @@
       return e;
     }
     _place(e) {
-      e.group.visible = !e.cur.stored;
+      // items hung on the east wall hide with it, cutaway-style
+      var hiddenWithWall = e.kind === 'wall' && e.cur.wall === 'east' && !(this.state && this.state.eastWallOn);
+      e.group.visible = !e.cur.stored && !hiddenWithWall;
       if (e.kind === 'floor') {
         var hw = e.w / 2, hd = e.d / 2;
         e.cur.x = Math.max(-7 + hw, Math.min(7 - hw, e.cur.x));
@@ -358,6 +445,10 @@
           e.cur.u = this._clampWestU(e.cur.u, e.w / 2);
           e.group.position.set(WEST_X, e.cur.y, e.cur.u);
           e.group.rotation.y = Math.PI / 2;
+        } else if (e.cur.wall === 'east') {
+          e.cur.u = this._clampWestU(e.cur.u, e.w / 2);
+          e.group.position.set(EAST_X, e.cur.y, e.cur.u);
+          e.group.rotation.y = -Math.PI / 2;
         } else {
           e.cur.u = this._clampNorthU(e.cur.u, e.w / 2);
           e.group.position.set(e.cur.u, e.cur.y, NORTH_Z);
@@ -372,7 +463,7 @@
         if (typeof p.z === 'number') out.z = p.z;
         if (typeof p.rotY === 'number') out.rotY = p.rotY;
       } else {
-        if (p.wall === 'west' || p.wall === 'north') out.wall = p.wall;
+        if (p.wall === 'west' || p.wall === 'north' || p.wall === 'east') out.wall = p.wall;
         if (typeof p.u === 'number') out.u = p.u;
         if (typeof p.y === 'number') out.y = p.y;
       }
@@ -489,6 +580,13 @@
       this._box(WT, WH, 17.3, WALL_IN, -7 - WT / 2, WH / 2, 0);
       this._box(15.3, 0.25, 0.6, WOOD_DK, 0, WH + 0.1, -8 - WT / 2).castShadow = false;
       this._box(0.6, 0.25, 17.3, WOOD_DK, -7 - WT / 2, WH + 0.1, 0).castShadow = false;
+
+      /* toggleable east wall (normally the open cutaway side) */
+      var eastWall = new T.Group(); room.add(eastWall);
+      this._box(WT, WH, 17.3, WALL_IN, 7 + WT / 2, WH / 2, 0, eastWall);
+      this._box(0.6, 0.25, 17.3, WOOD_DK, 7 + WT / 2, WH + 0.1, 0, eastWall).castShadow = false;
+      eastWall.visible = false;
+      this.eastWallG = eastWall;
 
       /* ---- window (fixed) ---- */
       var winG = new T.Group(); winG.position.set(0, 4.5, -8); room.add(winG);
@@ -1030,7 +1128,11 @@
     _bindInput() {
       var self = this, el = this.renderer.domElement;
       var drag = null, pinch = null, moved = 0;
+      el.addEventListener('click', function () {
+        if (self._walk && self._walk.on) self._walkInteract();
+      });
       el.addEventListener('pointerdown', function (e) {
+        if (self._walk && self._walk.on) return;
         el.setPointerCapture(e.pointerId);
         drag = { x: e.clientX, y: e.clientY, id: e.pointerId }; moved = 0; self._idleT = 0;
         var dh = self._editMode ? self._pickDrag(e) : null;
@@ -1082,7 +1184,9 @@
         self._dragObj = null; drag = null;
       });
       el.addEventListener('wheel', function (e) {
-        e.preventDefault(); self._idleT = 0; self._tween = null;
+        e.preventDefault();
+        if (self._walk && self._walk.on) return;
+        self._idleT = 0; self._tween = null;
         self.orbit.radius = Math.max(13, Math.min(40, self.orbit.radius * (1 + e.deltaY * 0.001)));
       }, { passive: false });
       el.addEventListener('touchstart', function (e) {
@@ -1119,6 +1223,11 @@
         var hw = entry.w / 2;
         if (pt.x < -5.4) {
           entry.cur.wall = 'west'; entry.cur.u = this._clampWestU(pt.z, hw);
+          entry._lastValid = deepCopy(entry.cur);
+          this._place(entry);
+          this._floatingEntry = null; this.errHelper.visible = false;
+        } else if (pt.x > 5.4 && this.state.eastWallOn) {
+          entry.cur.wall = 'east'; entry.cur.u = this._clampWestU(pt.z, hw);
           entry._lastValid = deepCopy(entry.cur);
           this._place(entry);
           this._floatingEntry = null; this.errHelper.visible = false;
@@ -1173,7 +1282,28 @@
       return this.raycaster.ray.intersectPlane(this._floorPlane, pt) ? pt : null;
     }
 
+    _applyAction(a) {
+      var s = this.state;
+      if (a === 'lights') this.setRoomState({ lightsOn: !s.lightsOn });
+      else if (a === 'computer') this.setRoomState({ computerOn: !s.computerOn });
+      else if (a === 'tv') this.setRoomState({ tvOn: !s.tvOn });
+      else if (a === 'curtains') this.setRoomState({ curtainsOpen: !s.curtainsOpen });
+      else if (a === 'sofa') { if (!this.reduced) this._sofaVel = 2.6; }
+      else if (a === 'diffuser') { if (!this.reduced) this._mistBurst = 4; }
+      else if (a === 'microwave') { this._mwFlash = 1.4; }
+      else if (a === 'fridge') { this._fridgeOpen = this._fridgeOpen > 0.5 ? 0 : 2.2; }
+      else if (a === 'fans') this.setRoomState({ fansOn: !s.fansOn });
+    }
+
+    _walkInteract() {
+      this.pointer.set(0, 0);
+      this.raycaster.setFromCamera(this.pointer, this.camera);
+      var hit = this._firstVisibleHit(this.raycaster.intersectObjects(this.hitMeshes, false));
+      if (hit && hit.distance < 12) this._applyAction(hit.object.userData.action);
+    }
+
     _hover(e) {
+      if (this._walk && this._walk.on) return;
       if (this._editMode) {
         var dh = this._pickDrag(e);
         if (dh) {
@@ -1211,16 +1341,7 @@
       }
       var hitObj = this._pick(e);
       if (!hitObj) return;
-      var a = hitObj.object.userData.action, s = this.state;
-      if (a === 'lights') this.setRoomState({ lightsOn: !s.lightsOn });
-      else if (a === 'computer') this.setRoomState({ computerOn: !s.computerOn });
-      else if (a === 'tv') this.setRoomState({ tvOn: !s.tvOn });
-      else if (a === 'curtains') this.setRoomState({ curtainsOpen: !s.curtainsOpen });
-      else if (a === 'sofa') { if (!this.reduced) this._sofaVel = 2.6; }
-      else if (a === 'diffuser') { if (!this.reduced) this._mistBurst = 4; }
-      else if (a === 'microwave') { this._mwFlash = 1.4; }
-      else if (a === 'fridge') { this._fridgeOpen = this._fridgeOpen > 0.5 ? 0 : 2.2; }
-      else if (a === 'fans') this.setRoomState({ fansOn: !s.fansOn });
+      this._applyAction(hitObj.object.userData.action);
     }
 
     /* ---------- camera ---------- */
@@ -1246,18 +1367,55 @@
       var T = this.T, dt = Math.min(this.clock.getDelta(), 0.05), t = this.clock.elapsedTime;
       var s = this.state, night = s.mode === 'night';
 
-      if (this._tween) {
+      if (this._walk && this._walk.on) {
+        var wk = this._walk;
+        var mvF = (wk.keys.KeyW || wk.keys.ArrowUp ? 1 : 0) - (wk.keys.KeyS || wk.keys.ArrowDown ? 1 : 0);
+        var mvR = (wk.keys.KeyD || wk.keys.ArrowRight ? 1 : 0) - (wk.keys.KeyA || wk.keys.ArrowLeft ? 1 : 0);
+        var wfx = -Math.sin(wk.yaw), wfz = -Math.cos(wk.yaw);
+        if (mvF || mvR) {
+          /* forward = (wfx, wfz); right = (-wfz, wfx) */
+          var mx = wfx * mvF - wfz * mvR;
+          var mz = wfz * mvF + wfx * mvR;
+          var ml = Math.hypot(mx, mz);
+          wk.x += (mx / ml) * 7 * dt;
+          wk.z += (mz / ml) * 7 * dt;
+          wk.x = Math.max(-6.6, Math.min(6.6, wk.x));
+          wk.z = Math.max(-7.4, Math.min(7.4, wk.z));
+        }
+        if (wk.jumpY > 0 || wk.vy !== 0) {
+          wk.jumpY += wk.vy * dt;
+          wk.vy -= 30 * dt;
+          if (wk.jumpY <= 0) { wk.jumpY = 0; wk.vy = 0; }
+        }
+        var eye = 5.2 + wk.jumpY;
+        var wcp = Math.cos(wk.pitch);
+        this.camera.position.set(wk.x, eye, wk.z);
+        this.camera.lookAt(wk.x + wfx * wcp, eye + Math.sin(wk.pitch), wk.z + wfz * wcp);
+        /* crosshair: name the interactive object you're looking at */
+        this.pointer.set(0, 0);
+        this.raycaster.setFromCamera(this.pointer, this.camera);
+        var look = this._firstVisibleHit(this.raycaster.intersectObjects(this.hitMeshes, false));
+        if (look && look.distance < 12) {
+          this.tip.style.display = 'block';
+          this.tip.textContent = look.object.userData.label;
+          this.tip.style.left = (this.clientWidth / 2) + 'px';
+          this.tip.style.top = (this.clientHeight / 2 - 14) + 'px';
+        } else {
+          this.tip.style.display = 'none';
+        }
+      } else if (this._tween) {
         var tw = this._tween; tw.t = Math.min(1, tw.t + dt / 0.7);
         var k = 1 - Math.pow(1 - tw.t, 3);
         this.orbit.theta = tw.from.theta + tw.dTheta * k;
         this.orbit.phi = lerp(tw.from.phi, this.orbitDefault.phi, k);
         this.orbit.radius = lerp(tw.from.radius, this.orbitDefault.radius, k);
         if (tw.t >= 1) this._tween = null;
+        this._applyOrbit();
       } else {
         this._idleT += dt;
         if (this._idleT > 6 && !this.reduced && this._autoRotate !== false && !this._editMode) this.orbit.theta += dt * 0.09;
+        this._applyOrbit();
       }
-      this._applyOrbit();
 
       /* keep helpers hugging their targets */
       if (this._selected && this.selHelper.visible) this.selHelper.setFromObject(this._selected.proxy);
@@ -1355,6 +1513,15 @@
       this.fridgeLight.intensity = damp(this.fridgeLight.intensity, frOn ? 1.2 : 0, 6, dt);
       this.fridgeGlowS.material.opacity = damp(this.fridgeGlowS.material.opacity, frOn ? 0.42 : 0, 6, dt);
 
+      /* east wall toggle (items hung on it hide with it) */
+      if (this.eastWallG && this.eastWallG.visible !== !!s.eastWallOn) {
+        this.eastWallG.visible = !!s.eastWallOn;
+        for (var ew in this.movables) {
+          var ewe = this.movables[ew];
+          if (ewe.kind === 'wall') this._place(ewe);
+        }
+      }
+
       /* item labels + room measurements */
       if (this.measureGroup) {
         this.measureGroup.visible = !!s.measurementsOn;
@@ -1368,7 +1535,7 @@
         for (var lid in this.movables) {
           var le = this.movables[lid];
           var div = this._labelEls[lid] || (this._labelEls[lid] = this._overlayEl(le.label));
-          if (le.cur.stored) { div.style.display = 'none'; continue; }
+          if (!le.group.visible) { div.style.display = 'none'; continue; }
           var ly = le.kind === 'floor'
             ? le.proxy.position.y * 2 + 0.35
             : le.group.position.y + le.h / 2 + 0.35;
