@@ -17,6 +17,8 @@ const LIVE_TOGGLES = [
   { key: 'tvOn', label: 'TV' },
   { key: 'curtainsOpen', label: 'Curtains', onWord: 'Open', offWord: 'Closed' },
   { key: 'fansOn', label: 'Fans' },
+  { key: 'labelsOn', label: 'Item Labels' },
+  { key: 'measurementsOn', label: 'Measurements' },
 ] as const
 
 interface RoomPanelProps {

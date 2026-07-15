@@ -21,7 +21,9 @@
     computerOn: false,
     tvOn: false,
     curtainsOpen: true,
-    fansOn: false
+    fansOn: false,
+    labelsOn: false,
+    measurementsOn: false
   };
 
   var WEST_X = -6.85;   // resting plane for west-wall hung items
@@ -173,6 +175,10 @@
       this.room.remove(e.group);
       var idx = this.proxyMeshes.indexOf(e.proxy);
       if (idx >= 0) this.proxyMeshes.splice(idx, 1);
+      if (this._labelEls && this._labelEls[id]) {
+        this._labelEls[id].remove();
+        delete this._labelEls[id];
+      }
       delete this.movables[id];
     }
 
@@ -223,6 +229,8 @@
         'transform:translate(-50%,-130%);border:1px solid #C9A84C';
       this.appendChild(tip);
       this.tip = tip;
+      this._labelEls = {};
+      this._v3 = null; // scratch vector, created once THREE is live
 
       var scene = new T.Scene();
       scene.background = new T.Color('#F5F0E8');
@@ -236,8 +244,10 @@
       this.orbitDefault = { theta: 0.62, phi: 1.02, radius: 27 };
       this._applyOrbit();
 
+      this._v3 = new T.Vector3();
       this._buildLights();
       this._buildRoom();
+      this._buildMeasurements();
       this._bindInput();
 
       var self = this;
@@ -897,6 +907,55 @@
       this._mwFlash = 0; this._fridgeOpen = 0;
     }
 
+    /* ---------- overlay labels (HTML, projected each frame) ---------- */
+    _overlayEl(text) {
+      var d = document.createElement('div');
+      d.style.cssText = 'position:absolute;pointer-events:none;display:none;padding:2px 7px;' +
+        'background:rgba(44,31,14,0.82);color:#F5F0E8;font:600 9px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;' +
+        'letter-spacing:0.18em;text-transform:uppercase;border-radius:5px;white-space:nowrap;z-index:4;' +
+        'transform:translate(-50%,-100%);border:1px solid rgba(201,168,76,0.55)';
+      d.textContent = text;
+      this.appendChild(d);
+      return d;
+    }
+    _placeOverlay(d, x, y, z) {
+      var v = this._v3.set(x, y, z).project(this.camera);
+      if (v.z > 1 || v.x < -1.05 || v.x > 1.05 || v.y < -1.05 || v.y > 1.05) {
+        d.style.display = 'none';
+        return;
+      }
+      d.style.display = 'block';
+      d.style.left = (((v.x + 1) / 2) * this.clientWidth) + 'px';
+      d.style.top = (((1 - v.y) / 2) * this.clientHeight) + 'px';
+    }
+
+    /* ---------- room dimension lines (14 x 16 ft) ---------- */
+    _buildMeasurements() {
+      var T = this.T, g = new T.Group();
+      var mat = this._mat('#6B4F2A', { roughness: 0.6 });
+      var add = (w, d2, x, z) => {
+        var m = new T.Mesh(new T.BoxGeometry(w, 0.03, d2), mat);
+        m.position.set(x, 0.02, z);
+        m.castShadow = m.receiveShadow = false;
+        g.add(m);
+      };
+      // width line along the south slab edge, past the door/closet backs
+      add(14, 0.05, 0, 8.2);
+      add(0.05, 0.36, -7, 8.2);
+      add(0.05, 0.36, 7, 8.2);
+      // length line along the open east slab edge
+      add(0.05, 16, 7.2, 0);
+      add(0.36, 0.05, 7.2, -8);
+      add(0.36, 0.05, 7.2, 8);
+      g.visible = false;
+      this.room.add(g);
+      this.measureGroup = g;
+      this._measureEls = [
+        { el: this._overlayEl('14 FT'), p: [0, 0.45, 8.2] },
+        { el: this._overlayEl('16 FT'), p: [7.2, 0.45, 0] }
+      ];
+    }
+
     _outlet(x, y, z, ry) {
       var T = this.T, g = new T.Group(); g.position.set(x, y, z); if (ry) g.rotation.y = ry; this.room.add(g);
       this._box(0.06, 0.85, 0.55, this._mat('#EDE8DC', { roughness: 0.7 }), 0, 0, 0, g).castShadow = false;
@@ -1295,6 +1354,29 @@
       this.fridgeDoor.rotation.y = damp(this.fridgeDoor.rotation.y, frOn ? -1.0 : 0, 6, dt);
       this.fridgeLight.intensity = damp(this.fridgeLight.intensity, frOn ? 1.2 : 0, 6, dt);
       this.fridgeGlowS.material.opacity = damp(this.fridgeGlowS.material.opacity, frOn ? 0.42 : 0, 6, dt);
+
+      /* item labels + room measurements */
+      if (this.measureGroup) {
+        this.measureGroup.visible = !!s.measurementsOn;
+        for (var me = 0; me < this._measureEls.length; me++) {
+          var mo = this._measureEls[me];
+          if (s.measurementsOn) this._placeOverlay(mo.el, mo.p[0], mo.p[1], mo.p[2]);
+          else mo.el.style.display = 'none';
+        }
+      }
+      if (s.labelsOn) {
+        for (var lid in this.movables) {
+          var le = this.movables[lid];
+          var div = this._labelEls[lid] || (this._labelEls[lid] = this._overlayEl(le.label));
+          if (le.cur.stored) { div.style.display = 'none'; continue; }
+          var ly = le.kind === 'floor'
+            ? le.proxy.position.y * 2 + 0.35
+            : le.group.position.y + le.h / 2 + 0.35;
+          this._placeOverlay(div, le.group.position.x, ly, le.group.position.z);
+        }
+      } else {
+        for (var hid in this._labelEls) this._labelEls[hid].style.display = 'none';
+      }
 
       /* fan blade spin */
       if (this._fanSpin === undefined) this._fanSpin = 0;

@@ -15,6 +15,8 @@ interface DormRoomState {
   tvOn: boolean
   curtainsOpen: boolean
   fansOn: boolean
+  labelsOn: boolean
+  measurementsOn: boolean
 }
 
 type DormWall = 'north' | 'west'

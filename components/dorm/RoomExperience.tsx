@@ -14,6 +14,8 @@ const ROOM_DEFAULTS: DormRoomState = {
   tvOn: false,
   curtainsOpen: true,
   fansOn: false,
+  labelsOn: false,
+  measurementsOn: false,
 }
 
 const STAGE_ARIA_LABEL =
