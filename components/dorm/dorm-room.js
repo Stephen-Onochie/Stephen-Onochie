@@ -959,37 +959,57 @@
 
       /* ================= FIXED ENTRY WALL ================= */
       var STUB = 4.6;
-      var CW = 4, CD = 1.6;
+      /* Closets: full room height, painted-concrete niches. High shelf ~7 ft,
+         low shelf ~5.8 ft, hanging rod ~5.4 ft — tall enough that the movable
+         dresser tucks underneath. Left on entry (west, x=-4) = clothes;
+         right on entry (east, x=+4) = storage. */
+      var CW = 4, CD = 2.0, CH = 8;
       var CONC = this._mat('#B9B4AA', { roughness: 1, metalness: 0.02 });
       function buildCloset(cx, kind) {
         var cl = new T.Group(); cl.position.set(cx, 0, 7.2); room.add(cl);
-        self0._box(CW, STUB, 0.14, WALL, 0, STUB / 2, CD / 2, cl);
-        self0._box(0.14, STUB, CD, WALL, -CW / 2, STUB / 2, 0, cl);
-        self0._box(0.14, STUB, CD, WALL, CW / 2, STUB / 2, 0, cl);
-        self0._box(CW, 0.14, CD, WALL, 0, STUB, 0, cl);
+        self0._box(CW, CH, 0.14, WALL, 0, CH / 2, CD / 2, cl);
+        self0._box(0.14, CH, CD, WALL, -CW / 2, CH / 2, 0, cl);
+        self0._box(0.14, CH, CD, WALL, CW / 2, CH / 2, 0, cl);
+        self0._box(CW, 0.14, CD, WALL, 0, CH - 0.07, 0, cl);
         self0._box(CW, 0.16, CD, WALL, 0, 0.08, 0, cl).receiveShadow = true;
-        self0._box(CW - 0.3, 0.18, CD - 0.25, CONC, 0, 1.55, 0, cl);
-        self0._box(CW - 0.3, 0.18, CD - 0.25, CONC, 0, 2.95, 0, cl);
+        /* concrete shelves: low (still pretty high) + high */
+        self0._box(CW - 0.3, 0.18, CD - 0.25, CONC, 0, 5.8, 0, cl);
+        self0._box(CW - 0.3, 0.18, CD - 0.25, CONC, 0, 7.0, 0, cl);
+        /* hanging rod spanning the width, under the low shelf */
+        self0._box(CW - 0.3, 0.07, 0.07, DARK, 0, 5.4, 0, cl).castShadow = false;
         var m = self0._mat.bind(self0), box = self0._box.bind(self0);
         if (kind === 'clothes') {
-          box(0.08, 0.08, CD - 0.4, DARK, 0, 3.85, 0, cl).castShadow = false;
+          /* garments hanging from the rod */
           var gc = ['#7C5B3B', '#5F7A4A', '#C9A84C', '#8A6647', '#A9855C', '#6B4F2A'];
           for (var gi = 0; gi < 6; gi++)
-            box(0.5, 1.5, 0.28, m(gc[gi]), -1.4 + gi * 0.56, 3.05, -0.05, cl);
-          box(0.9, 0.5, 0.7, m('#E4D3AE'), -1.0, 3.3, 0, cl);
-          box(0.9, 0.4, 0.7, m('#C9A874'), 0.05, 3.25, 0, cl);
-          for (var si = 0; si < 3; si++) {
-            box(0.35, 0.22, 0.6, m(si % 2 ? '#2C2A26' : '#8A6647'), -1.2 + si * 0.5, 0.28, -0.1, cl);
-          }
+            box(0.5, 1.6, 0.3, m(gc[gi]), -1.4 + gi * 0.56, 4.55, -0.05, cl);
+          /* low shelf: folded stacks + basket */
+          box(0.9, 0.45, 1.2, m('#E4D3AE'), -1.1, 6.15, 0, cl);
+          box(0.9, 0.38, 1.2, m('#C9A874'), -0.1, 6.1, 0, cl);
+          box(0.95, 0.5, 1.3, m('#B79B6E'), 1.05, 6.18, 0, cl);
+          /* high shelf: boxes */
+          box(1.1, 0.6, 1.3, m('#A9855C'), -0.9, 7.4, 0, cl);
+          box(0.9, 0.5, 1.2, m('#8A6647'), 0.2, 7.35, 0, cl);
+          box(0.6, 0.45, 1.0, m('#F7F2E8'), 1.2, 7.32, 0, cl);
+          /* shoes on the floor, kept to one side so the dresser fits */
+          for (var si = 0; si < 3; si++)
+            box(0.35, 0.22, 0.6, m(si % 2 ? '#2C2A26' : '#8A6647'), 0.6 + si * 0.5, 0.3, -0.1, cl);
         } else {
-          box(1.0, 0.75, 0.85, m('#A9855C'), -0.95, 0.55, 0, cl);
-          box(1.0, 0.75, 0.85, m('#8A6647'), 0.35, 0.55, 0, cl);
-          box(0.95, 0.55, 0.8, m('#C9A874'), -0.9, 1.95, 0, cl);
-          box(0.95, 0.55, 0.8, m('#B79B6E'), 0.35, 1.95, 0, cl);
-          box(1.0, 0.28, 0.7, m('#E4D3AE'), -0.8, 3.28, 0, cl);
-          box(1.0, 0.24, 0.7, m('#EDE4D2'), -0.8, 3.5, 0, cl);
-          box(0.24, 0.5, 0.24, m('#5F7A4A'), 0.7, 3.4, 0, cl);
-          box(0.5, 0.5, 0.42, m('#F7F2E8'), 0.2, 3.35, 0, cl);
+          /* storage floor bins with stacked boxes on top */
+          box(1.3, 0.9, 1.5, m('#A9855C'), -1.0, 0.55, 0, cl);
+          box(1.3, 0.9, 1.5, m('#8A6647'), 0.5, 0.55, 0, cl);
+          box(1.0, 0.7, 1.2, m('#C9A874'), -0.95, 1.85, 0, cl);
+          box(0.9, 0.6, 1.1, m('#EDE4D2'), 0.5, 1.75, 0, cl);
+          box(0.85, 0.65, 1.0, m('#B79B6E'), -0.9, 2.75, 0, cl);
+          /* low shelf: baskets + paper goods */
+          box(0.95, 0.55, 1.3, m('#B79B6E'), -1.0, 6.2, 0, cl);
+          box(0.95, 0.55, 1.3, m('#C9A874'), 0.05, 6.2, 0, cl);
+          box(0.5, 0.5, 0.9, m('#F7F2E8'), 1.15, 6.18, 0, cl);
+          /* high shelf: linens + boxes */
+          box(1.0, 0.28, 1.1, m('#E4D3AE'), -0.8, 7.25, 0, cl);
+          box(1.0, 0.24, 1.1, m('#EDE4D2'), -0.8, 7.51, 0, cl);
+          box(0.9, 0.55, 1.2, m('#8A6647'), 0.5, 7.4, 0, cl);
+          box(0.24, 0.5, 0.24, m('#5F7A4A'), 1.4, 7.36, 0, cl);
         }
         return cl;
       }
