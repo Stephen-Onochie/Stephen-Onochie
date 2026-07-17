@@ -249,7 +249,21 @@ function TableView({
                 {a.deadline ? `${daysUntil(a.deadline)}d` : '—'}
               </td>
               <td className="px-3 py-2.5">
-                {a.job_url && <ExternalLink size={13} style={{ color: 'var(--iven-muted)' }} />}
+                {a.job_url ? (
+                  <a
+                    href={a.job_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold tracking-[1px] uppercase rounded-md px-2.5 py-1.5 whitespace-nowrap transition-colors"
+                    style={{ background: 'var(--iven-accent)', color: '#2C1F0E' }}
+                    title="Open the application link"
+                  >
+                    <ExternalLink size={11} /> Apply
+                  </a>
+                ) : (
+                  <span className="text-[12px]" style={{ color: 'var(--iven-muted)' }}>—</span>
+                )}
               </td>
             </tr>
           ))}

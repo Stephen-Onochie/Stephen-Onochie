@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, Trash2, Plus, ExternalLink, Calendar, Flag } from 'lucide-react'
+import { X, Trash2, Plus, ExternalLink, Calendar, Flag, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
   updateApplication,
@@ -214,12 +214,38 @@ function OverviewTab({
   onClose: () => void
 }) {
   const supabase = createClient()
+  const [generatingBio, setGeneratingBio] = useState(false)
+  const [notesVersion, setNotesVersion] = useState(0)
 
   async function handleDelete() {
     if (!confirm(`Delete ${app.company} — ${app.role_title}? This cannot be undone.`)) return
     await deleteApplication(supabase, app.id)
     onDeleted(app.id)
     onClose()
+  }
+
+  async function generateBio() {
+    setGeneratingBio(true)
+    try {
+      const res = await fetch('/api/internship/company-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company: app.company, role_title: app.role_title }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || 'Bio generation failed')
+        return
+      }
+      const existing = app.notes?.trim()
+      const merged = existing ? `${existing}\n\n${data.notes}` : data.notes
+      await patch({ notes: merged })
+      setNotesVersion(v => v + 1) // remount TextArea so the new notes show
+    } catch {
+      alert('Bio generation failed')
+    } finally {
+      setGeneratingBio(false)
+    }
   }
 
   function toDatetimeLocal(iso: string | null): string {
@@ -321,9 +347,27 @@ function OverviewTab({
         </span>
       </label>
 
-      <Field label="Notes">
-        <TextArea defaultValue={app.notes ?? ''} onBlur={e => patch({ notes: e.target.value || null })} />
-      </Field>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <span
+            className="font-mono text-[9px] font-semibold tracking-[1.5px] uppercase"
+            style={{ color: 'var(--iven-muted)' }}
+          >
+            Notes
+          </span>
+          <Button variant="ghost" onClick={generateBio} disabled={generatingBio}>
+            <span className="flex items-center gap-1.5">
+              <Sparkles size={12} /> {generatingBio ? 'Generating…' : 'Generate bio'}
+            </span>
+          </Button>
+        </div>
+        <TextArea
+          key={notesVersion}
+          defaultValue={app.notes ?? ''}
+          onBlur={e => patch({ notes: e.target.value || null })}
+          style={{ minHeight: 120 }}
+        />
+      </div>
 
       <div className="flex justify-end pt-2" style={{ borderTop: '1px solid var(--iven-grid)' }}>
         <Button variant="danger" onClick={handleDelete}>
