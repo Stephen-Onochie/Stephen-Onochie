@@ -107,6 +107,13 @@ export default function TodaysTasks({ max, onTodosChange }: TodaysTasksProps) {
       due_at: dueAt,
       completed: false,
       completed_at: null,
+      priority: 0,
+      pinned: false,
+      position: null,
+      parent_task_id: null,
+      recurrence_id: null,
+      source: 'manual',
+      triage_suggestion: null,
       sort_order: 0,
       created_at: new Date().toISOString(),
     }

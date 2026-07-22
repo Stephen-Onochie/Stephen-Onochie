@@ -21,6 +21,7 @@
     "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "^0.460.0",
     "mcp-handler": "^1.1.0",
     "next": "14.2.16",
@@ -29,6 +30,7 @@
     "react-grid-layout": "^2.2.3",
     "recharts": "^3.8.1",
     "resend": "^6.16.0",
+    "rrule": "^2.8.1",
     "tailwind-merge": "^2.5.4",
     "three": "0.158.0",
     "zod": "^4.4.3"

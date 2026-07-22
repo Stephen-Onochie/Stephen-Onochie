@@ -24,7 +24,7 @@ function showDueNotification(todo: Todo): void {
   new Notification('Todo due', {
     body: todo.title,
     tag: `todo-${todo.id}`,
-    icon: '/manifest.json',
+    icon: '/icons/icon-192.png',
   })
 }
 
