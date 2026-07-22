@@ -5,6 +5,10 @@
 export interface ParsedTodo {
   title: string
   dueAt: string | null // ISO string, or null if no date found
+  priority: number // 0 = none, 1..3
+  project: string | null // project/list name from @mention (case-insensitive)
+  tags: string[] // tag names from #hashtags
+  hadDateToken: boolean // true if a date/time token was recognized
 }
 
 const WEEKDAYS = [
@@ -50,6 +54,25 @@ function extractTime(
 
 export function parseTodoInput(input: string, now: Date = new Date()): ParsedTodo {
   let remaining = ` ${input.trim()} `
+
+  // --- Structured tokens: !pN priority, #tag, @project ---
+  let priority = 0
+  const tags: string[] = []
+  let project: string | null = null
+
+  remaining = remaining.replace(/\B!p([1-3])\b/gi, (_m, n) => {
+    priority = parseInt(n, 10)
+    return ' '
+  })
+  remaining = remaining.replace(/\B#([\w-]+)/g, (_m, name) => {
+    tags.push(name)
+    return ' '
+  })
+  remaining = remaining.replace(/\B@([\w-]+)/g, (_m, name) => {
+    if (!project) project = name
+    return ' '
+  })
+
   let date: Date | null = null
 
   const lower = remaining.toLowerCase()
@@ -136,6 +159,10 @@ export function parseTodoInput(input: string, now: Date = new Date()): ParsedTod
   return {
     title: title || input.trim(),
     dueAt: date ? date.toISOString() : null,
+    priority,
+    project,
+    tags,
+    hadDateToken: date !== null,
   }
 }
 

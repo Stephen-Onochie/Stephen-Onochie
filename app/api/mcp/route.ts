@@ -1,6 +1,15 @@
 import { createMcpHandler } from 'mcp-handler'
 import { z } from 'zod'
 import * as hevy from '@/lib/hevy/client'
+import { createAdminClient } from '@/lib/supabase/admin'
+import {
+  adminAddTask,
+  adminCompleteTask,
+  adminListTasks,
+  adminUpdateTask,
+  adminSearchTasks,
+  adminListProjects,
+} from '@/lib/todo/admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -212,6 +221,131 @@ const handler = createMcpHandler(
       async ({ query, limit }) => {
         try {
           return json(await hevy.searchExerciseTemplates(query, limit))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    // --- Todo module tools -------------------------------------------------
+    server.registerTool(
+      'task_add',
+      {
+        title: 'Add Task',
+        description:
+          "Create a task in Stephen's Todo module. Optionally set a due date (ISO 8601), priority (1=P1 highest … 3=P3), a project (name or id), tags, and an RRULE recurrence (e.g. 'FREQ=DAILY').",
+        inputSchema: {
+          title: z.string(),
+          due: z.string().nullable().optional().describe('ISO 8601 datetime'),
+          priority: z.number().int().min(0).max(3).optional(),
+          project: z.string().optional().describe('Project name or id'),
+          tags: z.array(z.string()).optional(),
+          recurrence: z.string().optional().describe('RFC 5545 RRULE, e.g. FREQ=WEEKLY;BYDAY=SU'),
+        },
+      },
+      async ({ title, due, priority, project, tags, recurrence }) => {
+        try {
+          return json(await adminAddTask(createAdminClient(), { title, due, priority, project, tags, recurrence }))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    server.registerTool(
+      'task_complete',
+      {
+        title: 'Complete Task',
+        description:
+          'Mark a task done by its id, or by a fuzzy title match when no id is known. Recurring tasks spawn their next occurrence automatically.',
+        inputSchema: {
+          task_id: z.string().optional(),
+          title: z.string().optional().describe('Fuzzy title to match if task_id is unknown'),
+        },
+      },
+      async ({ task_id, title }) => {
+        try {
+          return json(await adminCompleteTask(createAdminClient(), { task_id, title }))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    server.registerTool(
+      'task_list',
+      {
+        title: 'List Tasks',
+        description:
+          "List tasks with optional filters: bucket (today|inbox), project (name or id), status (todo|done), and due_before (ISO 8601).",
+        inputSchema: {
+          bucket: z.enum(['today', 'inbox']).optional(),
+          project: z.string().optional(),
+          status: z.enum(['todo', 'done']).optional(),
+          due_before: z.string().optional(),
+          limit: z.number().int().min(1).max(100).default(50),
+        },
+      },
+      async ({ bucket, project, status, due_before, limit }) => {
+        try {
+          return json(await adminListTasks(createAdminClient(), { bucket, project, status, due_before, limit }))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    server.registerTool(
+      'task_update',
+      {
+        title: 'Update Task',
+        description: 'Update fields on an existing task by id (title, notes, due, priority, pinned, project, completed).',
+        inputSchema: {
+          task_id: z.string(),
+          title: z.string().optional(),
+          notes: z.string().nullable().optional(),
+          due: z.string().nullable().optional(),
+          priority: z.number().int().min(0).max(3).optional(),
+          pinned: z.boolean().optional(),
+          project: z.string().optional(),
+          completed: z.boolean().optional(),
+        },
+      },
+      async (input) => {
+        try {
+          return json(await adminUpdateTask(createAdminClient(), input))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    server.registerTool(
+      'task_search',
+      {
+        title: 'Search Tasks',
+        description: 'Full-text search tasks by title substring (case-insensitive).',
+        inputSchema: { query: z.string() },
+      },
+      async ({ query }) => {
+        try {
+          return json(await adminSearchTasks(createAdminClient(), query))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    server.registerTool(
+      'project_list',
+      {
+        title: 'List Projects',
+        description: "List the Todo module's projects (lists), with their module links.",
+        inputSchema: {},
+      },
+      async () => {
+        try {
+          return json(await adminListProjects(createAdminClient()))
         } catch (e) {
           return jsonError(e)
         }
