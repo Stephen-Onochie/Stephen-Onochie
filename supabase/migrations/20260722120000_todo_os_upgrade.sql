@@ -2,6 +2,10 @@
 -- Extends the existing todo_lists (= projects) and todos tables in place —
 -- no rename, no data migration — and adds tags, task_tags, recurrences,
 -- and module_events. All new tables are RLS-scoped to auth.uid() = user_id.
+--
+-- Fully idempotent + seed-safe: safe to (re)run against a database in any
+-- partial state. The seed only touches an owner uid that actually exists in
+-- auth.users, so a wrong/absent uid can never roll back the schema changes.
 
 -- --- Shared updated_at trigger ------------------------------------------------
 create or replace function public.set_updated_at()
@@ -18,7 +22,7 @@ $$;
 -- RFC 5545 rrule per recurring series. next_occurrence is precomputed for cheap
 -- querying (weekly review, upcoming load). Regenerate-on-complete is the only
 -- materialization path this cycle (no cron).
-create table public.recurrences (
+create table if not exists public.recurrences (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   rrule text not null,
@@ -29,10 +33,11 @@ create table public.recurrences (
   created_at timestamptz not null default now()
 );
 
-create index recurrences_user_active_idx on public.recurrences (user_id, active);
+create index if not exists recurrences_user_active_idx on public.recurrences (user_id, active);
 
 alter table public.recurrences enable row level security;
 
+drop policy if exists "Users can manage their own recurrences" on public.recurrences;
 create policy "Users can manage their own recurrences"
   on public.recurrences for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -79,7 +84,7 @@ create trigger trg_todos_updated_at
   for each row execute function public.set_updated_at();
 
 -- --- tags ---------------------------------------------------------------------
-create table public.tags (
+create table if not exists public.tags (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   name text not null,
@@ -87,17 +92,18 @@ create table public.tags (
   created_at timestamptz not null default now()
 );
 
-create unique index tags_user_name_idx on public.tags (user_id, lower(name));
+create unique index if not exists tags_user_name_idx on public.tags (user_id, lower(name));
 
 alter table public.tags enable row level security;
 
+drop policy if exists "Users can manage their own tags" on public.tags;
 create policy "Users can manage their own tags"
   on public.tags for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- --- task_tags (join) ---------------------------------------------------------
 -- Carries user_id so RLS is a simple owner check rather than a join subquery.
-create table public.task_tags (
+create table if not exists public.task_tags (
   task_id uuid not null references public.todos (id) on delete cascade,
   tag_id uuid not null references public.tags (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -105,11 +111,12 @@ create table public.task_tags (
   primary key (task_id, tag_id)
 );
 
-create index task_tags_user_idx on public.task_tags (user_id);
-create index task_tags_tag_idx on public.task_tags (tag_id);
+create index if not exists task_tags_user_idx on public.task_tags (user_id);
+create index if not exists task_tags_tag_idx on public.task_tags (tag_id);
 
 alter table public.task_tags enable row level security;
 
+drop policy if exists "Users can manage their own task_tags" on public.task_tags;
 create policy "Users can manage their own task_tags"
   on public.task_tags for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -117,7 +124,7 @@ create policy "Users can manage their own task_tags"
 -- --- module_events ------------------------------------------------------------
 -- Loosely-coupled event bus. Completing a task whose project is module-linked
 -- emits a row here; target modules (reading, fitness) consume independently.
-create table public.module_events (
+create table if not exists public.module_events (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   source_task_id uuid references public.todos (id) on delete set null,
@@ -127,17 +134,19 @@ create table public.module_events (
   created_at timestamptz not null default now()
 );
 
-create index module_events_user_module_idx on public.module_events (user_id, module, created_at desc);
+create index if not exists module_events_user_module_idx on public.module_events (user_id, module, created_at desc);
 
 alter table public.module_events enable row level security;
 
+drop policy if exists "Users can manage their own module_events" on public.module_events;
 create policy "Users can manage their own module_events"
   on public.module_events for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- --- Seed default projects ----------------------------------------------------
--- Idempotent: only inserts a project name that the owner doesn't already have.
--- Owner uid matches HEALTH_USER_ID (the site owner).
+-- Idempotent + seed-safe: only inserts a project the owner doesn't already have,
+-- and only when the owner uid actually exists in auth.users (so a wrong uid can
+-- never fail this migration). Owner uid matches HEALTH_USER_ID.
 insert into public.todo_lists (user_id, name, emoji, color, module_link, sort_order)
 select v.user_id, v.name, v.emoji, v.color, v.module_link, v.sort_order
 from (values
@@ -148,7 +157,8 @@ from (values
   ('8c08ce23-f5d6-4f78-9193-ef9191b2975c'::uuid, 'Fitness', '💪', '#7C8C5A', 'fitness', 4),
   ('8c08ce23-f5d6-4f78-9193-ef9191b2975c'::uuid, 'Finance', '📊', '#5A7C8C', 'finance', 5)
 ) as v(user_id, name, emoji, color, module_link, sort_order)
-where not exists (
-  select 1 from public.todo_lists l
-  where l.user_id = v.user_id and lower(l.name) = lower(v.name)
-);
+where exists (select 1 from auth.users u where u.id = v.user_id)
+  and not exists (
+    select 1 from public.todo_lists l
+    where l.user_id = v.user_id and lower(l.name) = lower(v.name)
+  );
