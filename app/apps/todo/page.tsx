@@ -92,21 +92,22 @@ export default function TodoPage() {
 
   const load = useCallback(async () => {
     try {
-      const [l, t, tg, rec, map] = await Promise.all([
-        fetchLists(supabase),
-        fetchTodos(supabase),
-        fetchTags(supabase),
-        fetchRecurrences(supabase),
-        fetchTaskTagMap(supabase),
-      ])
+      // Lists + todos are the critical pair; a failure here is surfaced verbatim.
+      const [l, t] = await Promise.all([fetchLists(supabase), fetchTodos(supabase)])
       setLists(l)
       setTodos(t)
+      // Tags / recurrences / task-tags are additive — never let them blank the page.
+      const [tg, rec, map] = await Promise.all([
+        fetchTags(supabase).catch(() => [] as Tag[]),
+        fetchRecurrences(supabase).catch(() => [] as Recurrence[]),
+        fetchTaskTagMap(supabase).catch(() => ({} as Record<string, string[]>)),
+      ])
       setTags(tg)
       setRecurrences(rec)
       setTaskTagMap(map)
       setError(null)
-    } catch {
-      setError('Failed to load tasks. Is Supabase configured?')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load tasks.')
     } finally {
       setLoading(false)
     }
