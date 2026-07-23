@@ -35,8 +35,14 @@ function json(data: unknown) {
 }
 
 function jsonError(error: unknown) {
+  const text =
+    error instanceof Error
+      ? error.message
+      : error && typeof error === 'object'
+        ? JSON.stringify(error)
+        : String(error)
   return {
-    content: [{ type: 'text' as const, text: error instanceof Error ? error.message : String(error) }],
+    content: [{ type: 'text' as const, text }],
     isError: true,
   }
 }
