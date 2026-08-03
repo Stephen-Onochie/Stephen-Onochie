@@ -839,6 +839,59 @@
       this._registerFloor('sofa', sofa, 3.4, 2.9, 2.5, 'Floor sofa', { kind: 'floor', x: 2.4, z: 1.6, rotY: -Math.PI / 2 });
       this._place(this.movables.sofa);
 
+      /* ---- convertible futon (68.5 x 23.65 x 37.4 in, 17.32 in deck) ----
+         Starts in Furniture Storage; place it from the storage tray. */
+      var futon = new T.Group(); room.add(futon);
+      var FUT = this._mat('#C4793A', { roughness: 1 });
+      var FUT_DK = this._mat('#A9642C', { roughness: 1 });
+      var FUT_LEG = this._mat('#26221E', { roughness: 0.5, metalness: 0.3 });
+      [[-2.48, -0.68], [2.48, -0.68], [-2.48, 0.68], [2.48, 0.68]].forEach(function (lp) {
+        var fl = new T.Mesh(new T.CylinderGeometry(0.045, 0.08, 0.74, 8), FUT_LEG);
+        fl.position.set(lp[0], 0.37, lp[1]);
+        fl.rotation.z = lp[0] < 0 ? 0.16 : -0.16;
+        fl.rotation.x = lp[1] < 0 ? -0.11 : 0.11;
+        fl.castShadow = true; futon.add(fl);
+      });
+      this._box(5.45, 0.2, 1.8, FUT_DK, 0, 0.8, 0, futon);
+      var tuftGeo = new T.SphereGeometry(0.4, 10, 8);
+      for (var fm = 0; fm < 2; fm++) {
+        var fmx = fm ? 1.4 : -1.4;
+        this._box(2.72, 0.48, 1.86, FUT, fmx, 1.13, 0.04, futon);
+        var fbk = new T.Group();
+        fbk.position.set(fmx, 1.37, -0.76);
+        fbk.rotation.x = -0.17;
+        futon.add(fbk);
+        this._box(2.72, 1.78, 0.34, FUT, 0, 0.89, 0, fbk);
+        for (var tc = -1; tc <= 1; tc++) {
+          for (var tr = 0; tr < 2; tr++) {
+            var seatTuft = new T.Mesh(tuftGeo, FUT);
+            seatTuft.position.set(fmx + tc * 0.82, 1.34, -0.4 + tr * 0.8);
+            seatTuft.scale.set(1, 0.32, 1);
+            seatTuft.castShadow = true; futon.add(seatTuft);
+            var backTuft = new T.Mesh(tuftGeo, FUT);
+            backTuft.position.set(tc * 0.82, 0.44 + tr * 0.82, 0.17);
+            backTuft.scale.set(1, 1, 0.3);
+            fbk.add(backTuft);
+          }
+        }
+      }
+      this._box(0.09, 0.5, 1.86, FUT_DK, 0, 1.13, 0.04, futon).castShadow = false;
+      var pilMat = this._mat('#D18B4A', { roughness: 1 });
+      for (var fp = 0; fp < 2; fp++) {
+        var pilG = new T.Group();
+        pilG.position.set(fp ? 1.25 : -1.25, 1.74, -0.3);
+        pilG.rotation.x = -0.26;
+        futon.add(pilG);
+        var pil = new T.Mesh(new T.CapsuleGeometry(0.25, 1.05, 4, 10), pilMat);
+        pil.rotation.z = Math.PI / 2;
+        pil.scale.set(1, 1, 0.82);
+        pil.castShadow = true;
+        pilG.add(pil);
+      }
+      this._registerFloor('futon', futon, 5.8, 2.4, 3.2, 'Convertible futon',
+        { kind: 'floor', x: 2.2, z: 4.4, rotY: 0, stored: true });
+      this._place(this.movables.futon);
+
       /* ---- storage ottoman ---- */
       var ott = new T.Group(); room.add(ott); this.ott = ott;
       this._box(2.0, 1.0, 1.8, this._mat('#8A6647', { roughness: 1 }), 0, 0.5, 0, ott);
@@ -957,6 +1010,53 @@
         this._place(this.movables[pd.id]);
       }
 
+      /* ---- artificial ivy garland (hanging vine panel) ----
+         Defaults to the west wall in the stretch under the lofted bed, low
+         enough to read as the backdrop behind the lounge seating.
+         ~400 leaves, so they ride one InstancedMesh instead of 400 draw calls. */
+      var vines = new T.Group(); room.add(vines);
+      var VW = 5.0, VH = 4.2, VSTRANDS = 18, VROWS = 22;
+      this._box(VW, 0.08, 0.1, this._mat('#4A3F2E', { roughness: 1 }), 0, VH / 2, 0.06, vines).castShadow = false;
+      var stemMat = this._mat('#4C6438', { roughness: 1 });
+      var vStep = (VW - 0.4) / (VSTRANDS - 1);
+      var vLen = function (i) { return VH - 0.3 - Math.abs(Math.sin(i * 2.1)) * 0.55; };
+      for (var vs = 0; vs < VSTRANDS; vs++) {
+        var vsx = -VW / 2 + 0.2 + vs * vStep, vsl = vLen(vs);
+        this._box(0.035, vsl, 0.035, stemMat, vsx, VH / 2 - 0.06 - vsl / 2, 0.07, vines).castShadow = false;
+      }
+      /* leaf blades stay flat in local x/y so they face the room instead of
+         showing edge-on; only a light tilt is added for texture */
+      var leaves = new T.InstancedMesh(
+        new T.SphereGeometry(0.17, 8, 6),
+        this._mat('#5F7A4A', { roughness: 1 }),
+        VSTRANDS * VROWS
+      );
+      leaves.castShadow = leaves.receiveShadow = false;
+      var lMtx = new T.Matrix4(), lQ = new T.Quaternion(), lE = new T.Euler(),
+        lP = new T.Vector3(), lS = new T.Vector3(), lCol = new T.Color(), ln = 0;
+      for (var lstr = 0; lstr < VSTRANDS; lstr++) {
+        var lx = -VW / 2 + 0.2 + lstr * vStep, llen = vLen(lstr);
+        for (var lrow = 0; lrow < VROWS; lrow++) {
+          var lf = (lrow + 0.4) / VROWS, lside = lrow % 2 ? 1 : -1;
+          var jit = Math.sin(lstr * 3.7 + lrow * 1.9);
+          lP.set(lx + lside * (0.12 + Math.abs(jit) * 0.11), VH / 2 - 0.12 - lf * llen, 0.1 + Math.abs(jit) * 0.05);
+          lE.set(Math.sin(lstr + lrow * 2.3) * 0.3, lside * 0.25 + jit * 0.2, lside * 0.5 + jit * 0.8);
+          lQ.setFromEuler(lE);
+          var lsc = 0.85 + Math.abs(Math.cos(lstr * 1.3 + lrow)) * 0.5;
+          lS.set(lsc, lsc * 1.2, 0.22);
+          lMtx.compose(lP, lQ, lS);
+          leaves.setMatrixAt(ln, lMtx);
+          lCol.setHex(0x5F7A4A).offsetHSL(jit * 0.02, 0.03, jit * 0.07);
+          leaves.setColorAt(ln, lCol);
+          ln++;
+        }
+      }
+      leaves.instanceMatrix.needsUpdate = true;
+      if (leaves.instanceColor) leaves.instanceColor.needsUpdate = true;
+      vines.add(leaves);
+      this._registerWall('vines', vines, VW, VH, 'Ivy garland', { kind: 'wall', wall: 'west', u: -3.9, y: 2.4 });
+      this._place(this.movables.vines);
+
       /* ================= FIXED ENTRY WALL ================= */
       var STUB = 4.6;
       /* Closets: full room height, painted-concrete niches. High shelf ~7 ft,
@@ -1019,10 +1119,25 @@
       this._box(0.35, STUB + 0.4, 0.5, WALL, -1.55, (STUB + 0.4) / 2, 0, doorG);
       this._box(0.35, STUB + 0.4, 0.5, WALL, 1.55, (STUB + 0.4) / 2, 0, doorG);
       this._box(3.45, 0.35, 0.5, WALL, 0, STUB + 0.25, 0, doorG);
-      this._box(2.7, STUB, 0.18, WOOD_DK, 0, STUB / 2, 0, doorG);
-      var mirror = new T.Mesh(new T.PlaneGeometry(1.1, 3.4),
-        new T.MeshStandardMaterial({ color: '#cfd6d8', metalness: 0.85, roughness: 0.15 }));
-      mirror.rotation.y = Math.PI; mirror.position.set(0, 2.1, -0.11); doorG.add(mirror);
+      /* door leaf stops short of the header so the mirror's hooks can wrap over
+         it; a jamb strip behind fills the gap so it isn't a hole to the void */
+      this._box(2.7, STUB - 0.18, 0.18, WOOD_DK, 0, (STUB - 0.18) / 2, 0, doorG);
+      this._box(2.9, 0.32, 0.06, this._mat('#7A6A52'), 0, 4.56, 0.2, doorG).castShadow = false;
+      /* over-the-door mirror: 14.17 x 48.03 in ultra-thin black frame on two hooks */
+      var odm = new T.Group(); odm.position.set(0, 0, -0.09); doorG.add(odm);
+      var ODM_FRAME = this._mat('#26221E', { roughness: 0.45, metalness: 0.3 });
+      this._box(1.18, 3.46, 0.05, ODM_FRAME, 0, 2.22, -0.025, odm);
+      /* the scene has no environment map, so a fully metallic mirror renders
+         near-black; a low metalness reads as silvered glass instead */
+      var mirror = new T.Mesh(new T.PlaneGeometry(1.04, 3.32),
+        new T.MeshStandardMaterial({ color: '#D3DBDD', metalness: 0.3, roughness: 0.12 }));
+      mirror.rotation.y = Math.PI; mirror.position.set(0, 2.22, -0.056); odm.add(mirror);
+      for (var hkm = 0; hkm < 2; hkm++) {
+        var hkx = hkm ? 0.4 : -0.4;
+        this._box(0.07, 0.56, 0.05, ODM_FRAME, hkx, 4.23, -0.02, odm).castShadow = false;
+        this._box(0.07, 0.06, 0.25, ODM_FRAME, hkx, 4.51, 0.04, odm).castShadow = false;
+        this._box(0.07, 0.27, 0.05, ODM_FRAME, hkx, 4.345, 0.14, odm).castShadow = false;
+      }
       this._box(0.9, 0.25, 0.14, WOOD, -2.3, 3.0, 7.6);
       for (var hk = 0; hk < 3; hk++) this._box(0.05, 0.2, 0.15, DARK, -2.6 + hk * 0.3, 2.85, 7.55);
       this._box(0.35, 0.6, 0.05, this._mat('#5F7A4A'), -2.55, 2.5, 7.5).castShadow = false;
