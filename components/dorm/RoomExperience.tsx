@@ -20,7 +20,7 @@ const ROOM_DEFAULTS: DormRoomState = {
 }
 
 const STAGE_ARIA_LABEL =
-  "Interactive 3D diorama of Stephen's Wiley Hall dorm room: a cutaway box with a lofted bed and desk by the window, a brown floor sofa lounge facing a TV on a console, a reading nook and a mini-fridge kitchen station in the corners, and closets by the door. Use the Room OS panel controls to toggle lights, computer, TV, curtains, day or night, and auto-spin."
+  "Interactive 3D diorama of Stephen's Wiley Hall dorm room: a cutaway box with a lofted bed and desk by the window, a brown floor sofa lounge facing a 40-inch TV on a black tiered stand, a reading nook and a mini-fridge kitchen station in the corners, and closets by the door. Use the Room OS panel controls to toggle lights, computer, TV, curtains, day or night, and auto-spin."
 
 function StageSkeleton() {
   return (

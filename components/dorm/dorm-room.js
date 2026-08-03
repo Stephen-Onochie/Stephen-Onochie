@@ -778,28 +778,40 @@
         ms.userData = { t: -(mi * 0.9 + Math.random()), dx: 0 }; dresser.add(ms); this.mist.push(ms);
       }
 
-      /* ---- media unit (console + TV) ---- */
+      /* ---- TV stand (63.78 x 17.52 x 22.83 in, no-tools tiered frame) ----
+         Raised centre bay carries the TV; the two outer bays are the 13 in
+         cube compartments. Black frame, true-black-oak shelves. */
       var media = new T.Group(); room.add(media);
-      for (var cleg = 0; cleg < 4; cleg++)
-        this._box(0.2, 0.75, 0.2, WOOD_DK, (cleg < 2 ? -0.45 : 0.45), 0.375, (cleg % 2 ? -1.9 : 1.9), media);
-      this._box(1.3, 2.0, 4.2, WOOD, 0, 1.75, 0, media);
-      this._box(1.34, 0.16, 4.24, WOOD_DK, 0, 2.8, 0, media);
-      for (var cd = -1; cd <= 1; cd += 2) {
-        this._box(0.08, 1.5, 1.9, WOOD_DK, 0.66, 1.75, cd * 1.02, media);
-        this._box(0.1, 0.1, 0.4, DARK, 0.72, 1.75, cd * 1.02, media);
+      var TVS_FRAME = this._mat('#1B1917', { roughness: 0.55, metalness: 0.2 });
+      var TVS_OAK = this._mat('#2B2622', { roughness: 0.85 });
+      var SD = 1.46, SHW = 2.66, CHW = 1.32, SH = 1.9, LH = 1.42;
+      [[-CHW + 0.06, SH], [CHW - 0.06, SH], [-SHW + 0.06, LH], [SHW - 0.06, LH]].forEach(function (pp) {
+        for (var pd = -1; pd <= 1; pd += 2) {
+          var pox = pd * (SD / 2 - 0.08);
+          self0._box(0.1, pp[1], 0.1, TVS_FRAME, pox, pp[1] / 2, pp[0], media);
+          self0._box(0.17, 0.05, 0.17, TVS_FRAME, pox, 0.025, pp[0], media).castShadow = false;
+        }
+      });
+      this._box(SD, 0.09, CHW * 2, TVS_OAK, 0, SH - 0.045, 0, media);
+      this._box(SD - 0.1, 0.07, CHW * 2 - 0.14, TVS_OAK, 0, 1.02, 0, media);
+      this._box(SD - 0.1, 0.07, CHW * 2 - 0.14, TVS_OAK, 0, 0.3, 0, media);
+      for (var sb = 0; sb < 2; sb++) {
+        var sbz = (sb ? 1 : -1) * (CHW + SHW) / 2, sbw = SHW - CHW;
+        this._box(SD, 0.09, sbw, TVS_OAK, 0, LH - 0.045, sbz, media);
+        this._box(SD - 0.1, 0.07, sbw - 0.12, TVS_OAK, 0, 0.3, sbz, media);
       }
-      var tvG = new T.Group(); tvG.position.set(0.15, 4.2, 0); media.add(tvG);
-      this._box(0.5, 0.1, 1.2, DARK, -0.05, -1.3, 0, tvG);
-      this._box(0.16, 2.1, 3.7, BLACK, 0, 0, 0, tvG);
-      this.tvScreen = new T.Mesh(new T.PlaneGeometry(3.45, 1.86),
+      /* 40 in class panel: 34.9 x 19.6 in of screen inside a slim bezel */
+      var tvG = new T.Group(); tvG.position.set(0.12, 2.91, 0); media.add(tvG);
+      this._box(0.55, 0.08, 1.0, DARK, -0.04, -0.97, 0, tvG);
+      this._box(0.18, 0.22, 0.36, DARK, -0.14, -0.83, 0, tvG);
+      this._box(0.13, 1.72, 2.98, BLACK, 0, 0, 0, tvG);
+      this.tvScreen = new T.Mesh(new T.PlaneGeometry(2.8, 1.54),
         new T.MeshStandardMaterial({ color: '#14100C', emissive: '#bfd4ff', emissiveIntensity: 0, roughness: 0.35 }));
-      this.tvScreen.rotation.y = Math.PI / 2; this.tvScreen.position.x = 0.09; tvG.add(this.tvScreen);
-      this.tvGlow = this._glowSprite(3.4, 0xbfd4ff); this.tvGlow.position.set(0.65, 4.2, 0); media.add(this.tvGlow);
-      this.tvLight = new T.PointLight(0xbfd4ff, 0, 8, 2); this.tvLight.position.set(0.75, 3.7, 0.1); media.add(this.tvLight);
-      this._box(0.35, 0.55, 0.35, GREEN, 0, 3.15, -1.4, media);
-      this._box(0.5, 0.4, 0.16, this._mat('#8A6647'), 0, 3.08, -0.2, media);
-      hit(1.0, 2.6, 4.2, 0.25, 4.2, 0, media, 'tv', 'TV');
-      this._registerFloor('media', media, 1.6, 4.3, 6.0, 'Media console', { kind: 'floor', x: -6.35, z: 2.3, rotY: 0 });
+      this.tvScreen.rotation.y = Math.PI / 2; this.tvScreen.position.x = 0.075; tvG.add(this.tvScreen);
+      this.tvGlow = this._glowSprite(2.8, 0xbfd4ff); this.tvGlow.position.set(0.6, 2.91, 0); media.add(this.tvGlow);
+      this.tvLight = new T.PointLight(0xbfd4ff, 0, 8, 2); this.tvLight.position.set(0.68, 2.7, 0.1); media.add(this.tvLight);
+      hit(0.9, 2.1, 3.1, 0.22, 2.9, 0, media, 'tv', 'TV');
+      this._registerFloor('media', media, 1.6, 5.45, 3.9, 'TV stand', { kind: 'floor', x: -6.35, z: 2.55, rotY: 0 });
       this._place(this.movables.media);
 
       /* LED strip glow at the media unit's default wall spot (wall fixture, fixed) */
@@ -807,15 +819,28 @@
       this._box(0.06, 0.12, 4.0, this.ledMat, -6.98, 1.2, 2.3);
       this.ledGlow = this._glowSprite(3.0); this.ledGlow.position.set(-6.7, 1.4, 2.3); room.add(this.ledGlow);
 
-      /* ---- floor lamp ---- */
+      /* ---- torchiere floor lamp (71 in tall, 9 in base, white uplight bowl) ---- */
       var lamp = new T.Group(); room.add(lamp);
-      var lbase = new T.Mesh(new T.CylinderGeometry(0.35, 0.4, 0.14, 14), WOOD_DK); lbase.position.y = 0.07; lbase.castShadow = true; lamp.add(lbase);
-      this._box(0.1, 4.4, 0.1, WOOD_DK, 0, 2.2, 0, lamp);
-      var shade = new T.Mesh(new T.CylinderGeometry(0.55, 0.7, 0.8, 16), this._mat('#E9DCC1', { roughness: 0.7 }));
-      shade.position.y = 4.5; shade.castShadow = true; lamp.add(shade);
-      this.lampGlow1 = this._glowSprite(2.6); this.lampGlow1.position.set(0, 4.7, 0); lamp.add(this.lampGlow1);
-      this.lampLight1 = new T.PointLight(0xE2C97E, 0, 9, 2); this.lampLight1.position.set(0, 4.6, 0); lamp.add(this.lampLight1);
-      this._registerFloor('lamp', lamp, 1.4, 1.4, 5.0, 'Floor lamp', { kind: 'floor', x: -6.0, z: 5.6, rotY: 0 });
+      var LAMP_BLK = this._mat('#1C1A18', { roughness: 0.5, metalness: 0.25 });
+      var lbase = new T.Mesh(new T.CylinderGeometry(0.375, 0.375, 0.09, 20), LAMP_BLK);
+      lbase.position.y = 0.045; lbase.castShadow = true; lamp.add(lbase);
+      var lhub = new T.Mesh(new T.CylinderGeometry(0.13, 0.26, 0.15, 16), LAMP_BLK);
+      lhub.position.y = 0.14; lhub.castShadow = true; lamp.add(lhub);
+      var lpole = new T.Mesh(new T.CylinderGeometry(0.045, 0.055, 5.2, 12), LAMP_BLK);
+      lpole.position.y = 2.78; lpole.castShadow = true; lamp.add(lpole);
+      var lcollar = new T.Mesh(new T.CylinderGeometry(0.3, 0.07, 0.34, 16), LAMP_BLK);
+      lcollar.position.y = 5.48; lcollar.castShadow = true; lamp.add(lcollar);
+      /* the bowl only ever faces up, so its underside gets no direct light; a
+         faint emissive stands in for the translucency of the plastic shade */
+      var shade = new T.Mesh(new T.CylinderGeometry(0.85, 0.22, 0.55, 20, 1, true),
+        new T.MeshStandardMaterial({
+          color: '#F4F2EE', roughness: 0.65, side: T.DoubleSide,
+          emissive: '#F4F2EE', emissiveIntensity: 0.14
+        }));
+      shade.position.y = 5.64; shade.castShadow = true; lamp.add(shade);
+      this.lampGlow1 = this._glowSprite(2.6); this.lampGlow1.position.set(0, 5.95, 0); lamp.add(this.lampGlow1);
+      this.lampLight1 = new T.PointLight(0xE2C97E, 0, 9, 2); this.lampLight1.position.set(0, 5.85, 0); lamp.add(this.lampLight1);
+      this._registerFloor('lamp', lamp, 1.7, 1.7, 6.0, 'Floor lamp', { kind: 'floor', x: -6.0, z: 5.6, rotY: 0 });
       this._place(this.movables.lamp);
 
       /* ---- lounge rug ---- */
