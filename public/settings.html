@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0705">
+<meta name="robots" content="noindex, nofollow">
+<title>Ojis @ 50 — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Manrope:wght@500;700;800&display=swap">
+<style>
+  :root{--ink:#0A0705;--ink2:#120D07;--line:#241B10;--line2:#3A2C17;--gold:#D4AF37;--gold-hi:#F7E3A1;
+        --gold-dim:#8C6D1F;--cream:#F8F2E4;--muted:#8A8272;--muted2:#6E6252;--ok:#12B76A;--bad:#F97066;--warn:#FDB022}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%}
+  body{background:var(--ink);color:var(--cream);font-family:'Manrope',ui-sans-serif,system-ui,sans-serif;
+       padding:env(safe-area-inset-top) 0 40px}
+  .wrap{max-width:520px;margin:0 auto;padding:0 20px}
+  .top{padding:26px 0 18px}
+  .wm{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:24px;color:var(--gold-hi)}
+  .wm span{color:var(--gold)}
+  .sub{font-size:9px;letter-spacing:.28em;color:var(--gold-dim);font-weight:700;margin-top:3px}
+  .card{background:var(--ink2);border:1px solid var(--line);border-radius:18px;padding:22px;margin-top:14px}
+  .card h2{font-size:15px;font-weight:800;margin:0 0 4px}
+  .card p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 16px}
+  label{display:block;font-size:10px;letter-spacing:.18em;color:#7A6B4A;font-weight:700;margin:14px 0 7px}
+  input{font-family:inherit;width:100%;background:#161009;border:1px solid #2F2415;color:var(--cream);
+        border-radius:13px;padding:15px 16px;font-size:16px;font-weight:700;outline:none}
+  input:focus{border-color:var(--gold-dim)}
+  .btn{width:100%;padding:17px;border-radius:14px;border:none;background:var(--gold-hi);color:var(--ink);
+       font-family:inherit;font-size:16px;font-weight:800;margin-top:14px;cursor:pointer}
+  .btn.sec{background:transparent;border:1px solid var(--line2);color:var(--gold);font-weight:700;font-size:15px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .st{background:#0A0705;border:1px solid var(--line);border-radius:13px;padding:13px 15px}
+  .st b{display:block;font-size:9px;letter-spacing:.16em;color:#7A6B4A;font-weight:700}
+  .st i{display:block;font-style:normal;font-size:20px;font-weight:800;color:var(--gold-hi);margin-top:4px;letter-spacing:-.02em}
+  .st i.sm{font-size:14px;letter-spacing:0}
+  .msg{font-size:13px;font-weight:700;margin-top:12px;min-height:18px}
+  .msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+  .warnbox{margin-top:14px;padding:13px 15px;border-left:3px solid var(--warn);background:#241703;
+           border-radius:0 11px 11px 0;font-size:13px;line-height:1.55;color:#E8D9B8;font-weight:600}
+  .gate{padding:70px 22px;max-width:420px;margin:0 auto;text-align:center}
+  .foot{font-size:12px;color:var(--muted2);line-height:1.7;margin-top:24px;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="wm" style="font-size:30px">Ojis <span>@</span> 50</div>
+  <div class="sub" style="margin-bottom:24px">SETTINGS</div>
+  <input id="adminKey" type="password" autocomplete="off" placeholder="Admin key" style="text-align:center">
+  <button class="btn" id="unlock">Unlock</button>
+  <div class="msg bad" id="gErr"></div>
+  <div class="foot">This page never stores or shows the door password &mdash; only replaces it.</div>
+</div>
+
+<div id="app" class="wrap" style="display:none">
+  <div class="top">
+    <div class="wm">Ojis <span>@</span> 50</div>
+    <div class="sub">SETTINGS</div>
+  </div>
+
+  <div class="card">
+    <h2>Status</h2>
+    <p>Live numbers straight from the guest database.</p>
+    <div class="stats">
+      <div class="st"><b>GUESTS</b><i id="sTotal">—</i></div>
+      <div class="st"><b>CHECKED IN</b><i id="sIn">—</i></div>
+      <div class="st"><b>DOOR CODE</b><i id="sCode" class="sm">—</i></div>
+      <div class="st"><b>FAILED UNLOCKS (1H)</b><i id="sFail" class="sm">—</i></div>
+    </div>
+    <div class="msg" id="sWhen" style="color:var(--muted2);font-weight:600"></div>
+    <button class="btn sec" id="refresh">Refresh</button>
+  </div>
+
+  <div class="card">
+    <h2>Door password</h2>
+    <p>What security guards type to open the scanner. Changing it takes effect immediately &mdash; phones already unlocked stay unlocked until you also rotate the door code below.</p>
+    <label>NEW PASSWORD</label>
+    <input id="pw1" type="password" autocomplete="new-password" placeholder="At least 6 characters">
+    <label>REPEAT IT</label>
+    <input id="pw2" type="password" autocomplete="new-password" placeholder="Type it again">
+    <button class="btn" id="savePw">Change password</button>
+    <div class="msg" id="pwMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Door code</h2>
+    <p>The internal code every guard phone holds after unlocking. Rotate it only if a phone is lost or the password leaks &mdash; <strong>every guard will have to sign in again</strong>, so don't do this mid-event.</p>
+    <label>NEW CODE (4&ndash;10 DIGITS)</label>
+    <input id="newCode" type="tel" inputmode="numeric" placeholder="e.g. 771904">
+    <button class="btn sec" id="saveCode">Rotate door code</button>
+    <div class="msg" id="codeMsg"></div>
+    <div class="warnbox">Rotating mid-event kicks every scanner offline at the door. Only use it if something has actually gone wrong.</div>
+  </div>
+
+  <div class="foot">Scanner &middot; /checkin.html &nbsp;·&nbsp; Dashboard &middot; /dashboard.html &nbsp;·&nbsp; Guest lookup &middot; /ticket.html</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const URL_="https://qaunsrwutckiovtkvuhm.supabase.co", KEY="sb_publishable_HTSqWtJRzIqbR81vWlLMNA_BcNqX5kd";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let adminKey = sessionStorage.getItem("ojis.admin") || "";
+
+async function rpc(fn,body){
+  const r=await fetch(URL_+"/rest/v1/rpc/"+fn,{method:"POST",
+    headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},
+    body:JSON.stringify(body)});
+  if(!r.ok) throw new Error("http "+r.status);
+  return r.json();
+}
+const setMsg=(el,txt,ok)=>{ const e=$(el); e.textContent=txt; e.className="msg"+(txt?(ok?" ok":" bad"):""); };
+
+async function loadStatus(){
+  let d;
+  try{ d=await rpc("ojis_admin_status",{p_admin_key:adminKey}); }
+  catch(e){ setMsg("#sWhen","Couldn't reach the database.",false); return false; }
+  if(!d || d.result!=="OK") return false;
+  $("#sTotal").textContent=d.total_guests;
+  $("#sIn").textContent=d.checked_in;
+  $("#sCode").textContent=d.event_code;
+  $("#sFail").textContent=d.failed_unlocks_1h;
+  $("#sFail").style.color = d.failed_unlocks_1h>5 ? "var(--bad)" : "var(--gold-hi)";
+  const t=d.password_updated_at ? new Date(d.password_updated_at) : null;
+  $("#sWhen").textContent = t ? "Password last changed "+t.toLocaleString() : "";
+  $("#sWhen").className="msg"; $("#sWhen").style.color="var(--muted2)";
+  return true;
+}
+
+$("#unlock").onclick=async()=>{
+  const k=$("#adminKey").value.trim();
+  if(!k){ $("#gErr").textContent="Paste the admin key."; return; }
+  $("#gErr").textContent="Checking…";
+  adminKey=k;
+  const ok=await loadStatus();
+  if(!ok){ $("#gErr").textContent="That key isn't right."; adminKey=""; return; }
+  sessionStorage.setItem("ojis.admin",k);
+  $("#gate").style.display="none"; $("#app").style.display="block";
+};
+$("#adminKey").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#unlock").click(); });
+$("#refresh").onclick=loadStatus;
+
+$("#savePw").onclick=async()=>{
+  const a=$("#pw1").value, b=$("#pw2").value;
+  if(a.length<6){ setMsg("#pwMsg","Use at least 6 characters.",false); return; }
+  if(a!==b){ setMsg("#pwMsg","The two passwords don't match.",false); return; }
+  $("#savePw").disabled=true; setMsg("#pwMsg","Saving…",true);
+  try{
+    const r=await rpc("ojis_set_password",{p_admin_key:adminKey,p_new_password:a});
+    if(r.result==="OK"){ setMsg("#pwMsg","Password changed. Tell the guards.",true); $("#pw1").value=""; $("#pw2").value=""; loadStatus(); }
+    else if(r.result==="TOO_SHORT") setMsg("#pwMsg","Too short.",false);
+    else setMsg("#pwMsg","Not authorised — unlock again.",false);
+  }catch(e){ setMsg("#pwMsg","Couldn't save. Check your connection.",false); }
+  $("#savePw").disabled=false;
+};
+
+$("#saveCode").onclick=async()=>{
+  const c=$("#newCode").value.trim();
+  if(!/^\d{4,10}$/.test(c)){ setMsg("#codeMsg","4 to 10 digits.",false); return; }
+  if(!confirm("Rotate the door code?\n\nEvery guard phone will be signed out and must enter the password again.")) return;
+  $("#saveCode").disabled=true; setMsg("#codeMsg","Rotating…",true);
+  try{
+    const r=await rpc("ojis_set_event_code",{p_admin_key:adminKey,p_new_code:c});
+    if(r.result==="OK"){ setMsg("#codeMsg","Door code is now "+esc(r.event_code)+". Guards must sign in again.",true); $("#newCode").value=""; loadStatus(); }
+    else if(r.result==="BAD_CODE") setMsg("#codeMsg","Digits only, 4–10 of them.",false);
+    else setMsg("#codeMsg","Not authorised — unlock again.",false);
+  }catch(e){ setMsg("#codeMsg","Couldn't save.",false); }
+  $("#saveCode").disabled=false;
+};
+
+if(adminKey){ loadStatus().then(ok=>{ if(ok){ $("#gate").style.display="none"; $("#app").style.display="block"; } else adminKey=""; }); }
+})();
+</script>
+</body>
+</html>
