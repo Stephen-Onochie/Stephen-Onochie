@@ -38,7 +38,25 @@ const securityHeaders = [
   },
 ]
 
+
+// Short, trustworthy ticket links for the Ojis @ 50 invitations.
+// stephenonochie.com/t/0010 -> the hosted ticket image for OJIS-2026-0010.
+// A supabase.co URL in a text message to 350 guests reads as spam; this does not.
+const ticketRedirects = {
+  async redirects() {
+    return [
+      {
+        source: '/t/:id(\\d{1,4})',
+        destination:
+          'https://qaunsrwutckiovtkvuhm.supabase.co/storage/v1/object/public/ojis-tickets/OJIS-2026-:id.jpg',
+        permanent: false,
+      },
+    ]
+  },
+}
+
 const nextConfig = {
+  ...ticketRedirects,
   async headers() {
     return [
       {
