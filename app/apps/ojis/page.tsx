@@ -1,11 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import IvenModule from '@/components/iven/IvenModule'
-import {
-  ShieldCheck, Users, RefreshCw, Plus, Trash2, KeyRound, Loader2, Check, X,
-} from 'lucide-react'
+import { Users, RefreshCw, Plus, Trash2, Check, X } from 'lucide-react'
 
 type Tab = 'live' | 'guards' | 'security'
 
@@ -31,8 +28,6 @@ interface Status {
 interface TableFill { table_number: string; table_side: string; seats: number; arrived: number }
 interface Recent { guest_name: string; table_number: string; checked_in_at: string; checked_in_by: string | null }
 
-const KEY_STORE = 'ojis.adminKey'
-
 function timeAgo(iso: string | null) {
   if (!iso) return '—'
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
@@ -42,20 +37,27 @@ function timeAgo(iso: string | null) {
   return new Date(iso).toLocaleDateString()
 }
 
+/** Every call is authorized by the session cookie on the server. */
+async function api(body?: Record<string, unknown>) {
+  const res = await fetch('/api/ojis', body
+    ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    : { cache: 'no-store' })
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}))
+    throw new Error(j.error || `Request failed (${res.status})`)
+  }
+  return res.json()
+}
+
 export default function OjisAdminPage() {
-  const supabase = createClient()
-
-  const [adminKey, setAdminKey] = useState('')
-  const [unlocked, setUnlocked] = useState(false)
-  const [gateErr, setGateErr] = useState('')
-  const [gateBusy, setGateBusy] = useState(false)
-
   const [tab, setTab] = useState<Tab>('live')
   const [status, setStatus] = useState<Status | null>(null)
   const [tables, setTables] = useState<TableFill[]>([])
   const [recent, setRecent] = useState<Recent[]>([])
   const [guards, setGuards] = useState<Guard[]>([])
+  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [loadErr, setLoadErr] = useState('')
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null)
 
   const flash = useCallback((ok: boolean, msg: string) => {
@@ -63,122 +65,49 @@ export default function OjisAdminPage() {
     setTimeout(() => setToast(null), 3500)
   }, [])
 
-  const rpc = useCallback(
-    async (fn: string, args: Record<string, unknown>) => {
-      const { data, error } = await supabase.rpc(fn, args)
-      if (error) throw new Error(error.message)
-      return data as Record<string, unknown>
-    },
-    [supabase]
-  )
-
-  /* ---------- data ---------- */
-
-  const loadAll = useCallback(
-    async (key: string) => {
-      setRefreshing(true)
-      try {
-        const s = (await rpc('ojis_admin_status', { p_admin_key: key })) as unknown as Status & { result: string }
-        if (s.result !== 'OK') {
-          setUnlocked(false)
-          sessionStorage.removeItem(KEY_STORE)
-          return
-        }
-        setStatus(s)
-
-        const d = (await rpc('ojis_dashboard', { p_event_code: s.event_code })) as {
-          result: string; tables?: TableFill[]; recent?: Recent[]
-        }
-        if (d.result === 'OK') {
-          setTables(d.tables ?? [])
-          setRecent(d.recent ?? [])
-        }
-
-        const g = (await rpc('ojis_guards_list', { p_admin_key: key })) as { result: string; guards?: Guard[] }
-        if (g.result === 'OK') setGuards(g.guards ?? [])
-      } catch (e) {
-        flash(false, e instanceof Error ? e.message : 'Could not reach the event database.')
-      } finally {
-        setRefreshing(false)
-      }
-    },
-    [rpc, flash]
-  )
-
-  // Resume a session without retyping the key.
-  useEffect(() => {
-    const saved = sessionStorage.getItem(KEY_STORE)
-    if (!saved) return
-    setAdminKey(saved)
-    setUnlocked(true)
-    loadAll(saved)
-  }, [loadAll])
-
-  // Live refresh while the Live tab is open.
-  useEffect(() => {
-    if (!unlocked || tab !== 'live') return
-    const t = setInterval(() => loadAll(adminKey), 15000)
-    return () => clearInterval(t)
-  }, [unlocked, tab, adminKey, loadAll])
-
-  async function submitKey(e: React.FormEvent) {
-    e.preventDefault()
-    setGateBusy(true)
-    setGateErr('')
+  const load = useCallback(async () => {
+    setRefreshing(true)
     try {
-      const s = (await rpc('ojis_admin_status', { p_admin_key: adminKey })) as { result: string }
-      if (s.result !== 'OK') {
-        setGateErr('That admin key is not right.')
-        return
-      }
-      sessionStorage.setItem(KEY_STORE, adminKey)
-      setUnlocked(true)
-      await loadAll(adminKey)
-    } catch {
-      setGateErr('Could not reach the event database.')
+      const d = await api()
+      setStatus(d.status)
+      setTables(d.tables ?? [])
+      setRecent(d.recent ?? [])
+      setGuards(d.guards ?? [])
+      setLoadErr('')
+    } catch (e) {
+      setLoadErr(e instanceof Error ? e.message : 'Could not reach the event database.')
     } finally {
-      setGateBusy(false)
+      setRefreshing(false)
+      setLoading(false)
     }
-  }
+  }, [])
 
-  /* ---------- gate ---------- */
+  useEffect(() => { load() }, [load])
 
-  if (!unlocked) {
-    return (
-      <IvenModule index={15} title="Ojis @ 50">
-        <form onSubmit={submitKey} className="max-w-sm w-full">
-          <div className="flex items-center gap-2 mb-3" style={{ color: 'var(--iven-muted)' }}>
-            <KeyRound size={16} />
-            <span className="font-mono text-[10px] tracking-[2px] font-semibold uppercase">Admin key</span>
-          </div>
-          <input
-            type="password"
-            value={adminKey}
-            autoComplete="off"
-            onChange={e => setAdminKey(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg font-inter text-sm outline-none"
-            style={{
-              background: 'var(--iven-surface)',
-              border: '1px solid var(--iven-border)',
-              color: 'var(--iven-text)',
-            }}
-          />
-          {gateErr && <p className="font-inter text-xs mt-2" style={{ color: '#c0392b' }}>{gateErr}</p>}
-          <button
-            type="submit"
-            disabled={gateBusy || !adminKey}
-            className="mt-4 px-4 py-2 rounded-lg font-mono text-[10px] tracking-[2px] font-semibold uppercase inline-flex items-center gap-2 disabled:opacity-50"
-            style={{ background: 'var(--iven-accent)', color: '#2C1F0E', border: 'none', cursor: 'pointer' }}
-          >
-            {gateBusy && <Loader2 size={13} className="animate-spin" />}
-            Unlock
-          </button>
-        </form>
-      </IvenModule>
-    )
-  }
+  useEffect(() => {
+    if (tab !== 'live') return
+    const t = setInterval(load, 15000)
+    return () => clearInterval(t)
+  }, [tab, load])
 
-  /* ---------- shell ---------- */
+  const mutate = useCallback(
+    async (body: Record<string, unknown>, okMsg: string, messages: Record<string, string> = {}) => {
+      try {
+        const r = (await api(body)) as { result: string }
+        if (r.result !== 'OK') {
+          flash(false, messages[r.result] ?? r.result.replace(/_/g, ' ').toLowerCase())
+          return false
+        }
+        flash(true, okMsg)
+        await load()
+        return true
+      } catch (e) {
+        flash(false, e instanceof Error ? e.message : 'Change failed.')
+        return false
+      }
+    },
+    [flash, load]
+  )
 
   const pct = status && status.total_guests > 0
     ? Math.round((status.checked_in / status.total_guests) * 100)
@@ -190,7 +119,7 @@ export default function OjisAdminPage() {
       title={status?.event_name ?? 'Ojis @ 50'}
       right={
         <button
-          onClick={() => loadAll(adminKey)}
+          onClick={load}
           className="inline-flex items-center gap-2 font-mono text-[10px] tracking-[1.5px] font-semibold uppercase"
           style={{ color: 'var(--iven-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
@@ -212,6 +141,12 @@ export default function OjisAdminPage() {
         </div>
       )}
 
+      {loadErr && (
+        <div className="mb-4 font-inter text-sm" style={{ color: '#c0392b' }}>
+          {loadErr}
+        </div>
+      )}
+
       <div className="flex gap-1 mb-6">
         {(['live', 'guards', 'security'] as Tab[]).map(t => (
           <button
@@ -230,29 +165,14 @@ export default function OjisAdminPage() {
         ))}
       </div>
 
-      {tab === 'live' && (
-        <LiveTab status={status} pct={pct} tables={tables} recent={recent} />
-      )}
-
-      {tab === 'guards' && (
-        <GuardsTab
-          guards={guards}
-          adminKey={adminKey}
-          rpc={rpc}
-          flash={flash}
-          reload={() => loadAll(adminKey)}
-        />
-      )}
-
-      {tab === 'security' && (
-        <SecurityTab
-          status={status}
-          adminKey={adminKey}
-          rpc={rpc}
-          flash={flash}
-          reload={() => loadAll(adminKey)}
-          onKeyChanged={k => { setAdminKey(k); sessionStorage.setItem(KEY_STORE, k) }}
-        />
+      {loading ? (
+        <p className="font-inter text-sm" style={{ color: 'var(--iven-muted)' }}>Loading…</p>
+      ) : (
+        <>
+          {tab === 'live' && <LiveTab status={status} pct={pct} tables={tables} recent={recent} />}
+          {tab === 'guards' && <GuardsTab guards={guards} mutate={mutate} />}
+          {tab === 'security' && <SecurityTab status={status} mutate={mutate} />}
+        </>
       )}
     </IvenModule>
   )
@@ -262,10 +182,7 @@ export default function OjisAdminPage() {
 
 function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div
-      className="rounded-xl p-4"
-      style={{ background: 'var(--iven-surface)', border: '1px solid var(--iven-border)' }}
-    >
+    <div className="rounded-xl p-4" style={{ background: 'var(--iven-surface)', border: '1px solid var(--iven-border)' }}>
       <div className="font-mono text-[9px] tracking-[2px] font-semibold uppercase mb-1" style={{ color: 'var(--iven-muted)' }}>
         {label}
       </div>
@@ -330,17 +247,11 @@ function LiveTab({
           Latest arrivals
         </h2>
         {recent.length === 0 ? (
-          <p className="font-inter text-sm" style={{ color: 'var(--iven-muted)' }}>
-            Nobody has checked in yet.
-          </p>
+          <p className="font-inter text-sm" style={{ color: 'var(--iven-muted)' }}>Nobody has checked in yet.</p>
         ) : (
           <div className="flex flex-col">
             {recent.map((r, i) => (
-              <div
-                key={`${r.guest_name}-${i}`}
-                className="flex items-center justify-between py-2"
-                style={{ borderBottom: '1px solid var(--iven-grid)' }}
-              >
+              <div key={`${r.guest_name}-${i}`} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--iven-grid)' }}>
                 <div>
                   <div className="font-inter text-sm" style={{ color: 'var(--iven-text)' }}>{r.guest_name}</div>
                   <div className="font-mono text-[10px] tracking-[1px]" style={{ color: 'var(--iven-muted)' }}>
@@ -348,9 +259,7 @@ function LiveTab({
                     {r.checked_in_by ? ` · ${r.checked_in_by}` : ''}
                   </div>
                 </div>
-                <div className="font-mono text-[10px]" style={{ color: 'var(--iven-muted)' }}>
-                  {timeAgo(r.checked_in_at)}
-                </div>
+                <div className="font-mono text-[10px]" style={{ color: 'var(--iven-muted)' }}>{timeAgo(r.checked_in_at)}</div>
               </div>
             ))}
           </div>
@@ -368,64 +277,37 @@ const inputStyle = {
   color: 'var(--iven-text)',
 } as const
 
-function GuardsTab({
-  guards, adminKey, rpc, flash, reload,
-}: {
-  guards: Guard[]
-  adminKey: string
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<Record<string, unknown>>
-  flash: (ok: boolean, msg: string) => void
-  reload: () => void
-}) {
+const GUARD_MESSAGES: Record<string, string> = {
+  BAD_NAME: 'Give the guard a name.',
+  WEAK_PASSWORD: 'Password needs at least 4 characters.',
+  PASSWORD_REQUIRED: 'A new guard needs a password.',
+  DUPLICATE_NAME: 'There is already a guard with that name.',
+  NOT_FOUND: 'That guard no longer exists.',
+}
+
+type Mutate = (body: Record<string, unknown>, okMsg: string, messages?: Record<string, string>) => Promise<boolean>
+
+function GuardsTab({ guards, mutate }: { guards: Guard[]; mutate: Mutate }) {
   const [name, setName] = useState('')
   const [post, setPost] = useState('')
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const messages: Record<string, string> = {
-    BAD_NAME: 'Give the guard a name.',
-    WEAK_PASSWORD: 'Password needs at least 4 characters.',
-    PASSWORD_REQUIRED: 'A new guard needs a password.',
-    DUPLICATE_NAME: 'There is already a guard with that name.',
-    NOT_FOUND: 'That guard no longer exists.',
-    UNAUTHORIZED: 'Admin key rejected.',
-  }
-
-  async function call(args: Record<string, unknown>, okMsg: string) {
-    setBusy(true)
-    try {
-      const r = (await rpc('ojis_guard_upsert', { p_admin_key: adminKey, ...args })) as { result: string }
-      if (r.result !== 'OK') { flash(false, messages[r.result] ?? r.result); return false }
-      flash(true, okMsg)
-      reload()
-      return true
-    } catch (e) {
-      flash(false, e instanceof Error ? e.message : 'Save failed.')
-      return false
-    } finally {
-      setBusy(false)
-    }
-  }
-
   async function add(e: React.FormEvent) {
     e.preventDefault()
-    const ok = await call(
-      { p_id: null, p_name: name, p_post: post, p_password: pw, p_active: true },
-      `${name.trim()} added.`
+    setBusy(true)
+    const ok = await mutate(
+      { action: 'guard_upsert', id: null, name, post, password: pw, active: true },
+      `${name.trim()} added.`,
+      GUARD_MESSAGES
     )
+    setBusy(false)
     if (ok) { setName(''); setPost(''); setPw('') }
   }
 
   async function remove(g: Guard) {
     if (!confirm(`Remove ${g.guard_name}? Their password stops working immediately.`)) return
-    try {
-      const r = (await rpc('ojis_guard_delete', { p_admin_key: adminKey, p_id: g.id })) as { result: string }
-      if (r.result !== 'OK') { flash(false, messages[r.result] ?? r.result); return }
-      flash(true, `${g.guard_name} removed.`)
-      reload()
-    } catch (e) {
-      flash(false, e instanceof Error ? e.message : 'Delete failed.')
-    }
+    await mutate({ action: 'guard_delete', id: g.id }, `${g.guard_name} removed.`, GUARD_MESSAGES)
   }
 
   return (
@@ -465,24 +347,27 @@ function GuardsTab({
         </p>
       ) : (
         <div className="flex flex-col">
-          {guards.map(g => (
-            <GuardRow key={g.id} g={g} busy={busy} onSave={call} onRemove={() => remove(g)} />
-          ))}
+          {guards.map(g => <GuardRow key={g.id} g={g} mutate={mutate} onRemove={() => remove(g)} />)}
         </div>
       )}
     </div>
   )
 }
 
-function GuardRow({
-  g, busy, onSave, onRemove,
-}: {
-  g: Guard
-  busy: boolean
-  onSave: (args: Record<string, unknown>, okMsg: string) => Promise<boolean>
-  onRemove: () => void
-}) {
+function GuardRow({ g, mutate, onRemove }: { g: Guard; mutate: Mutate; onRemove: () => void }) {
   const [newPw, setNewPw] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function save(password: string, active: boolean, okMsg: string) {
+    setBusy(true)
+    const ok = await mutate(
+      { action: 'guard_upsert', id: g.id, name: g.guard_name, post: g.post ?? '', password, active },
+      okMsg,
+      GUARD_MESSAGES
+    )
+    setBusy(false)
+    return ok
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-3 py-3" style={{ borderBottom: '1px solid var(--iven-grid)' }}>
@@ -490,9 +375,7 @@ function GuardRow({
         <div className="font-inter text-sm" style={{ color: 'var(--iven-text)' }}>
           {g.guard_name}
           {!g.active && (
-            <span className="ml-2 font-mono text-[9px] tracking-[1.5px] uppercase" style={{ color: '#c0392b' }}>
-              disabled
-            </span>
+            <span className="ml-2 font-mono text-[9px] tracking-[1.5px] uppercase" style={{ color: '#c0392b' }}>disabled</span>
           )}
         </div>
         <div className="font-mono text-[10px] tracking-[1px]" style={{ color: 'var(--iven-muted)' }}>
@@ -500,23 +383,11 @@ function GuardRow({
         </div>
       </div>
 
-      <input
-        value={newPw}
-        onChange={e => setNewPw(e.target.value)}
-        placeholder="New password"
-        autoComplete="new-password"
-        className="px-2 py-[6px] rounded-lg font-inter text-xs outline-none"
-        style={{ ...inputStyle, width: 150 }}
-      />
+      <input value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="New password" autoComplete="new-password"
+        className="px-2 py-[6px] rounded-lg font-inter text-xs outline-none" style={{ ...inputStyle, width: 150 }} />
       <button
         disabled={busy || !newPw}
-        onClick={async () => {
-          const ok = await onSave(
-            { p_id: g.id, p_name: g.guard_name, p_post: g.post ?? '', p_password: newPw, p_active: g.active },
-            `${g.guard_name}'s password changed.`
-          )
-          if (ok) setNewPw('')
-        }}
+        onClick={async () => { if (await save(newPw, g.active, `${g.guard_name}'s password changed.`)) setNewPw('') }}
         className="px-3 py-[6px] rounded-lg font-mono text-[9px] tracking-[1.5px] font-semibold uppercase disabled:opacity-40"
         style={{ background: 'transparent', border: '1px solid var(--iven-border)', color: 'var(--iven-text)', cursor: 'pointer' }}
       >
@@ -524,10 +395,7 @@ function GuardRow({
       </button>
       <button
         disabled={busy}
-        onClick={() => onSave(
-          { p_id: g.id, p_name: g.guard_name, p_post: g.post ?? '', p_password: '', p_active: !g.active },
-          `${g.guard_name} ${g.active ? 'disabled' : 're-enabled'}.`
-        )}
+        onClick={() => save('', !g.active, `${g.guard_name} ${g.active ? 'disabled' : 're-enabled'}.`)}
         className="px-3 py-[6px] rounded-lg font-mono text-[9px] tracking-[1.5px] font-semibold uppercase disabled:opacity-40"
         style={{ background: 'transparent', border: '1px solid var(--iven-border)', color: 'var(--iven-muted)', cursor: 'pointer' }}
       >
@@ -547,39 +415,18 @@ function GuardRow({
 
 /* ================= Security ================= */
 
-function SecurityTab({
-  status, adminKey, rpc, flash, reload, onKeyChanged,
-}: {
-  status: Status | null
-  adminKey: string
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<Record<string, unknown>>
-  flash: (ok: boolean, msg: string) => void
-  reload: () => void
-  onKeyChanged: (k: string) => void
-}) {
+function SecurityTab({ status, mutate }: { status: Status | null; mutate: Mutate }) {
   const [doorPw, setDoorPw] = useState('')
   const [code, setCode] = useState('')
-  const [newKey, setNewKey] = useState('')
   const [busy, setBusy] = useState(false)
 
-  async function run(fn: string, args: Record<string, unknown>, okMsg: string, after?: () => void) {
+  async function run(body: Record<string, unknown>, okMsg: string, after: () => void) {
     setBusy(true)
-    try {
-      const r = (await rpc(fn, { p_admin_key: adminKey, ...args })) as { result: string }
-      if (r.result !== 'OK') { flash(false, r.result.replace(/_/g, ' ').toLowerCase()); return }
-      flash(true, okMsg)
-      after?.()
-      reload()
-    } catch (e) {
-      flash(false, e instanceof Error ? e.message : 'Change failed.')
-    } finally {
-      setBusy(false)
-    }
+    if (await mutate(body, okMsg)) after()
+    setBusy(false)
   }
 
-  const btn = {
-    background: 'var(--iven-accent)', color: '#2C1F0E', border: 'none', cursor: 'pointer',
-  } as const
+  const btn = { background: 'var(--iven-accent)', color: '#2C1F0E', border: 'none', cursor: 'pointer' } as const
 
   return (
     <div className="flex flex-col gap-7 max-w-lg">
@@ -595,7 +442,8 @@ function SecurityTab({
           <input type="password" value={doorPw} onChange={e => setDoorPw(e.target.value)} autoComplete="new-password"
             placeholder="At least 6 characters"
             className="flex-1 px-3 py-2 rounded-lg font-inter text-sm outline-none" style={inputStyle} />
-          <button disabled={busy || doorPw.length < 6} onClick={() => run('ojis_set_password', { p_new_password: doorPw }, 'Door password changed.', () => setDoorPw(''))}
+          <button disabled={busy || doorPw.length < 6}
+            onClick={() => run({ action: 'set_password', password: doorPw }, 'Door password changed.', () => setDoorPw(''))}
             className="px-4 py-2 rounded-lg font-mono text-[10px] tracking-[2px] font-semibold uppercase disabled:opacity-50" style={btn}>
             Change
           </button>
@@ -613,28 +461,10 @@ function SecurityTab({
         <div className="flex gap-2">
           <input value={code} onChange={e => setCode(e.target.value)} inputMode="numeric" placeholder="6 digits"
             className="flex-1 px-3 py-2 rounded-lg font-inter text-sm outline-none" style={inputStyle} />
-          <button disabled={busy || !/^\d{4,8}$/.test(code)} onClick={() => run('ojis_set_event_code', { p_new_code: code }, 'Event code rotated.', () => setCode(''))}
+          <button disabled={busy || !/^\d{4,8}$/.test(code)}
+            onClick={() => run({ action: 'set_event_code', code }, 'Event code rotated.', () => setCode(''))}
             className="px-4 py-2 rounded-lg font-mono text-[10px] tracking-[2px] font-semibold uppercase disabled:opacity-50" style={btn}>
             Rotate
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <h2 className="font-mono text-[10px] tracking-[2px] font-semibold uppercase mb-1 inline-flex items-center gap-2" style={{ color: 'var(--iven-muted)' }}>
-          <ShieldCheck size={13} /> Admin key
-        </h2>
-        <p className="font-inter text-xs mb-2" style={{ color: 'var(--iven-muted)' }}>
-          The key for this page. Only you need it.
-        </p>
-        <div className="flex gap-2">
-          <input type="password" value={newKey} onChange={e => setNewKey(e.target.value)} autoComplete="new-password"
-            placeholder="At least 8 characters"
-            className="flex-1 px-3 py-2 rounded-lg font-inter text-sm outline-none" style={inputStyle} />
-          <button disabled={busy || newKey.length < 8}
-            onClick={() => run('ojis_set_admin_key', { p_new_key: newKey }, 'Admin key changed.', () => { onKeyChanged(newKey); setNewKey('') })}
-            className="px-4 py-2 rounded-lg font-mono text-[10px] tracking-[2px] font-semibold uppercase disabled:opacity-50" style={btn}>
-            Change
           </button>
         </div>
       </div>
