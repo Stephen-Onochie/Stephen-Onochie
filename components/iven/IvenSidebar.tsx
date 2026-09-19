@@ -19,6 +19,7 @@ import {
   BookOpen,
   Briefcase,
   Globe,
+  ShieldCheck,
   Settings,
   LogOut,
   Moon,
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
   { label: 'LG REMOTE', icon: Tv2, href: '/apps/lg-remote' },
   { label: 'DORM OS', icon: Sofa, href: '/apps/dorm' },
   { label: 'PUBLIC VIEW', icon: Globe, href: '/apps/public-view' },
+  { label: 'OJIS @ 50', icon: ShieldCheck, href: '/apps/ojis' },
 ]
 
 export default function IvenSidebar() {
