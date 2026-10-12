@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { dedupeKey, computePriority } from '@/lib/internship/ingest'
+import { dedupeKeys, computePriority } from '@/lib/internship/ingest'
 import { buildIngestEmail } from '@/lib/internship/ingest-email'
 import { daysUntil } from '@/lib/internship/dates'
 import type {
@@ -62,8 +62,8 @@ export async function POST(req: Request) {
   }
 
   const seen = new Set<string>(
-    (existingRows ?? []).map(r =>
-      dedupeKey({
+    (existingRows ?? []).flatMap(r =>
+      dedupeKeys({
         job_url: r.job_url,
         company: r.company,
         role_title: r.role_title,
@@ -79,12 +79,12 @@ export async function POST(req: Request) {
       skippedDuplicates++ // malformed candidate; count as skipped rather than insert junk
       continue
     }
-    const key = dedupeKey(c)
-    if (seen.has(key)) {
+    const keys = dedupeKeys(c)
+    if (keys.some(k => seen.has(k))) {
       skippedDuplicates++
       continue
     }
-    seen.add(key)
+    keys.forEach(k => seen.add(k))
     fresh.push(c)
   }
 

@@ -72,11 +72,14 @@ session is stateless, so rely only on the steps below and the live APIs.
 2. Run scripts/ingest-sources.ts to fetch and normalize all sources, piping the targets
    JSON from step 1 into its stdin:
      echo '<targets json>' | npx tsx scripts/ingest-sources.ts
-   This returns { postings: [...], failed_sources: [...] } covering the three community
-   Summer 2027 listings.json feeds plus each ATS target's public board.
+   This returns { postings: [...], failed_sources: [...] } covering the community
+   Summer 2027 feeds, the LinkedIn searches in LINKEDIN_SEARCHES, and each ATS
+   target's public board.
 3. From postings, keep only those that are: an internship, for Summer 2027, and
    classifiable as one of [swe, embedded, backend, robotics, ml, hardware, product].
-   Drop everything else. Do NOT drop by location or pay.
+   Drop everything else. Do NOT drop by location or pay. LinkedIn postings
+   (source board:linkedin) usually don't name a season: treat them as Summer 2027
+   unless the title names a different term (Fall, Spring, Winter, 2026, co-op only).
 4. For each kept posting set: company, role_title, job_url, location, city_tag
    (indy/chicago/austin/remote/other), lane (lane1_program/lane2_portal/lane3_startup),
    role_type, season="summer_2027", is_paid_confirmed (true only if the posting states
@@ -85,7 +88,7 @@ session is stateless, so rely only on the steps below and the live APIs.
    posting). Lane rules: lane1_program if it matches an underclassman program (Salesforce
    Futureforce, Amazon, Microsoft Explore, Google STEP, NVIDIA Ignite, Meta University,
    Two Sigma, Duolingo, Pinterest Engage, UberSTAR); else ats:* sources -> lane3_startup,
-   community feed:* sources -> lane2_portal. city_tag indy includes Indianapolis/Carmel/
+   community feed:* and job-board board:* sources -> lane2_portal. city_tag indy includes Indianapolis/Carmel/
    Fishers/Zionsville/Columbus IN metro; remote = US-remote; any other US -> other.
 5. POST the batch to ${INGEST_API_URL} with the bearer header and body
    { run_at, first_run, candidates: [...] }. Set first_run=true ONLY on the very first
@@ -104,6 +107,16 @@ session is stateless, so rely only on the steps below and the live APIs.
   the lane/city matrix, and that duplicates + wrong-season candidates are skipped.
 - Newly-discovered rows and Lane 1 deadlines (≤7 days) appear in the next Sunday digest
   (`/api/cron/internship-digest`); the ingest API itself sends no email.
+
+## Adding a LinkedIn search
+Paste any `linkedin.com/jobs/search…` URL into `LINKEDIN_SEARCHES` in
+`scripts/ingest-sources.ts`. Its keywords, location, distance and every `f_*`
+filter are forwarded to LinkedIn's logged-out jobs endpoint (10 results/page,
+up to 5 pages, 1.5 s between requests). Results land as `source=board:linkedin`
+with canonical `linkedin.com/jobs/view/<id>` URLs. A throttled search shows up in
+`failed_sources` and the rest of the run continues. This is the logged-out page
+LinkedIn shows anyone, but automated access is against LinkedIn's user
+agreement — keep the search list small.
 
 ## Adding a company later
 Insert a row into `internship_targets` (company + ats_platform + ats_slug, `active=true`).
