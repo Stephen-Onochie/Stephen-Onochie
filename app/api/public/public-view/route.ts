@@ -36,6 +36,7 @@ export async function GET() {
     resumeHeading: data.resume_heading,
     resumeBlurb: data.resume_blurb,
     showCurrentlyReading: data.show_currently_reading,
+    showCurrentlyWatching: data.show_currently_watching,
     githubUrl: data.github_url,
     linkedinUrl: data.linkedin_url,
     instagramUrl: data.instagram_url,

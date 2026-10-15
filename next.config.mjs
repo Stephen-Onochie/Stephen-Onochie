@@ -2,7 +2,7 @@
 
 // Content-Security-Policy scoped to what the site actually loads:
 // - self for app assets/API; Supabase for auth + storage (https + websocket realtime)
-// - Instagram for the profile embed iframe
+// - Instagram for the profile embed iframe; youtube-nocookie for Watchlist trailers
 // - Google Fonts for the Ojis @ 50 check-in pages (Playfair Display + Manrope)
 // - 'unsafe-inline'/'unsafe-eval' on scripts are required by Next.js' inline runtime
 //   (tighten later with nonces if desired)
@@ -13,7 +13,7 @@ const cspDirectives = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.trycloudflare.com",
-  "frame-src https://www.instagram.com",
+  "frame-src https://www.instagram.com https://www.youtube-nocookie.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -7,6 +7,7 @@ export interface PublicViewSettings {
   resume_heading: string
   resume_blurb: string
   show_currently_reading: boolean
+  show_currently_watching: boolean
   github_url: string
   linkedin_url: string
   instagram_url: string
@@ -20,6 +21,7 @@ export interface PublicViewData {
   resumeHeading: string
   resumeBlurb: string
   showCurrentlyReading: boolean
+  showCurrentlyWatching: boolean
   githubUrl: string
   linkedinUrl: string
   instagramUrl: string
@@ -32,6 +34,7 @@ export const PUBLIC_VIEW_DEFAULTS: PublicViewData = {
   resumeHeading: 'Resume',
   resumeBlurb: 'Download a PDF overview of engineering experience, projects, and leadership.',
   showCurrentlyReading: true,
+  showCurrentlyWatching: true,
   githubUrl: 'https://github.com/Stephen-Onochie',
   linkedinUrl: 'https://linkedin.com/in/stephen-onochie-305760235',
   instagramUrl: 'https://www.instagram.com/stephenconochie/',

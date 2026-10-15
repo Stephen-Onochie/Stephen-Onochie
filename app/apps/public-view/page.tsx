@@ -20,6 +20,7 @@ export default function PublicViewPage() {
   const [resumeHeading, setResumeHeading] = useState('')
   const [resumeBlurb, setResumeBlurb] = useState('')
   const [showReading, setShowReading] = useState(true)
+  const [showWatching, setShowWatching] = useState(true)
   const [githubUrl, setGithubUrl] = useState('')
   const [linkedinUrl, setLinkedinUrl] = useState('')
   const [instagramUrl, setInstagramUrl] = useState('')
@@ -30,6 +31,7 @@ export default function PublicViewPage() {
     setResumeHeading(s.resume_heading)
     setResumeBlurb(s.resume_blurb)
     setShowReading(s.show_currently_reading)
+    setShowWatching(s.show_currently_watching)
     setGithubUrl(s.github_url)
     setLinkedinUrl(s.linkedin_url)
     setInstagramUrl(s.instagram_url)
@@ -49,6 +51,7 @@ export default function PublicViewPage() {
       resume_heading: resumeHeading.trim(),
       resume_blurb: resumeBlurb.trim(),
       show_currently_reading: showReading,
+      show_currently_watching: showWatching,
       github_url: githubUrl.trim(),
       linkedin_url: linkedinUrl.trim(),
       instagram_url: instagramUrl.trim(),
@@ -107,6 +110,16 @@ export default function PublicViewPage() {
               />
               <span className="text-[13px]" style={{ color: 'var(--iven-text)' }}>
                 Show the “Currently Reading” card on the public site
+              </span>
+            </label>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showWatching}
+                onChange={e => setShowWatching(e.target.checked)}
+              />
+              <span className="text-[13px]" style={{ color: 'var(--iven-text)' }}>
+                Show the “Currently Watching” card on the public site (pick the title in Watchlist)
               </span>
             </label>
           </Section>

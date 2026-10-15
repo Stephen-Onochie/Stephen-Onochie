@@ -4,6 +4,7 @@ import SiteHeader from '@/components/portfolio/SiteHeader'
 import Hero from '@/components/portfolio/Hero'
 import GridMatrix from '@/components/portfolio/GridMatrix'
 import CurrentlyReadingCard from '@/components/portfolio/CurrentlyReadingCard'
+import CurrentlyWatchingCard from '@/components/portfolio/CurrentlyWatchingCard'
 import GitHubSection from '@/components/portfolio/GitHubSection'
 import ResumeCTA from '@/components/portfolio/ResumeCTA'
 import Footer from '@/components/portfolio/Footer'
@@ -17,6 +18,7 @@ export default function Home() {
           <Hero />
           <GridMatrix />
           <CurrentlyReadingCard />
+          <CurrentlyWatchingCard />
           <GitHubSection />
           <ResumeCTA />
         </main>
