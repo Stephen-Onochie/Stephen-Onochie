@@ -2,21 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { CalendarDays, CloudRain, Loader2, Pencil, Sparkles, Wand2 } from 'lucide-react'
+import { CalendarDays, CloudRain, Library, Loader2, Pencil, Plus, Sparkles, Wand2 } from 'lucide-react'
 import { addDaysToDateStr, easternWeekday, todayEastern } from '@/lib/dates'
-import { OCCASION_PRESETS, PALETTES, WEEKLY_SLOTS } from '@/lib/stylemate/constants'
+import { OCCASION_PRESETS, PALETTES, SLOT_LABELS, WEEKLY_SLOTS } from '@/lib/stylemate/constants'
 import { planLength } from '@/lib/stylemate/plan'
 import {
   deleteOutfit,
   fetchOutfits,
   fetchSavedOutfits,
+  moveOutfit,
   updateOutfit,
   wearOutfit,
   withOutfitUrls,
 } from '@/lib/stylemate/supabase'
-import type { DayWeather, Outfit, OutfitView, WardrobeItemView } from '@/types/stylemate'
+import type { DayWeather, Outfit, OutfitSlot, OutfitView, WardrobeItemView } from '@/types/stylemate'
 import EstimatedProgress from './EstimatedProgress'
-import OutfitCard, { type OutfitActions } from './OutfitCard'
+import OutfitBuilder, { type BuilderResult } from './OutfitBuilder'
+import OutfitCard, { shortDate, type OutfitActions } from './OutfitCard'
 import { Button, Chip, inputStyle, SectionLabel } from './shared'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -48,15 +50,19 @@ function WeatherLine({ weather }: { weather: DayWeather }) {
   )
 }
 
+type LibraryFilter = 'all' | 'undated' | OutfitSlot
+
 export default function OutfitsView({
   supabase,
   items,
+  dark,
   onItemsUpdated,
   onOpenItem,
   notify,
 }: {
   supabase: SupabaseClient
   items: WardrobeItemView[]
+  dark: boolean
   onItemsUpdated: (items: WardrobeItemView[]) => void
   onOpenItem: (item: WardrobeItemView) => void
   notify: (message: string) => void
@@ -85,6 +91,11 @@ export default function OutfitsView({
   const [generating, setGenerating] = useState(false)
   const [fresh, setFresh] = useState<string[]>([])
 
+  const [section, setSection] = useState<'plan' | 'library'>('plan')
+  const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>('all')
+  const [builderOpen, setBuilderOpen] = useState(false)
+  const [editing, setEditing] = useState<OutfitView | null>(null)
+
   const itemMap = useMemo(() => new Map(items.map(i => [i.id, i])), [items])
   const ownedCount = items.filter(i => !i.is_incoming).length
 
@@ -110,7 +121,7 @@ export default function OutfitsView({
   const weather = weatherOverride ?? baseWeather
 
   const replace = useCallback((next: OutfitView) => {
-    setOutfits(prev => prev.map(o => (o.id === next.id ? next : o)))
+    setOutfits(prev => (prev.some(o => o.id === next.id) ? prev.map(o => (o.id === next.id ? next : o)) : [...prev, next]))
     setSaved(prev => {
       const without = prev.filter(o => o.id !== next.id)
       return next.saved ? [next, ...without] : without
@@ -137,13 +148,45 @@ export default function OutfitsView({
       onItemsUpdated(result.items)
       notify('Logged. Those pieces get a rest from the next plans.')
     },
-    toggleSave: async outfit => replace(await updateOutfit(supabase, outfit.id, { saved: !outfit.saved })),
+    toggleSave: async outfit => {
+      if (outfit.saved && outfit.plan_date === null) {
+        notify('Outfits with no day live in your library. Put it on a day first, or delete it.')
+        return
+      }
+      replace(await updateOutfit(supabase, outfit.id, { saved: !outfit.saved }))
+    },
     remove: async outfit => {
       await deleteOutfit(supabase, outfit)
       setOutfits(prev => prev.filter(o => o.id !== outfit.id))
       setSaved(prev => prev.filter(o => o.id !== outfit.id))
     },
+    move: async (outfit, date) => {
+      replace(await moveOutfit(supabase, outfit, date))
+      notify(date ? `Moved to ${shortDate(date)}.` : 'Kept in your library, off the calendar.')
+    },
+    edit: outfit => {
+      setEditing(outfit)
+      setBuilderOpen(true)
+    },
     openItem: onOpenItem,
+  }
+
+  function openBuilder() {
+    setEditing(null)
+    setBuilderOpen(true)
+  }
+
+  async function saveBuilt(result: BuilderResult, existing: OutfitView | null) {
+    try {
+      const { outfit } = await postJson<{ outfit: Outfit }>('/api/stylemate/outfits/custom', { ...result, id: existing?.id })
+      const [view] = await withOutfitUrls(supabase, [outfit])
+      replace(view)
+      setBuilderOpen(false)
+      if (view.plan_date) setSelectedDay(view.plan_date)
+      notify(existing ? 'Outfit updated.' : view.plan_date ? `Saved "${view.title}" to ${shortDate(view.plan_date)}.` : `Saved "${view.title}" to your library.`)
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Could not save the outfit')
+    }
   }
 
   async function createOutfits() {
@@ -185,10 +228,79 @@ export default function OutfitsView({
   const dayOutfits = outfits
     .filter(o => o.plan_date === selectedDay && !fresh.includes(o.id))
     .sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot))
-  const savedOnly = saved.filter(o => !outfits.some(x => x.id === o.id))
+  const library = saved.filter(o =>
+    libraryFilter === 'all' ? true : libraryFilter === 'undated' ? o.plan_date === null : o.slot === libraryFilter,
+  )
+  const undatedCount = saved.filter(o => o.plan_date === null).length
+
+  const builder = (
+    <OutfitBuilder
+      open={builderOpen}
+      outfit={editing}
+      items={items}
+      dark={dark}
+      defaultDate={section === 'plan' ? selectedDay : null}
+      onClose={() => setBuilderOpen(false)}
+      onSave={saveBuilt}
+    />
+  )
+
+  const header = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--iven-surface)', border: '1px solid var(--iven-grid)' }}>
+        {([['plan', 'Plan', CalendarDays], ['library', `Library · ${saved.length}`, Library]] as const).map(([id, label, Icon]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setSection(id)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-[11px] uppercase tracking-[1.5px] font-semibold"
+            style={section === id ? { background: 'var(--iven-accent)', color: '#2C1F0E' } : { color: 'var(--iven-muted)' }}
+          >
+            <Icon size={14} /> {label}
+          </button>
+        ))}
+      </div>
+      <Button variant="ghost" onClick={openBuilder} disabled={ownedCount < 2}>
+        <Plus size={13} /> Build an outfit
+      </Button>
+    </div>
+  )
+
+  if (section === 'library') {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <div className="flex gap-1.5 overflow-x-auto iven-no-scrollbar pb-1">
+          <Chip active={libraryFilter === 'all'} onClick={() => setLibraryFilter('all')} count={saved.length}>All</Chip>
+          <Chip active={libraryFilter === 'undated'} onClick={() => setLibraryFilter('undated')} count={undatedCount}>No day</Chip>
+          {(Object.keys(SLOT_LABELS) as OutfitSlot[]).map(s => {
+            const n = saved.filter(o => o.slot === s).length
+            return n ? <Chip key={s} active={libraryFilter === s} onClick={() => setLibraryFilter(s)} count={n}>{SLOT_LABELS[s]}</Chip> : null
+          })}
+        </div>
+        {library.length === 0 ? (
+          <div className="text-center py-16 rounded-2xl" style={{ border: '1px dashed var(--iven-grid)' }}>
+            <p className="font-playfair text-xl font-bold mb-2" style={{ color: 'var(--iven-text)' }}>
+              {saved.length === 0 ? 'No saved outfits yet' : 'Nothing in this filter'}
+            </p>
+            <p className="font-inter text-sm mb-5" style={{ color: 'var(--iven-muted)' }}>
+              Save any outfit with the bookmark, move one off the calendar, or build your own.
+            </p>
+            <Button onClick={openBuilder} disabled={ownedCount < 2}><Plus size={14} /> Build an outfit</Button>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {library.map(o => <OutfitCard key={o.id} outfit={o} items={itemMap} actions={actions} showDate />)}
+          </div>
+        )}
+        {builder}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-8">
+      {header}
       <section className="rounded-2xl p-5" style={{ background: 'var(--iven-surface)', border: '1px solid var(--iven-border)' }}>
         <div className="flex items-center gap-2 mb-4">
           <Wand2 size={18} style={{ color: 'var(--iven-accent)' }} />
@@ -393,7 +505,7 @@ export default function OutfitsView({
         ) : dayOutfits.length === 0 ? (
           <div className="text-center py-12 rounded-2xl" style={{ border: '1px dashed var(--iven-grid)' }}>
             <p className="font-inter text-sm" style={{ color: 'var(--iven-muted)' }}>
-              Nothing planned for {dayName(selectedDay)} yet. Create one above or plan the week.
+              Nothing planned for {dayName(selectedDay)} yet. Create one above, build your own, or move one here from your library.
             </p>
           </div>
         ) : (
@@ -402,15 +514,7 @@ export default function OutfitsView({
           </div>
         )}
       </section>
-
-      {savedOnly.length > 0 && (
-        <section>
-          <SectionLabel>Saved looks · {savedOnly.length}</SectionLabel>
-          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {savedOnly.map(o => <OutfitCard key={o.id} outfit={o} items={itemMap} actions={actions} />)}
-          </div>
-        </section>
-      )}
+      {builder}
     </div>
   )
 }

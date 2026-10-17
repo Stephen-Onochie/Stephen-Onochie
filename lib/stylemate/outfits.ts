@@ -2,8 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
 import { z } from 'zod/v4'
 import { claudeClient, ClaudeRefusalError, FALLBACK_PARAMS } from '@/lib/stylemate/claude'
-import { addDaysToDateStr } from '@/lib/dates'
-import { CLAUDE_MODEL } from '@/lib/stylemate/constants'
+import { CLAUDE_MODEL, SLOT_LABELS } from '@/lib/stylemate/constants'
+import { sundayOf } from '@/lib/stylemate/plan'
+import { isSweater, isTee } from '@/lib/stylemate/rules'
+
+export { isSweater, isTee }
 import { describeDay } from '@/lib/stylemate/weather'
 import type { DayWeather, Outfit, OutfitOrigin, OutfitSlot, WardrobeItem } from '@/types/stylemate'
 
@@ -50,19 +53,9 @@ Writing:
 
 Return one entry per requested outfit, with key copied from its brief.`
 
-const LAYER_TOP = /hoodie|sweat|sweater|cardigan|knit|fleece|zip|jumper|crewneck_sweat/i
 const RECENT_WEAR_DAYS = 14
 
-/** Tops worn against the skin (tees, tanks, polos, shirts) follow the no-repeat rule; layering tops don't. */
-export function isTee(item: Pick<WardrobeItem, 'category' | 'sub_type' | 'name'>): boolean {
-  return item.category === 'top' && !LAYER_TOP.test(`${item.sub_type ?? ''} ${item.name}`)
-}
 
-const SWEATER = /sweater|jumper|cardigan|pullover|turtleneck/i
-
-export function isSweater(item: Pick<WardrobeItem, 'category' | 'sub_type' | 'name'>): boolean {
-  return item.category === 'top' && SWEATER.test(`${item.sub_type ?? ''} ${item.name}`)
-}
 
 function recentlyWorn(item: Pick<WardrobeItem, 'last_worn_on'>): boolean {
   if (!item.last_worn_on) return false
@@ -279,11 +272,6 @@ async function enforceNoRepeatTees(outfits: GeneratedOutfit[], items: WardrobeIt
   return next
 }
 
-function sundayOf(date: string): string {
-  const [y, m, d] = date.split('-').map(Number)
-  return addDaysToDateStr(date, -new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay())
-}
-
 export async function generateAndStoreOutfits(
   supabase: SupabaseClient,
   userId: string,
@@ -316,4 +304,35 @@ export async function generateAndStoreOutfits(
   const { data, error } = await supabase.from('stylemate_outfits').insert(rows).select('*')
   if (error) throw error
   return (data as Outfit[]) ?? []
+}
+
+const descriptionSchema = z.object({ title: z.string(), reasoning: z.string(), styling_tip: z.string() })
+
+const DESCRIBE_SYSTEM = `You are the personal stylist inside StyleMate. The owner put this outfit together themselves: describe it, don't change it.
+- title: 2-5 punchy words (e.g. "Tonal Earth Layers", "Monochrome Night Out").
+- reasoning: 1-2 sentences on why the colors and shapes work together. Specific, not hype.
+- styling_tip: one concrete wearing tip (tuck, cuff, layer, sleeve push, accessory placement).`
+
+/** Title, reasoning and a styling tip for an outfit the owner put together by hand. */
+export async function describeOutfit(
+  pieces: WardrobeItem[],
+  slot: OutfitSlot,
+): Promise<{ title: string; reasoning: string; styling_tip: string }> {
+  const response = await claudeClient().beta.messages.parse({
+    model: CLAUDE_MODEL,
+    max_tokens: 4000,
+    ...FALLBACK_PARAMS,
+    system: DESCRIBE_SYSTEM,
+    output_config: { effort: 'low', format: betaZodOutputFormat(descriptionSchema) },
+    messages: [{
+      role: 'user',
+      content: `Occasion: ${SLOT_LABELS[slot]}\nPieces:\n${serializeCloset(pieces)}`,
+    }],
+  })
+  const parsed = response.stop_reason === 'refusal' ? null : response.parsed_output
+  return {
+    title: parsed?.title.trim() || 'My Look',
+    reasoning: parsed?.reasoning.trim() ?? '',
+    styling_tip: parsed?.styling_tip.trim() ?? '',
+  }
 }

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Bookmark, BookmarkCheck, Check, Download, ImageIcon, LayoutGrid, Loader2, PersonStanding, RefreshCw, Trash2 } from 'lucide-react'
+import { Bookmark, BookmarkCheck, CalendarDays, Check, Download, ImageIcon, LayoutGrid, Library, Loader2, Pencil, PersonStanding, RefreshCw, Trash2 } from 'lucide-react'
+import { addDaysToDateStr, todayEastern } from '@/lib/dates'
 import { SLOT_LABELS } from '@/lib/stylemate/constants'
 import type { OutfitImageKind, OutfitView, WardrobeItemView } from '@/types/stylemate'
 import { ItemImage } from './shared'
@@ -11,7 +12,55 @@ export interface OutfitActions {
   wear: (outfit: OutfitView) => Promise<void>
   toggleSave: (outfit: OutfitView) => Promise<void>
   remove: (outfit: OutfitView) => Promise<void>
+  move: (outfit: OutfitView, date: string | null) => Promise<void>
+  edit: (outfit: OutfitView) => void
   openItem: (item: WardrobeItemView) => void
+}
+
+const MOVE_DAYS = 14
+
+export function shortDate(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+}
+
+function MoveMenu({ outfit, onPick, onClose }: { outfit: OutfitView; onPick: (date: string | null) => void; onClose: () => void }) {
+  const today = todayEastern()
+  const days = Array.from({ length: MOVE_DAYS }, (_, i) => addDaysToDateStr(today, i))
+  return (
+    <>
+      <button type="button" aria-label="Close" className="fixed inset-0 z-10 cursor-default" onClick={onClose} />
+      <div
+        className="absolute bottom-full left-0 mb-2 z-20 w-64 rounded-xl p-2 shadow-lg"
+        style={{ background: 'var(--iven-bg)', border: '1px solid var(--iven-border)' }}
+        role="menu"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => onPick(null)}
+          className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 font-inter text-[13px] text-left"
+          style={outfit.plan_date === null ? { background: 'var(--iven-accent)', color: '#2C1F0E' } : { color: 'var(--iven-text)' }}
+        >
+          <Library size={13} /> Library only (no day)
+        </button>
+        <div className="grid grid-cols-2 gap-1 mt-1">
+          {days.map(d => (
+            <button
+              key={d}
+              type="button"
+              role="menuitem"
+              onClick={() => onPick(d)}
+              className="rounded-lg px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.5px] text-left"
+              style={outfit.plan_date === d ? { background: 'var(--iven-accent)', color: '#2C1F0E' } : { color: 'var(--iven-text)', border: '1px solid var(--iven-grid)' }}
+            >
+              {d === today ? 'Today' : shortDate(d)}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  )
 }
 
 function IconButton({
@@ -46,14 +95,17 @@ export default function OutfitCard({
   outfit,
   items,
   actions,
+  showDate = false,
 }: {
   outfit: OutfitView
   items: Map<string, WardrobeItemView>
   actions: OutfitActions
+  showDate?: boolean
 }) {
   const [view, setView] = useState<OutfitImageKind | 'pieces' | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [busy, setBusy] = useState<'wear' | 'save' | null>(null)
+  const [busy, setBusy] = useState<'wear' | 'save' | 'move' | null>(null)
+  const [moving, setMoving] = useState(false)
   const pieces = outfit.item_ids.map(id => items.get(id)).filter((i): i is WardrobeItemView => !!i)
 
   const urls: Record<OutfitImageKind, string | null> = { flatlay: outfit.image_url, model: outfit.model_image_url }
@@ -71,7 +123,7 @@ export default function OutfitCard({
     if (!urls[kind] && !pending[kind]) actions.generateImage(outfit, kind)
   }
 
-  async function run(kind: 'wear' | 'save', action: () => Promise<void>) {
+  async function run(kind: 'wear' | 'save' | 'move', action: () => Promise<void>) {
     setBusy(kind)
     try {
       await action()
@@ -104,6 +156,11 @@ export default function OutfitCard({
         <span className="absolute top-2 left-2 rounded-full px-2.5 py-1 font-mono text-[9px] uppercase tracking-[1.5px] font-semibold" style={{ background: 'var(--iven-accent)', color: '#2C1F0E' }}>
           {SLOT_LABELS[outfit.slot]}
         </span>
+        {showDate && (
+          <span className="absolute bottom-2 left-2 rounded-full px-2.5 py-1 font-mono text-[9px] uppercase tracking-[1.5px]" style={{ background: 'rgba(20,16,12,0.75)', color: '#F5F0E8' }}>
+            {outfit.plan_date ? shortDate(outfit.plan_date) : 'No day'}
+          </span>
+        )}
         {outfit.worn_on && (
           <span className="absolute top-2 right-2 rounded-full px-2.5 py-1 font-mono text-[9px] uppercase tracking-[1.5px]" style={{ background: 'rgba(20,16,12,0.75)', color: '#F5F0E8' }}>
             Worn {outfit.worn_on.slice(5)}
@@ -169,6 +226,24 @@ export default function OutfitCard({
           </IconButton>
           <IconButton label={outfit.saved ? 'Saved' : 'Save'} onClick={() => run('save', () => actions.toggleSave(outfit))} disabled={busy !== null} active={outfit.saved}>
             {outfit.saved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+          </IconButton>
+          <div className="relative">
+            <IconButton label="Move to a day" onClick={() => setMoving(m => !m)} disabled={busy !== null} active={moving}>
+              {busy === 'move' ? <Loader2 size={13} className="animate-spin" /> : <CalendarDays size={13} />}
+            </IconButton>
+            {moving && (
+              <MoveMenu
+                outfit={outfit}
+                onClose={() => setMoving(false)}
+                onPick={date => {
+                  setMoving(false)
+                  run('move', () => actions.move(outfit, date))
+                }}
+              />
+            )}
+          </div>
+          <IconButton label="Edit pieces" onClick={() => actions.edit(outfit)}>
+            <Pencil size={13} />
           </IconButton>
           {confirmDelete ? (
             <IconButton label="Confirm delete" onClick={() => actions.remove(outfit)}>

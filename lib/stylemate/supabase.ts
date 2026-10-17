@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { WARDROBE_IMAGES_BUCKET } from '@/lib/stylemate/constants'
+import { sundayOf } from '@/lib/stylemate/plan'
 import type {
   Outfit,
   OutfitView,
@@ -91,7 +92,7 @@ export async function fetchSavedOutfits(supabase: SupabaseClient): Promise<Outfi
     .select('*')
     .eq('saved', true)
     .order('created_at', { ascending: false })
-    .limit(60)
+    .limit(300)
   if (error) throw error
   return withOutfitUrls(supabase, (data as Outfit[]) ?? [])
 }
@@ -101,6 +102,19 @@ export async function updateOutfit(supabase: SupabaseClient, id: string, patch: 
   if (error) throw error
   const [view] = await withOutfitUrls(supabase, [data as Outfit])
   return view
+}
+
+/**
+ * Puts an outfit on a day, or into the library only (date null). Moving it saves
+ * it, so the Sunday plan never replaces an outfit the owner placed by hand.
+ */
+export async function moveOutfit(supabase: SupabaseClient, outfit: Outfit, date: string | null): Promise<OutfitView> {
+  return updateOutfit(supabase, outfit.id, {
+    plan_date: date,
+    week_start: date ? sundayOf(date) : null,
+    weather: date === outfit.plan_date ? outfit.weather : null,
+    saved: true,
+  })
 }
 
 export async function deleteOutfit(supabase: SupabaseClient, outfit: Outfit): Promise<void> {

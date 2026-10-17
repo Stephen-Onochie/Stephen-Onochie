@@ -167,6 +167,7 @@ export default function StyleMatePage() {
             <OutfitsView
               supabase={supabase}
               items={items}
+              dark={dark}
               onItemsUpdated={upsertItems}
               onOpenItem={i => setOpenItemId(i.id)}
               notify={setToast}
