@@ -78,6 +78,7 @@ function toggle(list: string[], value: string): string[] {
 
 export default function ItemDialog({
   item,
+  renderError,
   dark,
   onClose,
   onSave,
@@ -86,6 +87,7 @@ export default function ItemDialog({
   onRerender,
 }: {
   item: WardrobeItemView | null
+  renderError: string | null
   dark: boolean
   onClose: () => void
   onSave: (item: WardrobeItemView, patch: Partial<WardrobeItem>) => Promise<void>
@@ -151,7 +153,7 @@ export default function ItemDialog({
                 </Button>
               </div>
               {item.render_status === 'failed' && (
-                <p className="font-inter text-xs mt-2" style={{ color: '#B4452F' }}>Last render failed. Try again.</p>
+                <p className="font-inter text-xs mt-2" style={{ color: '#B4452F' }}>{renderError ? `Render failed: ${renderError}` : 'Last render failed. Try again.'}</p>
               )}
 
               <div className="mt-5 grid grid-cols-2 gap-3 font-inter text-xs" style={{ color: 'var(--iven-muted)' }}>

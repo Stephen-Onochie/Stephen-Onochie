@@ -57,7 +57,7 @@ async function providerError(label: string, res: Response): Promise<Error> {
   return new Error(`${label} ${res.status}: ${redact(String(message)).slice(0, 240)}`)
 }
 
-export async function callInteractions(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
+async function callInteractions(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
   const res = await fetch(`${GEMINI_BASE}/interactions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -74,7 +74,7 @@ export async function callInteractions(apiKey: string, parts: Part[], aspectRati
   return image
 }
 
-export async function callGenerateContent(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
+async function callGenerateContent(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
   const res = await fetch(`${GEMINI_BASE}/models/${LEGACY_IMAGE_MODEL}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -96,7 +96,7 @@ export async function callGenerateContent(apiKey: string, parts: Part[], aspectR
   return image
 }
 
-export async function callOpenRouter(apiKey: string, prompt: string, images: ImageInput[], aspectRatio: string): Promise<GeneratedImage> {
+async function callOpenRouter(apiKey: string, prompt: string, images: ImageInput[], aspectRatio: string): Promise<GeneratedImage> {
   const res = await fetch('https://openrouter.ai/api/v1/images', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },

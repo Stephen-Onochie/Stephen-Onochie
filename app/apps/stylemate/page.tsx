@@ -29,6 +29,7 @@ export default function StyleMatePage() {
   const [openItemId, setOpenItemId] = useState<string | null>(null)
   const [scanOpen, setScanOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [renderErrors, setRenderErrors] = useState<Record<string, string>>({})
 
   const renderQueue = useRef<string[]>([])
   const renderActive = useRef(0)
@@ -70,6 +71,10 @@ export default function StyleMatePage() {
 
   const renderItem = useCallback(async (id: string): Promise<void> => {
     setItems(prev => prev.map(i => (i.id === id ? { ...i, render_status: 'pending' } : i)))
+    setRenderErrors(prev => {
+      const { [id]: _cleared, ...rest } = prev
+      return rest
+    })
     try {
       const res = await fetch('/api/stylemate/render', {
         method: 'POST',
@@ -81,7 +86,7 @@ export default function StyleMatePage() {
       upsertItems(await withItemUrls(supabase, [payload.item as WardrobeItem]))
     } catch (err) {
       setItems(prev => prev.map(i => (i.id === id ? { ...i, render_status: 'failed' } : i)))
-      console.error('render failed', err)
+      setRenderErrors(prev => ({ ...prev, [id]: err instanceof Error ? err.message : 'Render failed' }))
     }
   }, [supabase, upsertItems])
 
@@ -182,6 +187,7 @@ export default function StyleMatePage() {
 
       <ItemDialog
         item={openItem}
+        renderError={openItem ? renderErrors[openItem.id] ?? null : null}
         dark={dark}
         onClose={() => setOpenItemId(null)}
         onSave={saveItem}
