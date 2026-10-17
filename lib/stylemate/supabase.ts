@@ -30,8 +30,12 @@ export async function withItemUrls(supabase: SupabaseClient, items: WardrobeItem
 }
 
 export async function withOutfitUrls(supabase: SupabaseClient, outfits: Outfit[]): Promise<OutfitView[]> {
-  const urls = await signPaths(supabase, outfits.map(o => o.image_path).filter((p): p is string => !!p))
-  return outfits.map(o => ({ ...o, image_url: o.image_path ? urls.get(o.image_path) ?? null : null }))
+  const urls = await signPaths(supabase, outfits.flatMap(o => [o.image_path, o.model_image_path]).filter((p): p is string => !!p))
+  return outfits.map(o => ({
+    ...o,
+    image_url: o.image_path ? urls.get(o.image_path) ?? null : null,
+    model_image_url: o.model_image_path ? urls.get(o.model_image_path) ?? null : null,
+  }))
 }
 
 export async function fetchItems(supabase: SupabaseClient): Promise<WardrobeItemView[]> {
@@ -100,7 +104,8 @@ export async function updateOutfit(supabase: SupabaseClient, id: string, patch: 
 }
 
 export async function deleteOutfit(supabase: SupabaseClient, outfit: Outfit): Promise<void> {
-  if (outfit.image_path) await supabase.storage.from(WARDROBE_IMAGES_BUCKET).remove([outfit.image_path])
+  const paths = [outfit.image_path, outfit.model_image_path].filter((p): p is string => !!p)
+  if (paths.length) await supabase.storage.from(WARDROBE_IMAGES_BUCKET).remove(paths)
   const { error } = await supabase.from('stylemate_outfits').delete().eq('id', outfit.id)
   if (error) throw error
 }

@@ -4,6 +4,7 @@ export type ItemSource = 'scan' | 'gmail' | 'manual'
 export type JobStatus = 'none' | 'pending' | 'done' | 'failed'
 export type OutfitSlot = 'class' | 'casual' | 'gym' | 'going_out' | 'custom'
 export type OutfitOrigin = 'weekly' | 'daily' | 'custom'
+export type OutfitImageKind = 'flatlay' | 'model'
 
 export interface WardrobeItem {
   id: string
@@ -95,6 +96,8 @@ export interface Outfit {
   weather: DayWeather | null
   image_path: string | null
   image_status: JobStatus
+  model_image_path: string | null
+  model_image_status: JobStatus
   saved: boolean
   worn_on: string | null
   created_at: string
@@ -102,6 +105,7 @@ export interface Outfit {
 
 export interface OutfitView extends Outfit {
   image_url: string | null
+  model_image_url: string | null
 }
 
 export interface OutfitRequest {

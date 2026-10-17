@@ -118,14 +118,15 @@ export default function OutfitsView({
   }, [])
 
   const actions: OutfitActions = {
-    generateImage: async outfit => {
-      replace({ ...outfit, image_status: 'pending' })
+    generateImage: async (outfit, kind) => {
+      const statusKey = kind === 'model' ? 'model_image_status' : 'image_status'
+      replace({ ...outfit, [statusKey]: 'pending' })
       try {
-        const { outfit: updated } = await postJson<{ outfit: Outfit }>(`/api/stylemate/outfits/${outfit.id}/image`)
+        const { outfit: updated } = await postJson<{ outfit: Outfit }>(`/api/stylemate/outfits/${outfit.id}/image`, { kind })
         const [view] = await withOutfitUrls(supabase, [updated])
         replace(view)
       } catch (err) {
-        replace({ ...outfit, image_status: 'failed' })
+        replace({ ...outfit, [statusKey]: 'failed' })
         notify(err instanceof Error ? err.message : 'Image generation failed')
       }
     },

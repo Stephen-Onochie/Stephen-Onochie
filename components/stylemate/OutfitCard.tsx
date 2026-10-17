@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Bookmark, BookmarkCheck, Check, Download, ImageIcon, LayoutGrid, Loader2, RefreshCw, Trash2 } from 'lucide-react'
+import { Bookmark, BookmarkCheck, Check, Download, ImageIcon, LayoutGrid, Loader2, PersonStanding, RefreshCw, Trash2 } from 'lucide-react'
 import { SLOT_LABELS } from '@/lib/stylemate/constants'
-import type { OutfitView, WardrobeItemView } from '@/types/stylemate'
+import type { OutfitImageKind, OutfitView, WardrobeItemView } from '@/types/stylemate'
 import { ItemImage } from './shared'
 
 export interface OutfitActions {
-  generateImage: (outfit: OutfitView) => Promise<void>
+  generateImage: (outfit: OutfitView, kind: OutfitImageKind) => Promise<void>
   wear: (outfit: OutfitView) => Promise<void>
   toggleSave: (outfit: OutfitView) => Promise<void>
   remove: (outfit: OutfitView) => Promise<void>
@@ -51,12 +51,25 @@ export default function OutfitCard({
   items: Map<string, WardrobeItemView>
   actions: OutfitActions
 }) {
-  const [showLook, setShowLook] = useState(true)
+  const [view, setView] = useState<OutfitImageKind | 'pieces' | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [busy, setBusy] = useState<'wear' | 'save' | null>(null)
   const pieces = outfit.item_ids.map(id => items.get(id)).filter((i): i is WardrobeItemView => !!i)
-  const generating = outfit.image_status === 'pending'
-  const lookVisible = showLook && !!outfit.image_url
+
+  const urls: Record<OutfitImageKind, string | null> = { flatlay: outfit.image_url, model: outfit.model_image_url }
+  const pending: Record<OutfitImageKind, boolean> = {
+    flatlay: outfit.image_status === 'pending',
+    model: outfit.model_image_status === 'pending',
+  }
+  // Until the user picks a view, show the newest available image, then the pieces grid.
+  const shown: OutfitImageKind | 'pieces' = view ?? (urls.model ? 'model' : urls.flatlay ? 'flatlay' : 'pieces')
+  const shownUrl = shown === 'pieces' ? null : urls[shown]
+  const generatingShown = shown !== 'pieces' && pending[shown]
+
+  function showOrGenerate(kind: OutfitImageKind) {
+    setView(kind)
+    if (!urls[kind] && !pending[kind]) actions.generateImage(outfit, kind)
+  }
 
   async function run(kind: 'wear' | 'save', action: () => Promise<void>) {
     setBusy(kind)
@@ -70,9 +83,9 @@ export default function OutfitCard({
   return (
     <article className="rounded-2xl overflow-hidden flex flex-col" style={{ background: 'var(--iven-surface)', border: '1px solid var(--iven-grid)' }}>
       <div className="relative" style={{ background: '#F5F0E8' }}>
-        {lookVisible ? (
+        {shownUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={outfit.image_url!} alt={outfit.title} className="w-full aspect-[4/5] object-cover" />
+          <img src={shownUrl} alt={`${outfit.title} ${shown === 'model' ? 'on a model' : 'flat lay'}`} className="w-full aspect-[4/5] object-cover" />
         ) : (
           <div className={`grid gap-1 p-1 aspect-[4/5] ${pieces.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {pieces.map(p => (
@@ -82,10 +95,10 @@ export default function OutfitCard({
             ))}
           </div>
         )}
-        {generating && (
+        {generatingShown && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(20,16,12,0.55)', color: '#F5F0E8' }}>
             <Loader2 size={22} className="animate-spin" />
-            <span className="font-mono text-[10px] uppercase tracking-[1.5px]">Styling the flat lay</span>
+            <span className="font-mono text-[10px] uppercase tracking-[1.5px]">{shown === 'model' ? 'Dressing the model' : 'Styling the flat lay'}</span>
           </div>
         )}
         <span className="absolute top-2 left-2 rounded-full px-2.5 py-1 font-mono text-[9px] uppercase tracking-[1.5px] font-semibold" style={{ background: 'var(--iven-accent)', color: '#2C1F0E' }}>
@@ -122,16 +135,24 @@ export default function OutfitCard({
         </div>
 
         <div className="flex flex-wrap gap-1.5 mt-auto pt-3">
-          {outfit.image_url ? (
+          <IconButton label="Flat lay image" onClick={() => showOrGenerate('flatlay')} active={shown === 'flatlay'}>
+            {pending.flatlay ? <Loader2 size={13} className="animate-spin" /> : <ImageIcon size={13} />} Look
+          </IconButton>
+          <IconButton label="Outfit on a model" onClick={() => showOrGenerate('model')} active={shown === 'model'}>
+            {pending.model ? <Loader2 size={13} className="animate-spin" /> : <PersonStanding size={13} />} Model
+          </IconButton>
+          {(urls.flatlay || urls.model) && (
+            <IconButton label="Show pieces" onClick={() => setView('pieces')} active={shown === 'pieces'}>
+              <LayoutGrid size={13} />
+            </IconButton>
+          )}
+          {shown !== 'pieces' && shownUrl && (
             <>
-              <IconButton label={lookVisible ? 'Show pieces' : 'Show look'} onClick={() => setShowLook(s => !s)}>
-                {lookVisible ? <LayoutGrid size={13} /> : <ImageIcon size={13} />}
-              </IconButton>
-              <IconButton label="Regenerate look image" onClick={() => actions.generateImage(outfit)} disabled={generating}>
+              <IconButton label={shown === 'model' ? 'Regenerate model image' : 'Regenerate look image'} onClick={() => actions.generateImage(outfit, shown)} disabled={pending[shown]}>
                 <RefreshCw size={13} />
               </IconButton>
               <a
-                href={outfit.image_url}
+                href={shownUrl}
                 target="_blank"
                 rel="noreferrer"
                 title="Open full image"
@@ -142,10 +163,6 @@ export default function OutfitCard({
                 <Download size={13} />
               </a>
             </>
-          ) : (
-            <IconButton label="Generate look image" onClick={() => actions.generateImage(outfit)} disabled={generating}>
-              <ImageIcon size={13} /> Look
-            </IconButton>
           )}
           <IconButton label={outfit.worn_on ? 'Worn' : 'Wore it'} onClick={() => run('wear', () => actions.wear(outfit))} disabled={!!outfit.worn_on || busy !== null} active={!!outfit.worn_on}>
             {busy === 'wear' ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {outfit.worn_on ? 'Worn' : 'Wore it'}
