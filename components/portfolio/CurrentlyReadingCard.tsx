@@ -25,7 +25,7 @@ export default function CurrentlyReadingCard() {
     : null
 
   return (
-    <section className="border-b border-grid">
+    <section className="min-w-0">
       <div className="px-6 md:px-8 py-6 md:py-8">
         <div className="flex items-center justify-between border-b border-grid pb-3 mb-6">
           <h2 className="font-display text-2xl md:text-3xl uppercase tracking-wide text-textPrimary">
