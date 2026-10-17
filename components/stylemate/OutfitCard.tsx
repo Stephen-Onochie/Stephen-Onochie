@@ -85,7 +85,7 @@ export default function OutfitCard({
       <div className="relative" style={{ background: '#F5F0E8' }}>
         {shownUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={shownUrl} alt={`${outfit.title} ${shown === 'model' ? 'on a model' : 'flat lay'}`} className="w-full aspect-[4/5] object-cover" />
+          <img src={shownUrl} alt={`${outfit.title} ${shown === 'model' ? 'on a mannequin' : 'flat lay'}`} className="w-full aspect-[4/5] object-cover" />
         ) : (
           <div className={`grid gap-1 p-1 aspect-[4/5] ${pieces.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {pieces.map(p => (
@@ -98,7 +98,7 @@ export default function OutfitCard({
         {generatingShown && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(20,16,12,0.55)', color: '#F5F0E8' }}>
             <Loader2 size={22} className="animate-spin" />
-            <span className="font-mono text-[10px] uppercase tracking-[1.5px]">{shown === 'model' ? 'Dressing the model' : 'Styling the flat lay'}</span>
+            <span className="font-mono text-[10px] uppercase tracking-[1.5px]">{shown === 'model' ? 'Dressing the mannequin' : 'Styling the flat lay'}</span>
           </div>
         )}
         <span className="absolute top-2 left-2 rounded-full px-2.5 py-1 font-mono text-[9px] uppercase tracking-[1.5px] font-semibold" style={{ background: 'var(--iven-accent)', color: '#2C1F0E' }}>
@@ -138,7 +138,7 @@ export default function OutfitCard({
           <IconButton label="Flat lay image" onClick={() => showOrGenerate('flatlay')} active={shown === 'flatlay'}>
             {pending.flatlay ? <Loader2 size={13} className="animate-spin" /> : <ImageIcon size={13} />} Look
           </IconButton>
-          <IconButton label="Outfit on a model" onClick={() => showOrGenerate('model')} active={shown === 'model'}>
+          <IconButton label="Outfit on a mannequin" onClick={() => showOrGenerate('model')} active={shown === 'model'}>
             {pending.model ? <Loader2 size={13} className="animate-spin" /> : <PersonStanding size={13} />} Model
           </IconButton>
           {(urls.flatlay || urls.model) && (
