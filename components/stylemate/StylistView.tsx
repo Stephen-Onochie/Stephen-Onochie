@@ -16,12 +16,21 @@ const STARTERS = [
 ]
 
 function InlineText({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g)
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g)
   return (
     <>
-      {parts.map((part, i) =>
-        part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : <Fragment key={i}>{part}</Fragment>,
-      )}
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) return <strong key={i}>{part.slice(2, -2)}</strong>
+        const link = part.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/)
+        if (link) {
+          return (
+            <a key={i} href={link[2]} target="_blank" rel="noreferrer" className="underline" style={{ color: 'var(--iven-accent)' }}>
+              {link[1]}
+            </a>
+          )
+        }
+        return <Fragment key={i}>{part}</Fragment>
+      })}
     </>
   )
 }
