@@ -15,6 +15,7 @@ import {
   withOutfitUrls,
 } from '@/lib/stylemate/supabase'
 import type { DayWeather, Outfit, OutfitView, WardrobeItemView } from '@/types/stylemate'
+import EstimatedProgress from './EstimatedProgress'
 import OutfitCard, { type OutfitActions } from './OutfitCard'
 import { Button, Chip, inputStyle, SectionLabel } from './shared'
 
@@ -305,10 +306,25 @@ export default function OutfitsView({
               />
             </div>
 
-            <Button onClick={createOutfits} disabled={generating || ownedCount < 2 || !occasion.trim()} className="py-3 mt-auto">
-              {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              {generating ? 'Styling…' : ownedCount < 2 ? 'Scan some clothes first' : 'Create 3 outfits'}
-            </Button>
+            <div className="mt-auto">
+              <Button onClick={createOutfits} disabled={generating || ownedCount < 2 || !occasion.trim()} className="py-3 w-full">
+                {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                {generating ? 'Styling…' : ownedCount < 2 ? 'Scan some clothes first' : 'Create 3 outfits'}
+              </Button>
+              <EstimatedProgress
+                active={generating}
+                storageKey="create"
+                defaultMs={30_000}
+                steps={[
+                  'Reading your closet',
+                  'Checking the weather',
+                  'Matching colors to your palette',
+                  'Balancing fits and layers',
+                  'Applying your rules: tees, sweaters, glasses',
+                  'Writing styling tips',
+                ]}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -333,6 +349,19 @@ export default function OutfitsView({
             {planning ? 'Planning the week…' : 'Plan the rest of my week'}
           </Button>
         </div>
+        <EstimatedProgress
+            className="mb-4"
+            active={planning}
+            storageKey="week"
+            defaultMs={100_000}
+            steps={[
+              "Pulling the week's forecast",
+              'Planning class, casual, gym and going-out looks',
+              'Spreading your tees across the week',
+              'Matching glasses to the weather',
+              'Saving your week',
+            ]}
+          />
         <p className="font-inter text-xs mb-4" style={{ color: 'var(--iven-muted)' }}>
           Every Sunday at 8am the week plans itself ({WEEKLY_SLOTS.map(s => s.label).join(', ')}) and you get an email. Saved looks are never replaced.
         </p>
