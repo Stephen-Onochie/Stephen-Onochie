@@ -38,7 +38,7 @@ What makes a fire outfit here:
 - Proportion and silhouette: balance fits (boxy or oversized top with straight or tapered bottoms, slim with relaxed), and keep formality levels within one step of each other unless the contrast is intentional (e.g. tee under an overcoat).
 - Weather: respect each item's temperature range and warmth; on rain days avoid suede and pristine white sneakers if alternatives exist.
 - Occasion: match the brief's energy. Gym = functional athletic pieces. Class = comfortable but put-together. Casual = relaxed but obviously styled. Going out = the sharpest pieces available.
-- Variety: within one request, options must differ meaningfully. Across a multi-day plan, spread the closet: avoid repeating the same non-gym top or bottom more than twice in a week and never on consecutive days. Shoes, jewelry, outerwear and gym pieces may repeat. Prefer items not worn recently.
+- Repeats (the owner's standing rule): a T-shirt is never repeated. Every piece marked TEE in the closet appears in at most one outfit across the entire request, and TEEs marked "worn recently" are only used once every other TEE is taken. Pants, shorts, outerwear (the worker jacket included), sweaters, hoodies, shoes, jewelry and accessories may repeat freely, even on back-to-back days. Within one request, options must still differ meaningfully.
 - Small closet: if a perfect outfit is impossible, build the best available and use styling_tip to name the one piece that would complete it.
 
 Writing:
@@ -47,6 +47,19 @@ Writing:
 - styling_tip: one concrete wearing tip (tuck, cuff, layer, sleeve push, accessory placement) or the missing-piece note.
 
 Return one entry per requested outfit, with key copied from its brief.`
+
+const LAYER_TOP = /hoodie|sweat|sweater|cardigan|knit|fleece|zip|jumper|crewneck_sweat/i
+const RECENT_WEAR_DAYS = 14
+
+/** Tops worn against the skin (tees, tanks, polos, shirts) follow the no-repeat rule; layering tops don't. */
+export function isTee(item: Pick<WardrobeItem, 'category' | 'sub_type' | 'name'>): boolean {
+  return item.category === 'top' && !LAYER_TOP.test(`${item.sub_type ?? ''} ${item.name}`)
+}
+
+function recentlyWorn(item: Pick<WardrobeItem, 'last_worn_on'>): boolean {
+  if (!item.last_worn_on) return false
+  return Date.now() - new Date(`${item.last_worn_on}T12:00:00Z`).getTime() < RECENT_WEAR_DAYS * 86_400_000
+}
 
 function itemRef(index: number): string {
   return `i${index + 1}`
@@ -66,6 +79,7 @@ function serializeCloset(items: WardrobeItem[]): string {
         `${item.min_temp_threshold}-${item.max_temp_threshold}°F`,
         item.style_tags.length ? item.style_tags.join('/') : null,
         item.last_worn_on ? `last worn ${item.last_worn_on}` : null,
+        isTee(item) ? `TEE${recentlyWorn(item) ? ' (worn recently)' : ''}` : null,
       ]
       return bits.filter(Boolean).join(' | ')
     })
@@ -84,7 +98,7 @@ function serializeBrief(b: OutfitBrief): string {
   ].filter(Boolean).join('\n')
 }
 
-/** Closet items an outfit may draw from: owned (not still shipping) and clean. */
+/** Closet items an outfit may draw from: everything owned (not still shipping). */
 export async function loadWearableItems(supabase: SupabaseClient, userId: string): Promise<WardrobeItem[]> {
   const { data, error } = await supabase
     .from('wardrobe_items')
@@ -93,7 +107,7 @@ export async function loadWearableItems(supabase: SupabaseClient, userId: string
     .eq('is_incoming', false)
     .order('created_at', { ascending: true })
   if (error) throw error
-  return ((data as WardrobeItem[]) ?? []).filter(i => i.status === 'clean')
+  return (data as WardrobeItem[]) ?? []
 }
 
 export interface GeneratedOutfit {
@@ -132,7 +146,7 @@ export async function generateOutfits(items: WardrobeItem[], briefs: OutfitBrief
   if (!parsed) throw new Error('Claude returned no outfits')
 
   const validKeys = new Set(briefs.map(b => b.key))
-  return parsed.outfits
+  const outfits = parsed.outfits
     .filter(o => validKeys.has(o.key))
     .map(o => ({
       key: o.key,
@@ -142,6 +156,64 @@ export async function generateOutfits(items: WardrobeItem[], briefs: OutfitBrief
       styling_tip: o.styling_tip.trim(),
     }))
     .filter(o => o.item_ids.length >= 2)
+
+  return enforceNoRepeatTees(outfits, items)
+}
+
+const swapSchema = z.object({ swaps: z.array(z.object({ outfit: z.number().int(), tee_ref: z.string() })) })
+
+/**
+ * Claude follows the no-repeat-tee rule most of the time; this guarantees it when
+ * the closet allows. Later duplicates get a replacement tee picked by Claude from
+ * the unused ones so the colors still work. With no unused tees left the repeat stays.
+ */
+async function enforceNoRepeatTees(outfits: GeneratedOutfit[], items: WardrobeItem[]): Promise<GeneratedOutfit[]> {
+  const byId = new Map(items.map(i => [i.id, i]))
+  const used = new Set<string>()
+  const conflicts: { index: number; teeId: string }[] = []
+  outfits.forEach((o, index) => {
+    for (const id of o.item_ids) {
+      const item = byId.get(id)
+      if (!item || !isTee(item)) continue
+      if (used.has(id)) conflicts.push({ index, teeId: id })
+      used.add(id)
+    }
+  })
+
+  const spare = items.filter(i => isTee(i) && !used.has(i.id))
+  if (conflicts.length === 0 || spare.length === 0) return outfits
+
+  const refOf = new Map(items.map((item, i) => [item.id, itemRef(i)]))
+  const idOfRef = new Map(items.map((item, i) => [itemRef(i), item.id]))
+  const describe = (o: GeneratedOutfit) => o.item_ids.map(id => `${refOf.get(id)} ${byId.get(id)?.name}`).join(', ')
+
+  const response = await claudeClient().beta.messages.parse({
+    model: CLAUDE_MODEL,
+    max_tokens: 4000,
+    ...FALLBACK_PARAMS,
+    output_config: { effort: 'low', format: betaZodOutputFormat(swapSchema) },
+    messages: [{
+      role: 'user',
+      content:
+        `These outfits reuse a T-shirt that another outfit already uses. The owner never repeats a T-shirt. ` +
+        `For each, pick the replacement tee (by ref) from the unused tees that best fits the outfit's colors and formality. ` +
+        `Each unused tee can be given to only one outfit; if there are more outfits than tees, skip the hardest fits.\n\n` +
+        `Outfits to fix:\n${conflicts.map(c => `outfit ${c.index}: "${outfits[c.index].title}" = ${describe(outfits[c.index])}; replace ${refOf.get(c.teeId)}`).join('\n')}\n\n` +
+        `Unused tees:\n${spare.map(s => `${refOf.get(s.id)} ${s.name} (${s.color}, formality ${s.formality})`).join('\n')}`,
+    }],
+  })
+  const swaps = response.stop_reason === 'refusal' ? [] : response.parsed_output?.swaps ?? []
+
+  const spareIds = new Set(spare.map(s => s.id))
+  const next = outfits.map(o => ({ ...o, item_ids: [...o.item_ids] }))
+  for (const swap of swaps) {
+    const conflict = conflicts.find(c => c.index === swap.outfit)
+    const newId = idOfRef.get(swap.tee_ref.trim())
+    if (!conflict || !newId || !spareIds.has(newId)) continue
+    spareIds.delete(newId)
+    next[swap.outfit].item_ids = next[swap.outfit].item_ids.map(id => (id === conflict.teeId ? newId : id))
+  }
+  return next
 }
 
 function sundayOf(date: string): string {

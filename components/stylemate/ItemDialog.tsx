@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { ExternalLink, Loader2, PackageCheck, RefreshCw, Trash2, X } from 'lucide-react'
-import { APPAREL_CATEGORIES, LAUNDRY_STATUSES, OCCASIONS, SEASONS } from '@/lib/stylemate/constants'
-import type { ApparelCategory, LaundryStatus, WardrobeItem, WardrobeItemView } from '@/types/stylemate'
+import { APPAREL_CATEGORIES, OCCASIONS, SEASONS } from '@/lib/stylemate/constants'
+import type { ApparelCategory, WardrobeItem, WardrobeItemView } from '@/types/stylemate'
 import { Button, Chip, inputStyle, ItemImage, SectionLabel } from './shared'
 
 type Draft = Pick<
   WardrobeItem,
   | 'name' | 'category' | 'sub_type' | 'color' | 'color_hex' | 'colors' | 'pattern' | 'material' | 'fit' | 'brand'
   | 'size' | 'description' | 'formality' | 'warmth' | 'seasons' | 'occasions' | 'style_tags'
-  | 'min_temp_threshold' | 'max_temp_threshold' | 'status'
+  | 'min_temp_threshold' | 'max_temp_threshold'
 >
 
 function toDraft(item: WardrobeItem): Draft {
@@ -20,7 +20,7 @@ function toDraft(item: WardrobeItem): Draft {
     colors: item.colors, pattern: item.pattern, material: item.material, fit: item.fit, brand: item.brand,
     size: item.size, description: item.description, formality: item.formality, warmth: item.warmth,
     seasons: item.seasons, occasions: item.occasions, style_tags: item.style_tags,
-    min_temp_threshold: item.min_temp_threshold, max_temp_threshold: item.max_temp_threshold, status: item.status,
+    min_temp_threshold: item.min_temp_threshold, max_temp_threshold: item.max_temp_threshold,
   }
 }
 
@@ -272,14 +272,6 @@ export default function ItemDialog({
                 />
               </Field>
 
-              <div>
-                <SectionLabel>Laundry</SectionLabel>
-                <div className="flex flex-wrap gap-1.5">
-                  {LAUNDRY_STATUSES.map(s => (
-                    <Chip key={s.value} active={draft.status === s.value} onClick={() => set('status', s.value as LaundryStatus)}>{s.label}</Chip>
-                  ))}
-                </div>
-              </div>
 
               <div className="flex items-center justify-between gap-3 pt-3 border-t" style={{ borderColor: 'var(--iven-grid)' }}>
                 {confirmDelete ? (

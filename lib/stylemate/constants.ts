@@ -1,4 +1,4 @@
-import type { ApparelCategory, LaundryStatus, OutfitSlot } from '@/types/stylemate'
+import type { ApparelCategory, OutfitSlot } from '@/types/stylemate'
 
 export const APPAREL_CATEGORIES: { value: ApparelCategory; label: string }[] = [
   { value: 'top', label: 'Tops' },
@@ -11,12 +11,6 @@ export const APPAREL_CATEGORIES: { value: ApparelCategory; label: string }[] = [
 ]
 
 export const CATEGORY_VALUES = APPAREL_CATEGORIES.map(c => c.value) as [ApparelCategory, ...ApparelCategory[]]
-
-export const LAUNDRY_STATUSES: { value: LaundryStatus; label: string }[] = [
-  { value: 'clean', label: 'Clean' },
-  { value: 'dirty', label: 'Dirty' },
-  { value: 'laundry_cycle', label: 'In Laundry' },
-]
 
 export const OCCASIONS = ['class', 'casual', 'gym', 'going_out', 'formal', 'lounge', 'date', 'work'] as const
 export const SEASONS = ['spring', 'summer', 'fall', 'winter'] as const
@@ -61,7 +55,5 @@ export const OCCASION_PRESETS = [
 ]
 
 export const WARDROBE_IMAGES_BUCKET = 'wardrobe-images'
-
-export const LAUNDRY_WARNING_THRESHOLD = 2
 
 export const CLAUDE_MODEL = 'claude-opus-5-5'

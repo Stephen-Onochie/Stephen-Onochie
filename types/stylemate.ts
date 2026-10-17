@@ -1,5 +1,4 @@
 export type ApparelCategory = 'top' | 'bottom' | 'outerwear' | 'footwear' | 'accessory' | 'jewelry' | 'bag'
-export type LaundryStatus = 'clean' | 'dirty' | 'laundry_cycle'
 export type StyleMateTab = 'closet' | 'outfits' | 'stylist'
 export type ItemSource = 'scan' | 'gmail' | 'manual'
 export type JobStatus = 'none' | 'pending' | 'done' | 'failed'
@@ -28,7 +27,6 @@ export interface WardrobeItem {
   style_tags: string[]
   min_temp_threshold: number
   max_temp_threshold: number
-  status: LaundryStatus
   is_incoming: boolean
   image_url: string | null
   render_path: string | null

@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import { Loader2, Package, ScanLine, Search } from 'lucide-react'
 import { APPAREL_CATEGORIES } from '@/lib/stylemate/constants'
 import type { ApparelCategory, WardrobeItemView } from '@/types/stylemate'
-import LaundryWarning from './LaundryWarning'
 import { Button, Chip, inputStyle, ItemImage, SectionLabel } from './shared'
 
 type SortKey = 'newest' | 'most_worn' | 'least_worn' | 'color' | 'formality'
@@ -52,11 +51,6 @@ function ItemCard({ item, onClick }: { item: WardrobeItemView; onClick: () => vo
         {item.render_status === 'pending' && (
           <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[1px]" style={{ background: 'rgba(20,16,12,0.7)', color: '#F5F0E8' }}>
             <Loader2 size={10} className="animate-spin" /> Rendering
-          </span>
-        )}
-        {item.status !== 'clean' && (
-          <span className="absolute top-2 left-2 rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-[1px]" style={{ background: '#B4452F', color: '#fff' }}>
-            {item.status === 'dirty' ? 'Dirty' : 'Laundry'}
           </span>
         )}
       </div>
@@ -139,8 +133,6 @@ export default function ClosetView({
           </div>
         </div>
       )}
-
-      <LaundryWarning items={items} />
 
       <div className="flex gap-1.5 overflow-x-auto iven-no-scrollbar mb-5 pb-1">
         <Chip active={category === 'all'} onClick={() => setCategory('all')} count={owned.length}>All</Chip>
