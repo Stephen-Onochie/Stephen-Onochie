@@ -236,24 +236,31 @@ export async function renderOutfit(pieces: OutfitPiece[], context: { title: stri
 
 const MODEL_SUBJECT = process.env.STYLEMATE_MODEL_DESCRIPTION ?? 'a male model with an athletic build'
 
-/**
- * The outfit worn by a faceless model: framed from the chin down, so any glasses
- * hang from the neckline instead of sitting on a face that isn't in the shot.
- */
+export type ModelStyle = 'cropped' | 'mannequin'
+
+/** The outfit worn on a body with no visible face. */
 export async function renderOnModel(
   pieces: OutfitPiece[],
   context: { title: string; occasion: string | null; stylingTip: string | null },
+  style: ModelStyle = 'cropped',
 ): Promise<GeneratedImage> {
   const { list, references, intro } = await outfitReferences(pieces)
   const hasEyewear = pieces.some(p => p.item.category === 'eyewear')
+  const subject = style === 'mannequin'
+    ? 'a lifelike full-size male mannequin with realistic athletic proportions and a smooth, completely featureless matte head (no eyes, nose, mouth or hair)'
+    : MODEL_SUBJECT
+  const framing = style === 'mannequin'
+    ? 'Show the whole mannequin from head to shoes in a natural relaxed standing pose. ' + (hasEyewear ? 'The glasses sit on the blank head where eyes would be. ' : '')
+    : 'Strict composition: the top edge of the photo cuts across the base of the neck, so the head and face are entirely outside the frame. Show the body from the neck down to the shoes. ' +
+      (hasEyewear ? 'The glasses are hooked by one temple into the neckline of the top so they are visible. ' : '')
   const prompt =
-    `Create a photorealistic full-length editorial fashion photograph of ${MODEL_SUBJECT} wearing the complete outfit "${context.title}"` +
+    `Create a photorealistic full-length editorial fashion photograph of ${subject} wearing the complete outfit "${context.title}"` +
     (context.occasion ? ` for ${context.occasion}` : '') +
-    `. The model wears exactly these ${pieces.length} pieces and no other clothing or accessories:\n${list}\n` +
+    `. It wears exactly these ${pieces.length} pieces and no other clothing or accessories:\n${list}\n` +
     intro +
-    'Faceless framing: crop the shot just below the chin so the face is never visible, and show the full body down to the shoes. ' +
-    (hasEyewear ? 'The glasses are hooked by one temple into the neckline of the top so they stay visible. ' : '') +
+    'Every graphic, patch or logo stays on the piece it belongs to. ' +
+    framing +
     (context.stylingTip ? `Style it this way: ${context.stylingTip} ` : '') +
-    'Natural relaxed standing pose, true-to-life fit and drape, seamless warm cream studio backdrop, soft natural daylight. No text or added logos.'
-  return generateImage(prompt, references, '4:5')
+    'True-to-life fit and drape, seamless warm cream studio backdrop, soft natural daylight. No text or added logos.'
+  return generateImage(prompt, references, style === 'mannequin' ? '4:5' : '2:3')
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { WARDROBE_IMAGES_BUCKET } from '@/lib/stylemate/constants'
-import { renderOnModel } from '@/lib/stylemate/images'
+import { renderOnModel, type ModelStyle } from '@/lib/stylemate/images'
 import { downloadImage, errorMessage, extFor, uploadImage } from '@/lib/stylemate/server'
 import type { WardrobeItem } from '@/types/stylemate'
 
@@ -18,10 +18,11 @@ export async function GET(request: Request) {
   const { data } = await supabase.from('wardrobe_items').select('*').in('name', names)
   const items = (data as WardrobeItem[]) ?? []
   const pieces = await Promise.all(items.map(async item => ({ item, image: await downloadImage(supabase, item.render_path ?? item.image_url!).catch(() => null) })))
+  const style = (new URL(request.url).searchParams.get('style') ?? 'cropped') as ModelStyle
   const t = Date.now()
   try {
-    const image = await renderOnModel(pieces, { title: 'Workwear Monochrome', occasion: 'class', stylingTip: 'Wear the jacket open and cuff the jeans once over the Jordans.' })
-    const path = await uploadImage(supabase, `${items[0].user_id}/outfits/look-check-model.${extFor(image.mimeType)}`, image.bytes, image.mimeType)
+    const image = await renderOnModel(pieces, { title: 'Workwear Monochrome', occasion: 'class', stylingTip: 'Wear the jacket open and cuff the jeans once over the Jordans.' }, style)
+    const path = await uploadImage(supabase, `${items[0].user_id}/outfits/look-check-${style}.${extFor(image.mimeType)}`, image.bytes, image.mimeType)
     const { data: signed } = await supabase.storage.from(WARDROBE_IMAGES_BUCKET).createSignedUrl(path, 3600)
     return NextResponse.json({ ok: true, ms: Date.now() - t, pieces: items.map(i => i.name), url: signed?.signedUrl })
   } catch (e) {
