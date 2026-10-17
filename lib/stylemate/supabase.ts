@@ -1,122 +1,150 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { WARDROBE_IMAGES_BUCKET } from '@/lib/stylemate/constants'
 import type {
+  Outfit,
+  OutfitView,
+  StylistMessage,
+  StylistThread,
   WardrobeItem,
-  WardrobeItemInsert,
-  WardrobeItemWithSignedUrl,
+  WardrobeItemView,
 } from '@/types/stylemate'
 
-const SIGNED_URL_TTL = 3600
+const SIGNED_URL_TTL = 60 * 60 * 6
 
-export function wardrobeImagePath(userId: string, itemId: string, ext = 'jpg'): string {
-  return `${userId}/${itemId}.${ext}`
+async function signPaths(supabase: SupabaseClient, paths: string[]): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(paths.filter(Boolean)))
+  if (unique.length === 0) return new Map()
+  const { data } = await supabase.storage.from(WARDROBE_IMAGES_BUCKET).createSignedUrls(unique, SIGNED_URL_TTL)
+  const urls = new Map<string, string>()
+  for (const d of data ?? []) if (d.path && d.signedUrl) urls.set(d.path, d.signedUrl)
+  return urls
 }
 
-export async function fetchWardrobeItems(
-  supabase: SupabaseClient,
-  options?: { incomingOnly?: boolean }
-): Promise<WardrobeItemWithSignedUrl[]> {
-  let query = supabase
-    .from('wardrobe_items')
-    .select('*')
-    .order('created_at', { ascending: false })
+export async function withItemUrls(supabase: SupabaseClient, items: WardrobeItem[]): Promise<WardrobeItemView[]> {
+  const urls = await signPaths(supabase, items.flatMap(i => [i.image_url, i.render_path].filter((p): p is string => !!p)))
+  return items.map(i => ({
+    ...i,
+    photo_url: i.image_url ? urls.get(i.image_url) ?? null : null,
+    render_url: i.render_path ? urls.get(i.render_path) ?? null : null,
+  }))
+}
 
-  if (options?.incomingOnly) {
-    query = query.eq('is_incoming', true)
-  } else {
-    query = query.eq('is_incoming', false)
-  }
+export async function withOutfitUrls(supabase: SupabaseClient, outfits: Outfit[]): Promise<OutfitView[]> {
+  const urls = await signPaths(supabase, outfits.map(o => o.image_path).filter((p): p is string => !!p))
+  return outfits.map(o => ({ ...o, image_url: o.image_path ? urls.get(o.image_path) ?? null : null }))
+}
 
-  const { data, error } = await query
+export async function fetchItems(supabase: SupabaseClient): Promise<WardrobeItemView[]> {
+  const { data, error } = await supabase.from('wardrobe_items').select('*').order('created_at', { ascending: false })
   if (error) throw error
-
-  const items = (data as WardrobeItem[]) ?? []
-  return Promise.all(items.map((item) => attachSignedUrl(supabase, item)))
+  return withItemUrls(supabase, (data as WardrobeItem[]) ?? [])
 }
 
-async function attachSignedUrl(
-  supabase: SupabaseClient,
-  item: WardrobeItem
-): Promise<WardrobeItemWithSignedUrl> {
-  if (!item.image_url) {
-    return { ...item, signed_image_url: null }
-  }
-
-  const { data, error } = await supabase.storage
-    .from(WARDROBE_IMAGES_BUCKET)
-    .createSignedUrl(item.image_url, SIGNED_URL_TTL)
-
-  if (error) {
-    return { ...item, signed_image_url: null }
-  }
-
-  return { ...item, signed_image_url: data.signedUrl }
-}
-
-export async function createWardrobeItem(
-  supabase: SupabaseClient,
-  userId: string,
-  item: WardrobeItemInsert
-): Promise<WardrobeItem> {
+export async function updateItem(supabase: SupabaseClient, id: string, patch: Partial<WardrobeItem>): Promise<WardrobeItemView> {
   const { data, error } = await supabase
     .from('wardrobe_items')
-    .insert({ ...item, user_id: userId })
-    .select('*')
-    .single()
-
-  if (error) throw error
-  return data as WardrobeItem
-}
-
-export async function updateWardrobeItem(
-  supabase: SupabaseClient,
-  id: string,
-  patch: Partial<WardrobeItemInsert>
-): Promise<WardrobeItem> {
-  const { data, error } = await supabase
-    .from('wardrobe_items')
-    .update(patch)
+    .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select('*')
     .single()
-
   if (error) throw error
-  return data as WardrobeItem
+  const [view] = await withItemUrls(supabase, [data as WardrobeItem])
+  return view
 }
 
-export async function deleteWardrobeItem(
-  supabase: SupabaseClient,
-  id: string,
-  imagePath?: string | null
-): Promise<void> {
-  if (imagePath) {
-    await supabase.storage.from(WARDROBE_IMAGES_BUCKET).remove([imagePath])
-  }
-
-  const { error } = await supabase.from('wardrobe_items').delete().eq('id', id)
+export async function deleteItem(supabase: SupabaseClient, item: WardrobeItem, allItems: WardrobeItem[]): Promise<void> {
+  // One scan photo can back several items; only delete it when this is the last user.
+  const photoShared = !!item.image_url && allItems.some(i => i.id !== item.id && i.image_url === item.image_url)
+  const paths = [photoShared ? null : item.image_url, item.render_path].filter((p): p is string => !!p)
+  if (paths.length) await supabase.storage.from(WARDROBE_IMAGES_BUCKET).remove(paths)
+  const { error } = await supabase.from('wardrobe_items').delete().eq('id', item.id)
   if (error) throw error
 }
 
-export async function uploadWardrobeImage(
-  supabase: SupabaseClient,
-  userId: string,
-  itemId: string,
-  file: File
-): Promise<string> {
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-  const path = wardrobeImagePath(userId, itemId, ext)
-
+export async function uploadScanPhoto(supabase: SupabaseClient, userId: string, blob: Blob): Promise<string> {
+  const path = `${userId}/scans/${crypto.randomUUID()}.jpg`
   const { error } = await supabase.storage
     .from(WARDROBE_IMAGES_BUCKET)
-    .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
-
+    .upload(path, blob, { contentType: blob.type || 'image/jpeg' })
   if (error) throw error
   return path
 }
 
-export async function approveIncomingItem(
+export async function fetchOutfits(supabase: SupabaseClient, from: string, to: string): Promise<OutfitView[]> {
+  const { data, error } = await supabase
+    .from('stylemate_outfits')
+    .select('*')
+    .gte('plan_date', from)
+    .lte('plan_date', to)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return withOutfitUrls(supabase, (data as Outfit[]) ?? [])
+}
+
+export async function fetchSavedOutfits(supabase: SupabaseClient): Promise<OutfitView[]> {
+  const { data, error } = await supabase
+    .from('stylemate_outfits')
+    .select('*')
+    .eq('saved', true)
+    .order('created_at', { ascending: false })
+    .limit(60)
+  if (error) throw error
+  return withOutfitUrls(supabase, (data as Outfit[]) ?? [])
+}
+
+export async function updateOutfit(supabase: SupabaseClient, id: string, patch: Partial<Outfit>): Promise<OutfitView> {
+  const { data, error } = await supabase.from('stylemate_outfits').update(patch).eq('id', id).select('*').single()
+  if (error) throw error
+  const [view] = await withOutfitUrls(supabase, [data as Outfit])
+  return view
+}
+
+export async function deleteOutfit(supabase: SupabaseClient, outfit: Outfit): Promise<void> {
+  if (outfit.image_path) await supabase.storage.from(WARDROBE_IMAGES_BUCKET).remove([outfit.image_path])
+  const { error } = await supabase.from('stylemate_outfits').delete().eq('id', outfit.id)
+  if (error) throw error
+}
+
+/** Marks an outfit worn on `date`: saves it and bumps each piece's wear stats. */
+export async function wearOutfit(
   supabase: SupabaseClient,
-  id: string
-): Promise<WardrobeItem> {
-  return updateWardrobeItem(supabase, id, { is_incoming: false })
+  outfit: Outfit,
+  items: WardrobeItem[],
+  date: string,
+): Promise<{ outfit: OutfitView; items: WardrobeItemView[] }> {
+  const updatedOutfit = await updateOutfit(supabase, outfit.id, { worn_on: date, saved: true })
+  const pieces = items.filter(i => outfit.item_ids.includes(i.id))
+  const updatedItems = await Promise.all(
+    pieces.map(i => updateItem(supabase, i.id, { wear_count: i.wear_count + 1, last_worn_on: date })),
+  )
+  return { outfit: updatedOutfit, items: updatedItems }
+}
+
+export async function fetchThreads(supabase: SupabaseClient): Promise<StylistThread[]> {
+  const { data, error } = await supabase
+    .from('stylemate_threads')
+    .select('id, title, messages, updated_at')
+    .order('updated_at', { ascending: false })
+    .limit(30)
+  if (error) throw error
+  return (data as StylistThread[]) ?? []
+}
+
+export async function saveThread(
+  supabase: SupabaseClient,
+  userId: string,
+  thread: { id: string | null; title: string; messages: StylistMessage[] },
+): Promise<StylistThread> {
+  const row = { title: thread.title, messages: thread.messages, updated_at: new Date().toISOString() }
+  const query = thread.id
+    ? supabase.from('stylemate_threads').update(row).eq('id', thread.id)
+    : supabase.from('stylemate_threads').insert({ ...row, user_id: userId })
+  const { data, error } = await query.select('id, title, messages, updated_at').single()
+  if (error) throw error
+  return data as StylistThread
+}
+
+export async function deleteThread(supabase: SupabaseClient, id: string): Promise<void> {
+  const { error } = await supabase.from('stylemate_threads').delete().eq('id', id)
+  if (error) throw error
 }

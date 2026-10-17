@@ -24,7 +24,7 @@ const WMO_CONDITIONS: Record<number, string> = {
   99: 'Thunderstorm',
 }
 
-function describeWeather(code: number): string {
+export function describeWeather(code: number): string {
   return WMO_CONDITIONS[code] ?? 'Current conditions'
 }
 

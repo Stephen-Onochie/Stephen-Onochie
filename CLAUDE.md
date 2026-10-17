@@ -14,14 +14,14 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 - **Next.js 14** (App Router) + TypeScript
 - **Supabase** — Postgres, Auth, RLS, Realtime, private storage bucket `wardrobe-images`
 - **Tailwind 3.4**, Radix UI, shadcn/ui, Lucide
-- **Google Gemini Vision API** (`GEMINI_API_KEY`)
+- **Claude API** via `@anthropic-ai/sdk` (`ANTHROPIC_API_KEY`) for StyleMate; **Gemini** image generation (`GEMINI_API_KEY`) for StyleMate renders
 - DB migrations in `/supabase/migrations/`
 
 ## Private Apps
 
 | App | Purpose |
 |-----|---------|
-| **StyleMate** | Wardrobe catalog with Gemini Vision photo analysis |
+| **StyleMate** | AI wardrobe + stylist (`/apps/stylemate`): Closet / Outfits / Stylist tabs. Bulk photo scan tagged by Claude, clean 2D product renders and outfit flat lays from Gemini, daily + weekly outfit planning around the forecast, Gmail purchase import, Claude stylist chat with web search. See "StyleMate" below. Tables: `wardrobe_items`, `stylemate_outfits`, `stylemate_threads`. |
 | **Native Clock** | Desk display: weather, stocks, NPR news tickers. Tasks tab shows all incomplete todos (no today filter). |
 | **Standing Timer** | Stand/sit/break health cycles + stats |
 | **Bubbles** | Ephemeral auto-expiring notes |
@@ -36,6 +36,18 @@ Stephen's personal website at `stephenonochie.com` — deployed on Vercel. Two d
 | **Public View** | Owner-only settings (`/apps/public-view`) that drive the public portfolio: resume link URL + heading/blurb, show/hide Currently Reading, and GitHub/LinkedIn/Instagram links. The public site reads them via `app/api/public/public-view` (service-role, no-store, scoped to `HEALTH_USER_ID`) through `components/portfolio/PublicSettingsProvider`. Table: `public_view_settings` (column defaults reproduce the old hardcoded values, so the site is unchanged until edited). |
 
 Planned apps: business dashboard (agency/startup stats).
+
+## StyleMate
+
+- **Claude:** `lib/stylemate/claude.ts` builds the client. The key is an org-level `sk-ant-usr` key; if a key ever needs a workspace, set `ANTHROPIC_WORKSPACE_ID` (sent as `anthropic-workspace-id`). Model `claude-opus-5-5` everywhere (`CLAUDE_MODEL`), with server-side refusal fallback (`fallbacks: "default"`). Tagging uses structured outputs at low effort; outfits at medium.
+- **Scan flow:** browser resizes to 1568px JPEG (`lib/stylemate/resize.ts`), uploads to `wardrobe-images/<uid>/scans/`, then `POST /api/stylemate/scan` tags it. One photo can hold several pieces: each becomes its own row sharing `image_url` (delete only removes the photo when no other item uses it).
+- **Renders:** `lib/stylemate/images.ts` calls Gemini's Interactions API (`STYLEMATE_IMAGE_MODEL`, default `gemini-nano-banana-2.1`) with a `generateContent` + `gemini-2.5-flash-image` fallback. The page auto-queues a render (concurrency 2) for every item with `render_status='none'`; outfit flat lays (`POST /api/stylemate/outfits/[id]/image`) are on demand and use the item renders as references.
+- **Outfits:** `lib/stylemate/outfits.ts` sends the clean, owned closet with short refs (`i1`, `i2`…) and maps refs back to ids, dropping anything invented. Weekly slots are class / casual / gym / going_out (`WEEKLY_SLOTS`). `planWeek` (`lib/stylemate/week.ts`) plans today through Saturday (also next week when ≤2 days remain, `lib/stylemate/plan.ts`), generates before deleting the old unsaved plan, and never touches saved outfits.
+- **Weekly cron:** `app/api/cron/stylemate-weekly` is scheduled at 12:00 AND 13:00 UTC Sundays; it only runs when it is 8am Eastern (DST-proof), then emails the plan via Resend. `?force=1` (with `CRON_SECRET`) skips the hour check.
+- **Gmail import:** daily Claude cloud routine (Gmail connector, prompt + setup in `scripts/stylemate-gmail-routine.md`) posts order lines to `POST /api/stylemate/ingest` (bearer `STYLEMATE_INGEST_SECRET`, service-role, rows stamped with `STYLEMATE_USER_ID`). Rows land `is_incoming=true` ("On the way" strip) and dedupe on `source_ref`. Small CDN thumbnails (`w=128`) are upsized to `w=900`. **Secret coupling:** the secret must match in Vercel AND the routine prompt.
+- **Stylist chat:** `POST /api/stylemate/chat` streams plain text; closet, planned outfits and 7-day forecast go in a cached system block. Claude cites closet pieces as `[[item:<first 8 of uuid>]]`, which `StylistView` renders as thumbnail chips. Threads persist in `stylemate_threads`.
+- **Weather:** `lib/stylemate/weather.ts` (Open-Meteo daily, no-store, one retry because it intermittently answers "service is overloaded", then Indiana seasonal normals).
+- The legacy `archetype` column and `apparel_category` enum remain (additive migration); new categories `jewelry`, `bag` were added to the enum.
 
 ## LG TV Proxy
 
