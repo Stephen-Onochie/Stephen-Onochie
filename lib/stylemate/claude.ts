@@ -51,7 +51,8 @@ const TAGGING_SYSTEM = `You catalog clothing for a personal wardrobe app that la
 For each distinct wearable item, return:
 - is_wearable: false only for things that are not clothing, shoes, jewelry, bags or accessories.
 - name: short shoppable name, 2-6 words, Title Case, color first (e.g. "Black Boxy Heavyweight Tee", "Gold Cuban Link Chain").
-- category: top (shirts, tees, polos, sweaters, hoodies), bottom (pants, jeans, shorts, joggers), outerwear (jackets, coats, overshirts, puffers), footwear, jewelry (chains, rings, bracelets, earrings, watches), accessory (hats, belts, sunglasses, scarves, socks), bag.
+- category: top (shirts, tees, polos, sweaters, hoodies), bottom (pants, jeans, shorts, joggers), outerwear (jackets, coats, overshirts, puffers), footwear, jewelry (chains, rings, bracelets, earrings, watches), eyewear (glasses and sunglasses), accessory (hats, belts, scarves, socks), bag.
+- For eyewear, sub_type is exactly "glasses" (clear lenses) or "sunglasses" (tinted or dark lenses), and the description names the frame shape (round, square, rectangular, aviator, cat-eye, oval, browline, wayfarer), frame material and lens tint. The owner's eyewear is all prescription.
 - sub_type: snake_case specific type (e.g. graphic_tee, cargo_pants, zip_hoodie, chelsea_boots, low_top_sneakers, cuban_chain).
 - color: dominant color in plain words (e.g. "washed black", "cream", "olive"). color_hex: closest 6-digit hex for it. colors: every notable color, dominant first.
 - pattern: solid, striped, checked, graphic, logo, camo, floral, textured, colorblock, etc.

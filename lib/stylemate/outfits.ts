@@ -39,6 +39,7 @@ What makes a fire outfit here:
 - Weather: respect each item's temperature range and warmth; on rain days avoid suede and pristine white sneakers if alternatives exist.
 - Occasion: match the brief's energy. Gym = functional athletic pieces. Class = comfortable but put-together. Casual = relaxed but obviously styled. Going out = the sharpest pieces available.
 - Repeats (the owner's standing rule): a T-shirt is never repeated. Every piece marked TEE in the closet appears in at most one outfit across the entire request, and TEEs marked "worn recently" are only used once every other TEE is taken. Pants, shorts, outerwear (the worker jacket included), sweaters, hoodies, shoes, jewelry and accessories may repeat freely, even on back-to-back days. Within one request, options must still differ meaningfully.
+- Eyewear (the owner's standing rule): they wear prescription glasses every day and all their sunglasses are prescription too. When the closet has eyewear, every outfit includes exactly one pair. Sunglasses only for daytime outdoor outfits on clear or partly cloudy days; clear frames for the gym (indoors), night, going-out, overcast or rainy looks. Pick the frame whose color, shape and formality suit the outfit. Glasses repeat freely.
 - Small closet: if a perfect outfit is impossible, build the best available and use styling_tip to name the one piece that would complete it.
 
 Writing:
@@ -80,6 +81,7 @@ function serializeCloset(items: WardrobeItem[]): string {
         item.style_tags.length ? item.style_tags.join('/') : null,
         item.last_worn_on ? `last worn ${item.last_worn_on}` : null,
         isTee(item) ? `TEE${recentlyWorn(item) ? ' (worn recently)' : ''}` : null,
+        item.category === 'eyewear' ? (isSunglasses(item) ? 'PRESCRIPTION SUNGLASSES' : 'PRESCRIPTION GLASSES') : null,
       ]
       return bits.filter(Boolean).join(' | ')
     })
@@ -157,7 +159,45 @@ export async function generateOutfits(items: WardrobeItem[], briefs: OutfitBrief
     }))
     .filter(o => o.item_ids.length >= 2)
 
-  return enforceNoRepeatTees(outfits, items)
+  return enforceEyewear(await enforceNoRepeatTees(outfits, items), items, briefs)
+}
+
+const SUNNY = new Set(['Clear', 'Mainly clear', 'Partly cloudy'])
+const NO_SUNGLASSES_OCCASION = /night|party|club|lounge|date|dinner|going out|event|gym|workout|training/i
+
+function isSunglasses(item: Pick<WardrobeItem, 'sub_type'>): boolean {
+  return item.sub_type === 'sunglasses'
+}
+
+/**
+ * Every outfit wears exactly one pair of the owner's prescription glasses:
+ * sunglasses only outdoors by day in sun, clear frames otherwise (gym, night, gloom). Claude usually gets this
+ * right; this keeps it true, choosing the frame closest in formality to the look.
+ */
+function enforceEyewear(outfits: GeneratedOutfit[], items: WardrobeItem[], briefs: OutfitBrief[]): GeneratedOutfit[] {
+  const eyewear = items.filter(i => i.category === 'eyewear')
+  if (eyewear.length === 0) return outfits
+  const byId = new Map(items.map(i => [i.id, i]))
+  const briefByKey = new Map(briefs.map(b => [b.key, b]))
+
+  return outfits.map(outfit => {
+    const brief = briefByKey.get(outfit.key)
+    const sunnyDay = !!brief && SUNNY.has(brief.weather.condition) && brief.weather.precipChance < 40
+      && brief.slot !== 'going_out' && brief.slot !== 'gym' && !NO_SUNGLASSES_OCCASION.test(brief.occasion)
+    const allowed = eyewear.filter(e => sunnyDay || !isSunglasses(e))
+    if (allowed.length === 0) return outfit
+
+    const pieces = outfit.item_ids.map(id => byId.get(id)).filter((i): i is WardrobeItem => !!i)
+    const chosen = pieces.filter(p => p.category === 'eyewear')
+    const keep = chosen.find(c => allowed.some(a => a.id === c.id))
+    const others = outfit.item_ids.filter(id => byId.get(id)?.category !== 'eyewear')
+    if (keep) return { ...outfit, item_ids: [...others, keep.id] }
+
+    const nonEyewear = pieces.filter(p => p.category !== 'eyewear')
+    const formality = nonEyewear.reduce((n, p) => n + p.formality, 0) / Math.max(1, nonEyewear.length)
+    const best = [...allowed].sort((a, b) => Math.abs(a.formality - formality) - Math.abs(b.formality - formality))[0]
+    return { ...outfit, item_ids: [...others, best.id] }
+  })
 }
 
 const swapSchema = z.object({ swaps: z.array(z.object({ outfit: z.number().int(), tee_ref: z.string() })) })

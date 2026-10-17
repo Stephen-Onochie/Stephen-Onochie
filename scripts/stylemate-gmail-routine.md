@@ -21,7 +21,7 @@ You run once a day for StyleMate, a private wardrobe app. Find new clothing purc
    newer_than:3d (subject:(order OR "order confirmation" OR "your order" OR "in the bag" OR purchase OR receipt OR "thanks for your order") OR category:purchases) -subject:(shipped OR dispatched OR delivered OR "out for delivery" OR return OR refund OR review)
    Page through every result. Skip marketing/promo emails (no order number or no line items).
 
-2. For each order confirmation from a retailer that sells clothing, shoes, jewelry, watches, bags, hats, belts or other wearable accessories (e.g. boohooMAN, ASOS, Zara, H&M, Nike, Adidas, Amazon, Depop, Grailed, StockX, Shein, Uniqlo, PacSun, Urban Outfitters, Mejuri), open the message with get_message using FULL_CONTENT so the HTML body is available. The body can be large: if a tool result is saved to a file, extract what you need from that file with jq/python instead of reading it whole. Ignore non-wearable lines (electronics, food, books, gift cards, shipping protection).
+2. For each order confirmation from a retailer that sells clothing, shoes, jewelry, watches, glasses/sunglasses, bags, hats, belts or other wearable accessories (e.g. boohooMAN, ASOS, Zara, H&M, Nike, Adidas, Amazon, Depop, Grailed, StockX, Shein, Uniqlo, PacSun, Urban Outfitters, Mejuri, Warby Parker, Zenni, Ray-Ban, EyeBuyDirect), open the message with get_message using FULL_CONTENT so the HTML body is available. The body can be large: if a tool result is saved to a file, extract what you need from that file with jq/python instead of reading it whole. Ignore non-wearable lines (electronics, food, books, gift cards, shipping protection, lens cleaner, contact lenses).
 
 3. Build one entry per order:
    {"message_id": "<Gmail message id>", "retailer": "<store name>", "ordered_at": "<ISO 8601 date from the email>",
@@ -29,8 +29,8 @@ You run once a day for StyleMate, a private wardrobe app. Find new clothing purc
                "color": "<color/colour>", "size": "<size>", "price": <number or null>,
                "image_url": "<https product image src for this line, or null>",
                "product_url": "<https product link for this line, or null>",
-               "category_hint": "<top|bottom|outerwear|footwear|jewelry|accessory|bag>"}]}
-   The product image is the <img> next to each line item in the HTML (for boohooMAN they look like https://mediahub.boohooman.com/cmm03928_white_xl?qlt=85&w=128...). Match each image to its line by order of appearance and by the color/style code in the filename. Decode &amp; to &. Never use logos, icons, social or app-store images. If quantity is above 1, still send a single line. Dates like 07/10/2026 from UK retailers (boohoo, ASOS) are day/month/year.
+               "category_hint": "<top|bottom|outerwear|footwear|jewelry|eyewear|accessory|bag>"}]}
+   For glasses, put the frame name, frame color and lens type (clear or sun/tinted) in name/color. The product image is the <img> next to each line item in the HTML (for boohooMAN they look like https://mediahub.boohooman.com/cmm03928_white_xl?qlt=85&w=128...). Match each image to its line by order of appearance and by the color/style code in the filename. Decode &amp; to &. Never use logos, icons, social or app-store images. If quantity is above 1, still send a single line. Dates like 07/10/2026 from UK retailers (boohoo, ASOS) are day/month/year.
 
 4. If you found at least one wearable line, POST everything in one request (the www host matters: the bare domain 307-redirects and drops the POST):
    curl -sS -X POST https://www.stephenonochie.com/api/stylemate/ingest \

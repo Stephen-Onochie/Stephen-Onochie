@@ -6,6 +6,7 @@ export const APPAREL_CATEGORIES: { value: ApparelCategory; label: string }[] = [
   { value: 'outerwear', label: 'Outerwear' },
   { value: 'footwear', label: 'Shoes' },
   { value: 'jewelry', label: 'Jewelry' },
+  { value: 'eyewear', label: 'Glasses' },
   { value: 'accessory', label: 'Accessories' },
   { value: 'bag', label: 'Bags' },
 ]

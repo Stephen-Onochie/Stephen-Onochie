@@ -1,4 +1,4 @@
-export type ApparelCategory = 'top' | 'bottom' | 'outerwear' | 'footwear' | 'accessory' | 'jewelry' | 'bag'
+export type ApparelCategory = 'top' | 'bottom' | 'outerwear' | 'footwear' | 'accessory' | 'jewelry' | 'eyewear' | 'bag'
 export type StyleMateTab = 'closet' | 'outfits' | 'stylist'
 export type ItemSource = 'scan' | 'gmail' | 'manual'
 export type JobStatus = 'none' | 'pending' | 'done' | 'failed'

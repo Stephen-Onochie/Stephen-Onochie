@@ -203,6 +203,12 @@ export default function ItemDialog({
                     </Chip>
                   ))}
                 </div>
+                {draft.category === 'eyewear' && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <Chip active={draft.sub_type !== 'sunglasses'} onClick={() => set('sub_type', 'glasses')}>Clear lenses</Chip>
+                    <Chip active={draft.sub_type === 'sunglasses'} onClick={() => set('sub_type', 'sunglasses')}>Sunglasses</Chip>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

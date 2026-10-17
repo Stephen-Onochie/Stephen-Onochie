@@ -152,7 +152,7 @@ function itemSummary(item: Pick<WardrobeItem, 'name' | 'brand' | 'color' | 'patt
 
 const PRODUCT_STYLE =
   'Clean e-commerce product shot centered on a seamless warm off-white background (#F5F0E8) with a soft natural shadow, even studio lighting, sharp focus. ' +
-  'Clothing is shown as a neat flat lay or invisible-mannequin shape; shoes as a three-quarter side view; jewelry as a close-up. ' +
+  'Clothing is shown as a neat flat lay or invisible-mannequin shape; shoes as a three-quarter side view; jewelry as a close-up; glasses as a front three-quarter view with the temples open. ' +
   'No people, hands, hangers, tags, props or text.'
 
 /** A clean 2D product render of one garment, from its photo or (no photo) its description. */

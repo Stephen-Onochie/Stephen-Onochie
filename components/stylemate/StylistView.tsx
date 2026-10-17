@@ -13,6 +13,7 @@ const STARTERS = [
   'Give me 3 fits for a party this weekend',
   "What's trending in menswear right now?",
   'Which of my pieces are the most versatile?',
+  'What glasses frames should I add next?',
 ]
 
 function InlineText({ text }: { text: string }) {
