@@ -19,6 +19,7 @@ export default function SocialNav({ variant }: { variant: 'desktop' | 'mobile' }
           <a
             key={link.label}
             href={link.href}
+            data-track={`header-${link.label.toLowerCase()}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 text-center py-2 text-[10px] uppercase tracking-[0.2em] text-textMuted border-r border-grid last:border-r-0 hover:text-gold hover:bg-surface transition-colors duration-200"
@@ -36,6 +37,7 @@ export default function SocialNav({ variant }: { variant: 'desktop' | 'mobile' }
         <a
           key={link.label}
           href={link.href}
+          data-track={`header-${link.label.toLowerCase()}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center px-3 md:px-4 text-[10px] uppercase tracking-[0.2em] text-textMuted border-r border-grid last:border-r-0 hover:text-gold hover:bg-surface transition-colors duration-200"

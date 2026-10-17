@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { repoClickTarget } from '@/lib/site-analytics/click-targets'
 
 interface Repo {
   id: number
@@ -15,6 +16,7 @@ function RepoCell({ repo }: { repo: Repo }) {
   return (
     <a
       href={repo.html_url}
+      data-track={repoClickTarget(repo.name)}
       target="_blank"
       rel="noopener noreferrer"
       className="block border border-grid bg-beige p-5 md:p-6 hover:bg-surface hover:border-gold transition-colors duration-200 group min-h-[140px] flex flex-col"
@@ -75,6 +77,7 @@ export default function GitHubSection() {
           </h2>
           <a
             href="https://github.com/Stephen-Onochie"
+            data-track="github-profile"
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono text-[10px] uppercase tracking-[0.2em] text-gold mt-3 hover:text-brownAccent transition-colors duration-200"

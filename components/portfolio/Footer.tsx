@@ -12,12 +12,14 @@ export default function Footer() {
         </p>
         <a
           href="mailto:stephenconochie@gmail.com"
+          data-track="footer-email"
           className="px-6 py-5 font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted hover:text-gold transition-colors duration-200 text-center md:text-left"
         >
           stephenconochie@gmail.com
         </a>
         <a
           href={githubUrl}
+          data-track="footer-github"
           target="_blank"
           rel="noopener noreferrer"
           className="px-6 py-5 font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted hover:text-gold transition-colors duration-200 text-center md:text-right"

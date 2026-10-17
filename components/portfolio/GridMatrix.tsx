@@ -87,6 +87,7 @@ export default function GridMatrix() {
               </div>
               <a
                 href="https://sitesbystephen.com"
+                data-track="agency-portal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block font-mono text-xs uppercase tracking-[0.25em] text-gold border-b border-gold pb-0.5 hover:text-brownAccent hover:border-brownAccent transition-colors duration-200"
@@ -105,6 +106,7 @@ export default function GridMatrix() {
             </h2>
             <a
               href="https://www.linkedin.com/in/stephenonochie"
+              data-track="connect-linkedin-handle"
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted hover:text-gold transition-colors duration-200"

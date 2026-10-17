@@ -14,6 +14,7 @@ export default async function AppsLogoLink() {
   return (
     <Link
       href={href}
+      data-track="apps-logo"
       className="group relative flex items-center justify-center w-11 h-11 md:w-12 md:h-12 border border-transparent hover:border-grid transition-colors duration-200"
       aria-label={label}
       title={label}

@@ -40,6 +40,7 @@ export default function LinkedInCard() {
 
         <a
           href={LINKEDIN_URL}
+          data-track="connect-linkedin-card"
           target="_blank"
           rel="noopener noreferrer"
           className="mt-8 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.25em] text-gold border-b border-gold pb-0.5 hover:text-brownAccent hover:border-brownAccent transition-colors duration-200 self-start"

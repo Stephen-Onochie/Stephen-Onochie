@@ -1,13 +1,16 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useIvenDarkMode } from './IvenDarkModeContext'
 import IvenSidebar from './IvenSidebar'
 import StandingTimerEventToast from './StandingTimerEventToast'
 import { useStandingTimerEngine } from '@/hooks/useStandingTimerEngine'
+import { markOwnerBrowser } from '@/lib/site-analytics/visitor'
 
-export default function IvenShell({ children }: { children: React.ReactNode }) {
+export default function IvenShell({ children, sidebarOrder }: { children: React.ReactNode; sidebarOrder: string[] }) {
   const { dark } = useIvenDarkMode()
   useStandingTimerEngine()
+  useEffect(markOwnerBrowser, [])
 
   return (
     <div
@@ -15,7 +18,7 @@ export default function IvenShell({ children }: { children: React.ReactNode }) {
       className="flex overflow-hidden"
       style={{ height: '100dvh', background: 'var(--iven-bg)', color: 'var(--iven-text)' }}
     >
-      <IvenSidebar />
+      <IvenSidebar initialOrder={sidebarOrder} />
       <main className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>
         {children}
       </main>

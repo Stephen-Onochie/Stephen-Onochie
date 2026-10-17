@@ -48,3 +48,27 @@ export function addDaysToDateStr(dateStr: string, n: number): string {
   const pd = String(anchor.getUTCDate()).padStart(2, '0')
   return `${py}-${pm}-${pd}`
 }
+
+/** The instant Eastern midnight begins on a YYYY-MM-DD date. */
+export function easternMidnight(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  // 05:00 UTC is 00:00 EST / 01:00 EDT — always before the 2am DST switch, so
+  // the offset read here is the one in effect at that day's midnight.
+  const probe = new Date(Date.UTC(y, m - 1, d, 5))
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: SITE_TIMEZONE,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    })
+      .formatToParts(probe)
+      .map(p => [p.type, Number(p.value)])
+  )
+  const wallClockAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute)
+  const offsetMs = wallClockAsUtc - probe.getTime()
+  return new Date(Date.UTC(y, m - 1, d) - offsetMs)
+}

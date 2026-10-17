@@ -8,6 +8,7 @@ import WavesStreakWidget from './WavesStreakWidget'
 import ReadingWidget from './ReadingWidget'
 import HealthStepsWidget from './health/HealthStepsWidget'
 import HealthRecoveryWidget from './health/HealthRecoveryWidget'
+import SiteTrafficWidget from './SiteTrafficWidget'
 import type { DashboardWidgetLayout } from '@/types/health'
 
 export interface WidgetDef {
@@ -32,6 +33,7 @@ export const WIDGETS: WidgetDef[] = [
   { id: 'reading', label: 'Reading', component: ReadingWidget, defaultLayout: { x: 0, y: 940, w: 636, h: 220 }, minW: 240, minH: 140 },
   { id: 'health-steps', label: 'Health · Steps', component: HealthStepsWidget, defaultLayout: { x: 652, y: 1024, w: 636, h: 300 }, minW: 240, minH: 200 },
   { id: 'health-recovery', label: 'Health · Recovery', component: HealthRecoveryWidget, defaultLayout: { x: 0, y: 1176, w: 636, h: 300 }, minW: 240, minH: 200 },
+  { id: 'site-traffic', label: 'Site Traffic', component: SiteTrafficWidget, defaultLayout: { x: 652, y: 1340, w: 636, h: 280 }, minW: 300, minH: 200 },
 ]
 
 export const WIDGET_MAP: Record<string, WidgetDef> = Object.fromEntries(

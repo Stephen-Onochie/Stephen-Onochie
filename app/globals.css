@@ -108,3 +108,11 @@ html {
   background: var(--iven-accent);
   animation: iven-indeterminate 1.15s ease-in-out infinite;
 }
+
+.iven-no-scrollbar {
+  scrollbar-width: none;
+}
+
+.iven-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

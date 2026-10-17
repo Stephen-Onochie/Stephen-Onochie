@@ -8,6 +8,7 @@ import CurrentlyWatchingCard from '@/components/portfolio/CurrentlyWatchingCard'
 import GitHubSection from '@/components/portfolio/GitHubSection'
 import ResumeCTA from '@/components/portfolio/ResumeCTA'
 import Footer from '@/components/portfolio/Footer'
+import ClickTracker from '@/components/portfolio/ClickTracker'
 
 export default function Home() {
   return (
@@ -27,6 +28,7 @@ export default function Home() {
           <ResumeCTA />
         </main>
         <Footer />
+        <ClickTracker />
       </PublicSettingsProvider>
     </PortfolioFonts>
   )

@@ -18,6 +18,7 @@ export default function ResumeCTA() {
         <div className="p-8 md:p-12 flex items-center justify-center bg-surface">
           <a
             href={resumeUrl}
+            data-track="resume"
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono text-xs uppercase tracking-[0.3em] text-textPrimary border border-grid px-8 py-4 hover:border-gold hover:text-gold bg-beige transition-colors duration-200"

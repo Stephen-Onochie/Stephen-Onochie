@@ -2,26 +2,28 @@
 
 import type { DateRange } from '@/types/health'
 
-const RANGES: { key: DateRange; label: string }[] = [
+const HEALTH_RANGES: { key: DateRange; label: string }[] = [
   { key: '7d', label: '7D' },
   { key: '30d', label: '30D' },
   { key: '90d', label: '90D' },
   { key: 'all', label: 'ALL' },
 ]
 
-export default function RangeToggle({
+export default function RangeToggle<T extends string = DateRange>({
   value,
   onChange,
+  options = HEALTH_RANGES as { key: T; label: string }[],
 }: {
-  value: DateRange
-  onChange: (r: DateRange) => void
+  value: T
+  onChange: (r: T) => void
+  options?: { key: T; label: string }[]
 }) {
   return (
     <div
       className="flex gap-0.5 p-[3px] rounded-[11px]"
       style={{ background: 'var(--iven-surface)', border: '1px solid var(--iven-border)' }}
     >
-      {RANGES.map(r => {
+      {options.map(r => {
         const on = r.key === value
         return (
           <button
