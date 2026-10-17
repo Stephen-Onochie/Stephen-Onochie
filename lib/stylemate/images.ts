@@ -1,3 +1,4 @@
+import sharp from 'sharp'
 import type { WardrobeItem } from '@/types/stylemate'
 
 // Claude has no image output, so renders come from Gemini's image model: first
@@ -168,21 +169,57 @@ export async function renderItem(
   return generateImage(prompt, photo ? [photo] : [], '1:1')
 }
 
+// Google's image model accepts at most 3 reference images through OpenRouter, so
+// larger outfits are tiled into one reference sheet (reading order, gaps between
+// tiles so pieces don't blend into each other's cream backgrounds).
+const MAX_SEPARATE_REFERENCES = 3
+const SHEET_TILE = 512
+const SHEET_GAP = 16
+
+async function referenceSheet(images: ImageInput[]): Promise<ImageInput> {
+  const cols = images.length <= 4 ? 2 : 3
+  const rows = Math.ceil(images.length / cols)
+  const cell = SHEET_TILE + SHEET_GAP
+  const tiles = await Promise.all(
+    images.map(img =>
+      sharp(Buffer.from(img.data, 'base64'))
+        .resize(SHEET_TILE, SHEET_TILE, { fit: 'contain', background: '#F5F0E8' })
+        .flatten({ background: '#F5F0E8' })
+        .jpeg()
+        .toBuffer(),
+    ),
+  )
+  const sheet = await sharp({
+    create: { width: cols * cell + SHEET_GAP, height: rows * cell + SHEET_GAP, channels: 3, background: '#CFC3AE' },
+  })
+    .composite(tiles.map((input, i) => ({ input, left: SHEET_GAP + (i % cols) * cell, top: SHEET_GAP + Math.floor(i / cols) * cell })))
+    .jpeg({ quality: 88 })
+    .toBuffer()
+  return { data: sheet.toString('base64'), mimeType: 'image/jpeg' }
+}
+
 /** An editorial flat lay of a full outfit built from the pieces' renders or photos. */
 export async function renderOutfit(
   pieces: { item: Pick<WardrobeItem, 'name' | 'brand' | 'color' | 'pattern' | 'material' | 'description' | 'category'>; image: ImageInput | null }[],
   context: { title: string; occasion: string | null },
 ): Promise<GeneratedImage> {
-  const withImages = pieces.filter(p => p.image)
-  const list = pieces.map((p, i) => `${i + 1}. ${p.item.category}: ${itemSummary(p.item)}`).join('\n')
+  const numbered = pieces.map((p, i) => ({ ...p, n: i + 1 }))
+  const withImages = numbered.filter(p => p.image)
+  const useSheet = withImages.length > MAX_SEPARATE_REFERENCES
+  const references = useSheet ? [await referenceSheet(withImages.map(p => p.image!))] : withImages.map(p => p.image!)
+  const list = numbered.map(p => `${p.n}. ${p.item.category}: ${itemSummary(p.item)}`).join('\n')
+  const shown = withImages.map(p => p.n).join(', ')
   const prompt =
     `Create one editorial fashion flat-lay photograph of a complete outfit called "${context.title}"` +
     (context.occasion ? ` for ${context.occasion}` : '') +
     `. Use exactly these ${pieces.length} pieces and nothing else:\n${list}\n` +
-    (withImages.length
-      ? 'The attached images show the real pieces; reproduce each one faithfully (exact colors, graphics, logos, wash and shape). '
-      : '') +
+    (useSheet
+      ? `The attached reference sheet shows the real pieces ${shown}, one per tile, in reading order (left to right, top to bottom). It is only a reference: do not reproduce the grid. `
+      : withImages.length
+        ? `The attached images show the real pieces ${shown}, in that order. `
+        : '') +
+    (withImages.length ? 'Reproduce each pictured piece faithfully (exact colors, graphics, logos, wash and shape). ' : '') +
     'Arrange them as the outfit would be worn, top-down: outerwear and top at the top, bottoms below, shoes at the bottom, jewelry and accessories placed neatly around. ' +
     'Warm cream linen backdrop, soft natural daylight, magazine styling with generous spacing so every piece is instantly recognizable. No people, mannequins or text.'
-  return generateImage(prompt, withImages.map(p => p.image!), '4:5')
+  return generateImage(prompt, references, '4:5')
 }

@@ -39,6 +39,7 @@ What makes a fire outfit here:
 - Weather: respect each item's temperature range and warmth; on rain days avoid suede and pristine white sneakers if alternatives exist.
 - Occasion: match the brief's energy. Gym = functional athletic pieces. Class = comfortable but put-together. Casual = relaxed but obviously styled. Going out = the sharpest pieces available.
 - Repeats (the owner's standing rule): a T-shirt is never repeated. Every piece marked TEE in the closet appears in at most one outfit across the entire request, and TEEs marked "worn recently" are only used once every other TEE is taken. Pants, shorts, outerwear (the worker jacket included), sweaters, hoodies, shoes, jewelry and accessories may repeat freely, even on back-to-back days. Within one request, options must still differ meaningfully.
+- Sweaters (the owner's standing rule): a piece marked SWEATER is the only top in its outfit. Never layer it with a tee, shirt or other top, and never put a jacket or coat over it. Only pick a sweater when it is warm enough on its own for the weather; on colder days build the look from a top plus outerwear instead.
 - Eyewear (the owner's standing rule): they wear prescription glasses every day and all their sunglasses are prescription too. When the closet has eyewear, every outfit includes exactly one pair. Sunglasses only for daytime outdoor outfits on clear or partly cloudy days; clear frames for the gym (indoors), night, going-out, overcast or rainy looks. Pick the frame whose color, shape and formality suit the outfit. Glasses repeat freely.
 - Small closet: if a perfect outfit is impossible, build the best available and use styling_tip to name the one piece that would complete it.
 
@@ -55,6 +56,12 @@ const RECENT_WEAR_DAYS = 14
 /** Tops worn against the skin (tees, tanks, polos, shirts) follow the no-repeat rule; layering tops don't. */
 export function isTee(item: Pick<WardrobeItem, 'category' | 'sub_type' | 'name'>): boolean {
   return item.category === 'top' && !LAYER_TOP.test(`${item.sub_type ?? ''} ${item.name}`)
+}
+
+const SWEATER = /sweater|jumper|cardigan|pullover|turtleneck/i
+
+export function isSweater(item: Pick<WardrobeItem, 'category' | 'sub_type' | 'name'>): boolean {
+  return item.category === 'top' && SWEATER.test(`${item.sub_type ?? ''} ${item.name}`)
 }
 
 function recentlyWorn(item: Pick<WardrobeItem, 'last_worn_on'>): boolean {
@@ -81,6 +88,7 @@ function serializeCloset(items: WardrobeItem[]): string {
         item.style_tags.length ? item.style_tags.join('/') : null,
         item.last_worn_on ? `last worn ${item.last_worn_on}` : null,
         isTee(item) ? `TEE${recentlyWorn(item) ? ' (worn recently)' : ''}` : null,
+        isSweater(item) ? 'SWEATER (worn alone: no other top, no outerwear)' : null,
         item.category === 'eyewear' ? (isSunglasses(item) ? 'PRESCRIPTION SUNGLASSES' : 'PRESCRIPTION GLASSES') : null,
       ]
       return bits.filter(Boolean).join(' | ')
@@ -159,7 +167,22 @@ export async function generateOutfits(items: WardrobeItem[], briefs: OutfitBrief
     }))
     .filter(o => o.item_ids.length >= 2)
 
-  return enforceEyewear(await enforceNoRepeatTees(outfits, items), items, briefs)
+  return enforceEyewear(enforceSweaterAlone(await enforceNoRepeatTees(outfits, items), items), items, briefs)
+}
+
+/** A sweater is the outfit's only top layer: drop any other tops and outerwear around it. */
+function enforceSweaterAlone(outfits: GeneratedOutfit[], items: WardrobeItem[]): GeneratedOutfit[] {
+  const byId = new Map(items.map(i => [i.id, i]))
+  return outfits.map(outfit => {
+    const sweater = outfit.item_ids.map(id => byId.get(id)).find(i => i && isSweater(i))
+    if (!sweater) return outfit
+    const item_ids = outfit.item_ids.filter(id => {
+      const item = byId.get(id)
+      if (!item || id === sweater.id) return true
+      return item.category !== 'top' && item.category !== 'outerwear'
+    })
+    return { ...outfit, item_ids }
+  })
 }
 
 const SUNNY = new Set(['Clear', 'Mainly clear', 'Partly cloudy'])
