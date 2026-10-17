@@ -37,7 +37,7 @@ function findImage(node: unknown): GeneratedImage | null {
   return found
 }
 
-async function callInteractions(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
+export async function callInteractions(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
   const res = await fetch(`${GEMINI_BASE}/interactions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -54,7 +54,7 @@ async function callInteractions(apiKey: string, parts: Part[], aspectRatio: stri
   return image
 }
 
-async function callGenerateContent(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
+export async function callGenerateContent(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
   const res = await fetch(`${GEMINI_BASE}/models/${LEGACY_IMAGE_MODEL}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
