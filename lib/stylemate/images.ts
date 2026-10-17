@@ -1,9 +1,11 @@
 import type { WardrobeItem } from '@/types/stylemate'
 
-// Claude has no image output, so renders come from Gemini's image model via the
-// Interactions API, with the older generateContent shape as a fallback.
+// Claude has no image output, so renders come from Gemini's image model: first
+// direct (Interactions API, then the older generateContent shape), then through
+// OpenRouter's image endpoint, which serves the same model family on another key.
 const IMAGE_MODEL = process.env.STYLEMATE_IMAGE_MODEL ?? 'gemini-nano-banana-2.1'
 const LEGACY_IMAGE_MODEL = 'gemini-2.5-flash-image'
+const OPENROUTER_IMAGE_MODEL = process.env.STYLEMATE_OPENROUTER_IMAGE_MODEL ?? 'google/gemini-2.5-flash-image'
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
 
 export interface ImageInput {
@@ -37,6 +39,24 @@ function findImage(node: unknown): GeneratedImage | null {
   return found
 }
 
+// Provider errors can echo the API key back (Google's suspension message does).
+function redact(text: string): string {
+  return text.replace(/AIza[0-9A-Za-z_-]{20,}/g, '[key]').replace(/sk-[A-Za-z0-9_-]{16,}/g, '[key]')
+}
+
+async function providerError(label: string, res: Response): Promise<Error> {
+  const body = await res.text()
+  let message = body
+  try {
+    const parsed = JSON.parse(body)
+    const err = Array.isArray(parsed) ? parsed[0]?.error : parsed.error
+    message = err?.message ?? body
+  } catch {
+    // Non-JSON error body; keep the raw text.
+  }
+  return new Error(`${label} ${res.status}: ${redact(String(message)).slice(0, 240)}`)
+}
+
 export async function callInteractions(apiKey: string, parts: Part[], aspectRatio: string): Promise<GeneratedImage> {
   const res = await fetch(`${GEMINI_BASE}/interactions`, {
     method: 'POST',
@@ -48,7 +68,7 @@ export async function callInteractions(apiKey: string, parts: Part[], aspectRati
     }),
     signal: AbortSignal.timeout(90_000),
   })
-  if (!res.ok) throw new Error(`Gemini interactions ${res.status}: ${(await res.text()).slice(0, 300)}`)
+  if (!res.ok) throw await providerError('Gemini', res)
   const image = findImage(await res.json())
   if (!image) throw new Error('Gemini returned no image')
   return image
@@ -70,28 +90,58 @@ export async function callGenerateContent(apiKey: string, parts: Part[], aspectR
     }),
     signal: AbortSignal.timeout(90_000),
   })
-  if (!res.ok) throw new Error(`Gemini generateContent ${res.status}: ${(await res.text()).slice(0, 300)}`)
+  if (!res.ok) throw await providerError('Gemini', res)
   const image = findImage(await res.json())
   if (!image) throw new Error('Gemini returned no image')
   return image
 }
 
+export async function callOpenRouter(apiKey: string, prompt: string, images: ImageInput[], aspectRatio: string): Promise<GeneratedImage> {
+  const res = await fetch('https://openrouter.ai/api/v1/images', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: OPENROUTER_IMAGE_MODEL,
+      prompt,
+      aspect_ratio: aspectRatio,
+      ...(images.length
+        ? { input_references: images.map(img => ({ type: 'image_url', image_url: { url: `data:${img.mimeType};base64,${img.data}` } })) }
+        : {}),
+    }),
+    signal: AbortSignal.timeout(100_000),
+  })
+  if (!res.ok) throw await providerError('OpenRouter', res)
+  const payload = (await res.json()) as { data?: { b64_json?: string; media_type?: string }[] }
+  const first = payload.data?.find(d => d.b64_json)
+  if (!first?.b64_json) throw new Error('OpenRouter returned no image')
+  return { bytes: Buffer.from(first.b64_json, 'base64'), mimeType: first.media_type ?? 'image/png' }
+}
+
 async function generateImage(prompt: string, images: ImageInput[], aspectRatio: string): Promise<GeneratedImage> {
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured')
+  const geminiKey = process.env.GEMINI_API_KEY
+  const openRouterKey = process.env.OPENROUTER_API_KEY
   const parts: Part[] = [
     { type: 'text', text: prompt },
     ...images.map(img => ({ type: 'image' as const, mime_type: img.mimeType, data: img.data })),
   ]
-  try {
-    return await callInteractions(apiKey, parts, aspectRatio)
-  } catch (primary) {
+
+  const attempts: (() => Promise<GeneratedImage>)[] = []
+  if (geminiKey) {
+    attempts.push(() => callInteractions(geminiKey, parts, aspectRatio))
+    attempts.push(() => callGenerateContent(geminiKey, parts, aspectRatio))
+  }
+  if (openRouterKey) attempts.push(() => callOpenRouter(openRouterKey, prompt, images, aspectRatio))
+  if (attempts.length === 0) throw new Error('No image provider configured (GEMINI_API_KEY or OPENROUTER_API_KEY)')
+
+  const errors: string[] = []
+  for (const attempt of attempts) {
     try {
-      return await callGenerateContent(apiKey, parts, aspectRatio)
-    } catch {
-      throw primary
+      return await attempt()
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err))
     }
   }
+  throw new Error(Array.from(new Set(errors)).join(' | '))
 }
 
 function itemSummary(item: Pick<WardrobeItem, 'name' | 'brand' | 'color' | 'pattern' | 'material' | 'description'>): string {
