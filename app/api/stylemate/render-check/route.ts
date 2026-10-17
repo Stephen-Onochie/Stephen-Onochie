@@ -1,42 +1,34 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { callGenerateContent, callInteractions, callOpenRouter } from '@/lib/stylemate/images'
-import { downloadImage, errorMessage } from '@/lib/stylemate/server'
+import { WARDROBE_IMAGES_BUCKET } from '@/lib/stylemate/constants'
+import { renderItem } from '@/lib/stylemate/images'
+import { downloadImage, errorMessage, extFor, uploadImage } from '@/lib/stylemate/server'
+import type { WardrobeItem } from '@/types/stylemate'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-// Temporary diagnostic for failing renders; removed once fixed.
+// Temporary: re-runs failed item renders after the Gemini key suspension; removed once done.
 export async function GET(request: Request) {
   if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const apiKey = process.env.GEMINI_API_KEY
-  const itemId = new URL(request.url).searchParams.get('item')
   const supabase = createAdminClient()
-  const { data: item } = await supabase.from('wardrobe_items').select('image_url, name').eq('id', itemId).single()
-  const photo = item?.image_url ? await downloadImage(supabase, item.image_url) : null
+  const { data } = await supabase.from('wardrobe_items').select('*').eq('render_status', 'failed')
+  const items = (data as WardrobeItem[]) ?? []
 
-
-  const parts = [
-    { type: 'text' as const, text: `Product photo of only this item: ${item?.name}, on a plain off-white background.` },
-    ...(photo ? [{ type: 'image' as const, mime_type: photo.mimeType, data: photo.data }] : []),
-  ]
-  const probe = async (fn: () => Promise<{ bytes: Buffer; mimeType: string }>) => {
+  const results = await Promise.all(items.map(async item => {
     const t = Date.now()
     try {
-      const img = await fn()
-      return { ok: true, ms: Date.now() - t, bytes: img.bytes.length, mime: img.mimeType }
+      const photo = item.image_url ? await downloadImage(supabase, item.image_url) : null
+      const image = await renderItem(item, photo)
+      const path = await uploadImage(supabase, `${item.user_id}/renders/${item.id}.${extFor(image.mimeType)}`, image.bytes, image.mimeType)
+      await supabase.from('wardrobe_items').update({ render_path: path, render_status: 'done' }).eq('id', item.id)
+      const { data: signed } = await supabase.storage.from(WARDROBE_IMAGES_BUCKET).createSignedUrl(path, 3600)
+      return { name: item.name, ok: true, ms: Date.now() - t, url: signed?.signedUrl }
     } catch (e) {
-      return { ok: false, ms: Date.now() - t, error: errorMessage(e) }
+      return { name: item.name, ok: false, ms: Date.now() - t, error: errorMessage(e) }
     }
-  }
-  const orKey = process.env.OPENROUTER_API_KEY
-  const images = photo ? [photo] : []
-  return NextResponse.json({
-    photo: photo ? { mime: photo.mimeType, b64len: photo.data.length } : null,
-    interactions: apiKey ? await probe(() => callInteractions(apiKey, parts, '1:1')) : 'no key',
-    generateContent: apiKey ? await probe(() => callGenerateContent(apiKey, parts, '1:1')) : 'no key',
-    openRouter: orKey ? await probe(() => callOpenRouter(orKey, `Product photo of only this item: ${item?.name}, on a plain off-white background.`, images, '1:1')) : 'no key',
-  })
+  }))
+  return NextResponse.json({ results })
 }
