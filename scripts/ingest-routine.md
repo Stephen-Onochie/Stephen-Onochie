@@ -68,7 +68,8 @@ You are the internship ingestion agent for Stephen's tracker. Run autonomously; 
 session is stateless, so rely only on the steps below and the live APIs.
 
 1. GET ${TARGETS_API_URL} with header "Authorization: Bearer ${INGEST_SECRET}" to get
-   the ATS target companies and their platform+slug.
+   the ATS target companies (platform+slug+focus_area), the focus-area LinkedIn searches,
+   and focus_areas (the fields Stephen is exploring, from the tracker's Sources tab).
 2. Run scripts/ingest-sources.ts to fetch and normalize all sources, piping the targets
    JSON from step 1 into its stdin:
      echo '<targets json>' | npx tsx scripts/ingest-sources.ts
@@ -77,7 +78,9 @@ session is stateless, so rely only on the steps below and the live APIs.
    target's public board.
 3. From postings, keep only those that are: an internship, for Summer 2027, and
    classifiable as one of [swe, embedded, backend, robotics, ml, hardware, product].
-   Drop everything else. Do NOT drop by location or pay. LinkedIn postings
+   EXCEPTION: a posting carrying a focus_area (or plainly fitting one of focus_areas) is
+   kept if it's an engineering/technical/research internship in that field, even when no
+   role type fits; use role_type "other" for those. Drop everything else. Do NOT drop by location or pay. LinkedIn postings
    (source board:linkedin) usually don't name a season: treat them as Summer 2027
    unless the title names a different term (Fall, Spring, Winter, 2026, co-op only).
 4. For each kept posting set: company, role_title, job_url, location, city_tag
@@ -85,7 +88,8 @@ session is stateless, so rely only on the steps below and the live APIs.
    role_type, season="summer_2027", is_paid_confirmed (true only if the posting states
    paid), work_auth_flag (true if it requires US citizenship/clearance), deadline (only
    if a hard close is stated), and source (carry through the source from the normalized
-   posting). Lane rules: lane1_program if it matches an underclassman program (Salesforce
+   posting), and focus_area (carry it through when the posting has one, or set it to the
+   matching focus_areas name). Lane rules: lane1_program if it matches an underclassman program (Salesforce
    Futureforce, Amazon, Microsoft Explore, Google STEP, NVIDIA Ignite, Meta University,
    Two Sigma, Duolingo, Pinterest Engage, UberSTAR); else ats:* sources -> lane3_startup,
    community feed:* and job-board board:* sources -> lane2_portal. city_tag indy includes Indianapolis/Carmel/
@@ -118,10 +122,18 @@ with canonical `linkedin.com/jobs/view/<id>` URLs. A throttled search shows up i
 LinkedIn shows anyone, but automated access is against LinkedIn's user
 agreement — keep the search list small.
 
-## Adding a company later
-Insert a row into `internship_targets` (company + ats_platform + ats_slug, `active=true`).
-The routine pulls the list from `/api/internship/ingest/targets` each run, so the scraper
-expands automatically — no code change.
+## Adding a company or a new field (Sources tab)
+Use the **Sources** tab in the tracker. Each focus area holds LinkedIn search terms
+(keywords become `"<term> intern"` US-wide searches, or paste a full LinkedIn search URL),
+companies, and hand-browse links. Adding a company auto-detects its public
+Greenhouse/Lever/Ashby board (`/api/internship/sources/detect`); companies without one are
+kept as manual checks. **Suggest Companies** asks OpenRouter (web search) for more.
+The routine pulls everything from `/api/internship/ingest/targets` each run, so the scraper
+expands automatically — no code change. Area searches are capped at 8 per run
+(round-robin across areas, 2 pages each); pausing an area pauses its companies.
+Postings found through an area land tagged with its `focus_area_id`.
+
+Raw SQL still works for untagged targets:
 ```sql
 insert into public.internship_targets (user_id, company, ats_platform, ats_slug)
 values ('8c08ce23-f5d6-4f78-9193-ef9191b2975c', 'Company', 'greenhouse', 'slug');

@@ -15,7 +15,9 @@ import {
   thisWeek,
   distribution,
   tractionFlag,
+  weeklyHistory,
   type ReminderData,
+  type WeeklyHistory,
 } from '@/lib/internship/reminders'
 import { formatShortDate, formatDateTime } from '@/lib/internship/dates'
 import { Pill } from './ui'
@@ -47,6 +49,7 @@ export default function Dashboard({
   const tw = thisWeek(data)
   const dist = distribution(data)
   const traction = tractionFlag(data)
+  const history = weeklyHistory(data)
 
   return (
     <div className="flex flex-col gap-6">
@@ -94,6 +97,10 @@ export default function Dashboard({
           </div>
         </Panel>
       </div>
+
+      <Panel title="Applications Per Week">
+        <WeeklyChart history={history} />
+      </Panel>
 
       {/* This-week panel */}
       <Panel title="Needs Attention">
@@ -263,6 +270,80 @@ function AttentionList({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function WeeklyChart({ history }: { history: WeeklyHistory }) {
+  const { weeks } = history
+  const max = Math.max(1, ...weeks.map(w => Math.max(w.count, w.target)))
+  const CHART_H = 120
+  return (
+    <div>
+      <div className="flex flex-wrap gap-x-8 gap-y-2 mb-4">
+        <Stat label="Avg / week" value={history.average} />
+        <Stat label="Best week" value={history.bestWeek} />
+        <Stat label="Target streak" value={`${history.streak}w`} />
+      </div>
+      <div className="flex items-end gap-1.5" style={{ height: CHART_H }}>
+        {weeks.map((w, i) => {
+          const isCurrent = i === weeks.length - 1
+          const met = w.count >= w.target
+          return (
+            <div
+              key={w.weekStart}
+              className="relative flex-1 flex flex-col justify-end h-full"
+              title={`Week of ${formatShortDate(w.weekStart + 'T12:00:00')}: ${w.count} / ${w.target}`}
+            >
+              <div
+                className="absolute left-0 right-0"
+                style={{ bottom: (w.target / max) * CHART_H, borderTop: '1px dashed var(--iven-muted)', opacity: 0.6 }}
+              />
+              {w.count > 0 && (
+                <div
+                  className="font-mono text-[9px] font-semibold text-center mb-0.5"
+                  style={{ color: 'var(--iven-text)' }}
+                >
+                  {w.count}
+                </div>
+              )}
+              <div
+                className="rounded-t-md"
+                style={{
+                  height: Math.max(2, (w.count / max) * CHART_H - (w.count > 0 ? 14 : 0)),
+                  background: met ? '#7C8C5A' : 'var(--iven-accent)',
+                  opacity: isCurrent ? 1 : w.count > 0 ? 0.85 : 0.25,
+                  outline: isCurrent ? '1px solid var(--iven-text)' : undefined,
+                  outlineOffset: 1,
+                }}
+              />
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex gap-1.5 mt-1.5">
+        {weeks.map((w, i) => (
+          <div key={w.weekStart} className="flex-1 text-center font-mono text-[8px] truncate" style={{ color: 'var(--iven-muted)' }}>
+            {(weeks.length - 1 - i) % 2 === 0 ? formatShortDate(w.weekStart + 'T12:00:00') : ''}
+          </div>
+        ))}
+      </div>
+      <div className="font-mono text-[10px] mt-3" style={{ color: 'var(--iven-muted)' }}>
+        Counted from each card&apos;s applied date (set automatically when it leaves Wishlist, editable in
+        the card). Dashed line = weekly target.
+        {history.undated > 0 && ` ${history.undated} applied card${history.undated === 1 ? ' has' : 's have'} no applied date and aren't counted.`}
+      </div>
+    </div>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div>
+      <div className="font-playfair font-bold text-[22px] leading-none" style={{ color: 'var(--iven-text)' }}>{value}</div>
+      <div className="font-mono text-[9px] font-semibold tracking-[1px] uppercase mt-1" style={{ color: 'var(--iven-muted)' }}>
+        {label}
+      </div>
     </div>
   )
 }

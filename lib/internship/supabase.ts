@@ -13,6 +13,8 @@ import type {
   InternshipSettings,
   Stage,
   PipelineState,
+  FocusArea,
+  Target,
 } from '@/types/internship'
 
 async function requireUserId(supabase: SupabaseClient): Promise<string> {
@@ -66,18 +68,25 @@ export async function updateApplication(
   if (error) throw error
 }
 
+const APPLIED_OR_LATER: Stage[] = ['applied', 'oa', 'interview', 'offer']
+
+/** Stage patch that also stamps applied_at the first time a card reaches
+ *  applied or beyond (a card can jump straight from wishlist to OA). */
+export function stageChangePatch(app: Application, toStage: Stage): Partial<Application> {
+  const patch: Partial<Application> = { stage: toStage }
+  if (APPLIED_OR_LATER.includes(toStage) && !app.applied_at) {
+    patch.applied_at = new Date().toISOString()
+  }
+  return patch
+}
+
 export async function moveApplicationStage(
   supabase: SupabaseClient,
   app: Application,
   toStage: Stage
 ): Promise<void> {
   if (app.stage === toStage) return
-  const patch: Partial<Application> = { stage: toStage }
-  // Stamp applied_at the first time a card reaches "applied".
-  if (toStage === 'applied' && !app.applied_at) {
-    patch.applied_at = new Date().toISOString()
-  }
-  await updateApplication(supabase, app.id, patch)
+  await updateApplication(supabase, app.id, stageChangePatch(app, toStage))
   await logEvent(supabase, {
     application_id: app.id,
     event_type: 'stage_change',
@@ -379,5 +388,85 @@ export async function updateSettings(
     .from('internship_settings')
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('user_id', userId)
+  if (error) throw error
+}
+
+// ── Sources: focus areas + targets ──────────────────────────────────────────
+export async function fetchFocusAreas(supabase: SupabaseClient): Promise<FocusArea[]> {
+  const { data, error } = await supabase
+    .from('internship_focus_areas')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data as FocusArea[]) ?? []
+}
+
+export async function createFocusArea(
+  supabase: SupabaseClient,
+  area: Pick<FocusArea, 'name'> & Partial<Pick<FocusArea, 'description' | 'search_terms' | 'links' | 'sort_order'>>
+): Promise<FocusArea> {
+  const userId = await requireUserId(supabase)
+  const { data, error } = await supabase
+    .from('internship_focus_areas')
+    .insert({ ...area, user_id: userId })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as FocusArea
+}
+
+export async function updateFocusArea(
+  supabase: SupabaseClient,
+  id: string,
+  patch: Partial<FocusArea>
+): Promise<void> {
+  const { error } = await supabase
+    .from('internship_focus_areas')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteFocusArea(supabase: SupabaseClient, id: string): Promise<void> {
+  const { error } = await supabase.from('internship_focus_areas').delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function fetchTargets(supabase: SupabaseClient): Promise<Target[]> {
+  const { data, error } = await supabase
+    .from('internship_targets')
+    .select('*')
+    .order('company', { ascending: true })
+  if (error) throw error
+  return (data as Target[]) ?? []
+}
+
+export async function createTarget(
+  supabase: SupabaseClient,
+  target: Pick<Target, 'company'> &
+    Partial<Pick<Target, 'ats_platform' | 'ats_slug' | 'careers_url' | 'active' | 'focus_area_id' | 'notes'>>
+): Promise<Target> {
+  const userId = await requireUserId(supabase)
+  const { data, error } = await supabase
+    .from('internship_targets')
+    .insert({ ...target, user_id: userId })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data as Target
+}
+
+export async function updateTarget(
+  supabase: SupabaseClient,
+  id: string,
+  patch: Partial<Target>
+): Promise<void> {
+  const { error } = await supabase.from('internship_targets').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteTarget(supabase: SupabaseClient, id: string): Promise<void> {
+  const { error } = await supabase.from('internship_targets').delete().eq('id', id)
   if (error) throw error
 }
