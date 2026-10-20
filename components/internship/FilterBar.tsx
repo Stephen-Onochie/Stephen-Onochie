@@ -61,6 +61,54 @@ function FilterSelect<T extends string>({
   )
 }
 
+// Focus areas from the Sources tab sit in the Roles dropdown next to the fixed
+// role types, so a new field shows up as a role filter the moment it's added.
+const AREA_PREFIX = 'area:'
+
+function RoleSelect({
+  filters,
+  onChange,
+  areaOptions,
+}: {
+  filters: Filters
+  onChange: (f: Filters) => void
+  areaOptions: Record<string, string>
+}) {
+  const value = filters.area !== 'all' ? `${AREA_PREFIX}${filters.area}` : filters.roleType
+  const areas = Object.entries(areaOptions)
+  return (
+    <select
+      value={value}
+      onChange={e => {
+        const v = e.target.value
+        if (v.startsWith(AREA_PREFIX)) onChange({ ...filters, roleType: 'all', area: v.slice(AREA_PREFIX.length) })
+        else onChange({ ...filters, roleType: v as RoleType | 'all', area: 'all' })
+      }}
+      className="font-mono text-[10px] font-semibold tracking-[1px] uppercase rounded-lg px-2.5 py-1.5 cursor-pointer"
+      style={{
+        background: value === 'all' ? 'var(--iven-bg)' : 'color-mix(in srgb, var(--iven-accent) 14%, var(--iven-bg))',
+        border: '1px solid var(--iven-border)',
+        color: 'var(--iven-text)',
+        outline: 'none',
+      }}
+    >
+      <option value="all">All Roles</option>
+      <optgroup label="Role types">
+        {Object.entries(ROLE_TYPE_LABELS).map(([v, label]) => (
+          <option key={v} value={v}>{label}</option>
+        ))}
+      </optgroup>
+      {areas.length > 0 && (
+        <optgroup label="Your fields (Sources)">
+          {areas.map(([id, name]) => (
+            <option key={id} value={`${AREA_PREFIX}${id}`}>{name}</option>
+          ))}
+        </optgroup>
+      )}
+    </select>
+  )
+}
+
 export default function FilterBar({
   filters,
   onChange,
@@ -96,12 +144,9 @@ export default function FilterBar({
 
       <FilterSelect value={filters.lane} onChange={v => onChange({ ...filters, lane: v })} options={LANE_LABELS} allLabel="All Lanes" />
       <FilterSelect value={filters.city} onChange={v => onChange({ ...filters, city: v })} options={CITY_LABELS} allLabel="All Cities" />
-      <FilterSelect value={filters.roleType} onChange={v => onChange({ ...filters, roleType: v })} options={ROLE_TYPE_LABELS} allLabel="All Roles" />
+      <RoleSelect filters={filters} onChange={onChange} areaOptions={areaOptions} />
       <FilterSelect value={filters.priority} onChange={v => onChange({ ...filters, priority: v })} options={PRIORITY_LABELS} allLabel="All Priority" />
       <FilterSelect value={filters.referral} onChange={v => onChange({ ...filters, referral: v })} options={REFERRAL_LABELS} allLabel="All Referral" />
-      {Object.keys(areaOptions).length > 0 && (
-        <FilterSelect value={filters.area} onChange={v => onChange({ ...filters, area: v })} options={areaOptions} allLabel="All Areas" />
-      )}
 
       <button
         onClick={() => onChange({ ...filters, paidOnly: !filters.paidOnly })}
