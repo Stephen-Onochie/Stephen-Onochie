@@ -1,5 +1,6 @@
 import type { Application, Contact, Interview, Task, WeeklyGoal } from '@/types/internship'
 import { currentWeekRange, currentWeekStart, daysUntil, isOverdue } from './dates'
+import { addDaysToDateStr, easternMonday } from '@/lib/dates'
 
 export interface ReminderData {
   applications: Application[]
@@ -15,17 +16,71 @@ export interface WeeklyProgress {
   actual: number
 }
 
-/** Applications that moved to "applied" within the current local week. */
+const DEFAULT_WEEKLY_TARGET = 5
+
+function appliedCountsByWeek(apps: Application[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const a of apps) {
+    if (!a.applied_at) continue
+    const wk = easternMonday(new Date(a.applied_at))
+    counts.set(wk, (counts.get(wk) ?? 0) + 1)
+  }
+  return counts
+}
+
+/** Applications stamped applied within the current Eastern (Mon-start) week. */
 export function weeklyProgress(data: ReminderData, now = new Date()): WeeklyProgress {
-  const { start, end } = currentWeekRange(now)
   const weekStart = currentWeekStart(now)
   const goal = data.weeklyGoals.find(g => g.week_start === weekStart)
-  const actual = data.applications.filter(a => {
-    if (!a.applied_at) return false
-    const t = new Date(a.applied_at).getTime()
-    return t >= start.getTime() && t < end.getTime()
-  }).length
-  return { weekStart, target: goal?.target_apps ?? 5, actual }
+  const actual = appliedCountsByWeek(data.applications).get(weekStart) ?? 0
+  return { weekStart, target: goal?.target_apps ?? DEFAULT_WEEKLY_TARGET, actual }
+}
+
+export interface WeekBucket {
+  weekStart: string
+  count: number
+  target: number
+}
+
+export interface WeeklyHistory {
+  weeks: WeekBucket[] // oldest → newest, ending with the current week
+  average: number // mean over the completed weeks shown
+  bestWeek: number
+  /** Consecutive completed weeks (most recent first) that met their target. */
+  streak: number
+  /** Apps past wishlist with no applied date — invisible to the weekly counts. */
+  undated: number
+}
+
+export function weeklyHistory(data: ReminderData, numWeeks = 12, now = new Date()): WeeklyHistory {
+  const counts = appliedCountsByWeek(data.applications)
+  const goals = new Map(data.weeklyGoals.map(g => [g.week_start, g.target_apps]))
+  const current = currentWeekStart(now)
+  const weeks: WeekBucket[] = []
+  for (let i = numWeeks - 1; i >= 0; i--) {
+    const weekStart = addDaysToDateStr(current, -7 * i)
+    weeks.push({
+      weekStart,
+      count: counts.get(weekStart) ?? 0,
+      target: goals.get(weekStart) ?? DEFAULT_WEEKLY_TARGET,
+    })
+  }
+  const completed = weeks.slice(0, -1)
+  const average = completed.length
+    ? Math.round((completed.reduce((s, w) => s + w.count, 0) / completed.length) * 10) / 10
+    : 0
+  let streak = 0
+  for (let i = completed.length - 1; i >= 0 && completed[i].count >= completed[i].target; i--) streak++
+  const undated = data.applications.filter(
+    a => !a.applied_at && ['applied', 'oa', 'interview', 'offer'].includes(a.stage)
+  ).length
+  return {
+    weeks,
+    average,
+    bestWeek: Math.max(0, ...weeks.map(w => w.count)),
+    streak,
+    undated,
+  }
 }
 
 export interface FunnelStats {

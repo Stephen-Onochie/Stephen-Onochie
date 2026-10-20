@@ -12,6 +12,8 @@ import {
   fetchTasks,
   fetchWeeklyGoals,
   fetchSettings,
+  fetchFocusAreas,
+  fetchTargets,
 } from '@/lib/internship/supabase'
 import type {
   Application,
@@ -20,6 +22,8 @@ import type {
   Task,
   WeeklyGoal,
   InternshipSettings,
+  FocusArea,
+  Target,
 } from '@/types/internship'
 import Board from '@/components/internship/Board'
 import FilterBar, { EMPTY_FILTERS, type Filters } from '@/components/internship/FilterBar'
@@ -31,13 +35,15 @@ import InterviewsView from '@/components/internship/InterviewsView'
 import Dashboard from '@/components/internship/Dashboard'
 import ReminderBanners from '@/components/internship/ReminderBanners'
 import SettingsPanel from '@/components/internship/SettingsPanel'
+import SourcesView from '@/components/internship/SourcesView'
 import { Button } from '@/components/internship/ui'
 
-type Tab = 'board' | 'contacts' | 'interviews' | 'dashboard' | 'settings'
+type Tab = 'board' | 'contacts' | 'interviews' | 'sources' | 'dashboard' | 'settings'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'board', label: 'Board' },
   { key: 'contacts', label: 'Contacts' },
   { key: 'interviews', label: 'Interviews' },
+  { key: 'sources', label: 'Sources' },
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'settings', label: 'Settings' },
 ]
@@ -54,6 +60,8 @@ function InternshipTracker() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([])
   const [settings, setSettings] = useState<InternshipSettings | null>(null)
+  const [focusAreas, setFocusAreas] = useState<FocusArea[]>([])
+  const [targets, setTargets] = useState<Target[]>([])
 
   // Board UI state
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
@@ -74,13 +82,15 @@ function InternshipTracker() {
       data: { session },
     } = await supabase.auth.getSession()
     if (!session) return
-    const [apps, cts, ivs, tks, goals, st] = await Promise.all([
+    const [apps, cts, ivs, tks, goals, st, areas, tgts] = await Promise.all([
       fetchApplications(supabase),
       fetchContacts(supabase),
       fetchInterviews(supabase),
       fetchTasks(supabase),
       fetchWeeklyGoals(supabase),
       fetchSettings(supabase),
+      fetchFocusAreas(supabase),
+      fetchTargets(supabase),
     ])
     setApplications(apps)
     setContacts(cts)
@@ -88,6 +98,8 @@ function InternshipTracker() {
     setTasks(tks)
     setWeeklyGoals(goals)
     setSettings(st)
+    setFocusAreas(areas)
+    setTargets(tgts)
     setLoading(false)
   }, [])
 
@@ -112,6 +124,7 @@ function InternshipTracker() {
       if (filters.roleType !== 'all' && a.role_type !== filters.roleType) return false
       if (filters.priority !== 'all' && a.priority !== filters.priority) return false
       if (filters.referral !== 'all' && a.referral_status !== filters.referral) return false
+      if (filters.area !== 'all' && a.focus_area_id !== filters.area) return false
       if (filters.paidOnly && a.is_paid_confirmed) return false
       if (q && !a.company.toLowerCase().includes(q) && !a.role_title.toLowerCase().includes(q)) return false
       return true
@@ -187,6 +200,7 @@ function InternshipTracker() {
                 onSearch={setSearch}
                 view={view}
                 onView={setView}
+                areaOptions={Object.fromEntries(focusAreas.map(f => [f.id, f.name]))}
               />
               <Board
                 applications={filtered}
@@ -217,6 +231,20 @@ function InternshipTracker() {
 
           {tab === 'interviews' && (
             <InterviewsView interviews={interviews} applications={applications} onOpenApp={openApp} />
+          )}
+
+          {tab === 'sources' && (
+            <SourcesView
+              areas={focusAreas}
+              targets={targets}
+              applications={applications}
+              onAreasChange={setFocusAreas}
+              onTargetsChange={setTargets}
+              onShowOnBoard={areaId => {
+                setFilters({ ...EMPTY_FILTERS, area: areaId })
+                setTab('board')
+              }}
+            />
           )}
 
           {tab === 'dashboard' && (
@@ -251,6 +279,7 @@ function InternshipTracker() {
       />
       <ApplicationDetail
         application={detailApp}
+        focusAreas={focusAreas}
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onChange={patchApp}

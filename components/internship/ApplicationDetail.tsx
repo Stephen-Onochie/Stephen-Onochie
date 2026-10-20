@@ -19,6 +19,8 @@ import {
   deleteTask,
   fetchContacts,
   updateContact,
+  stageChangePatch,
+  logEvent,
 } from '@/lib/internship/supabase'
 import type {
   Application,
@@ -35,6 +37,7 @@ import type {
   Priority,
   ReferralStatus,
   ClosedReason,
+  FocusArea,
 } from '@/types/internship'
 import {
   STAGE_LABELS,
@@ -46,6 +49,7 @@ import {
   INTERVIEW_TYPE_LABELS,
 } from '@/types/internship'
 import { formatDateTime, formatShortDate, daysUntil } from '@/lib/internship/dates'
+import { easternDateStr, easternMidnight } from '@/lib/dates'
 import { Button, Field, TextInput, TextArea, Select, LaneBadge, Pill } from './ui'
 
 const overlayStyle = {
@@ -82,8 +86,10 @@ export default function ApplicationDetail({
   onOpenChange,
   onChange,
   onDeleted,
+  focusAreas,
 }: {
   application: Application | null
+  focusAreas: FocusArea[]
   open: boolean
   onOpenChange: (o: boolean) => void
   onChange: (app: Application) => void
@@ -188,7 +194,7 @@ export default function ApplicationDetail({
 
           {/* Body */}
           <div className="p-6 overflow-y-auto flex-1">
-            {tab === 'overview' && <OverviewTab app={local} patch={patch} onDeleted={onDeleted} onClose={() => onOpenChange(false)} />}
+            {tab === 'overview' && <OverviewTab app={local} focusAreas={focusAreas} patch={patch} onDeleted={onDeleted} onClose={() => onOpenChange(false)} />}
             {tab === 'timeline' && <TimelineTab applicationId={local.id} />}
             {tab === 'contacts' && <ContactsTab application={local} />}
             {tab === 'interviews' && <InterviewsTab application={local} />}
@@ -204,11 +210,13 @@ export default function ApplicationDetail({
 // ── Overview ────────────────────────────────────────────────────────────────
 function OverviewTab({
   app,
+  focusAreas,
   patch,
   onDeleted,
   onClose,
 }: {
   app: Application
+  focusAreas: FocusArea[]
   patch: (p: Partial<Application>) => Promise<void>
   onDeleted: (id: string) => void
   onClose: () => void
@@ -267,7 +275,16 @@ function OverviewTab({
         <Field label="Stage">
           <Select
             value={app.stage}
-            onChange={v => patch({ stage: v as Stage })}
+            onChange={async v => {
+              const toStage = v as Stage
+              if (toStage === app.stage) return
+              await patch(stageChangePatch(app, toStage))
+              await logEvent(supabase, {
+                application_id: app.id,
+                event_type: 'stage_change',
+                description: `Moved from ${app.stage} to ${toStage}`,
+              })
+            }}
             options={Object.entries(STAGE_LABELS).map(([value, label]) => ({ value, label }))}
           />
         </Field>
@@ -317,6 +334,28 @@ function OverviewTab({
             type="datetime-local"
             defaultValue={toDatetimeLocal(app.deadline)}
             onBlur={e => patch({ deadline: e.target.value ? new Date(e.target.value).toISOString() : null })}
+          />
+        </Field>
+        {focusAreas.length > 0 && (
+          <Field label="Focus Area">
+            <Select
+              value={app.focus_area_id ?? ''}
+              onChange={v => patch({ focus_area_id: v || null })}
+              options={[{ value: '', label: 'None' }, ...focusAreas.map(f => ({ value: f.id, label: f.name }))]}
+            />
+          </Field>
+        )}
+        <Field label="Applied On">
+          <TextInput
+            key={app.applied_at ?? 'none'}
+            type="date"
+            defaultValue={app.applied_at ? easternDateStr(new Date(app.applied_at)) : ''}
+            onBlur={e => {
+              const v = e.target.value
+              const current = app.applied_at ? easternDateStr(new Date(app.applied_at)) : ''
+              if (v === current) return
+              patch({ applied_at: v ? easternMidnight(v).toISOString() : null })
+            }}
           />
         </Field>
         {app.stage === 'closed' && (

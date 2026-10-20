@@ -94,6 +94,12 @@ export async function POST(req: Request) {
   const toInsert = fresh.slice(0, INSERT_CAP)
 
   // 4) Build rows — compute priority server-side, ignore any sent.
+  const { data: areaRows } = await supabase
+    .from('internship_focus_areas')
+    .select('id, name')
+    .eq('user_id', userId)
+  const areaIds = new Map((areaRows ?? []).map(a => [String(a.name).toLowerCase(), a.id as string]))
+
   const rows = toInsert.map(c => {
     const city_tag: CityTag = c.city_tag ?? 'other'
     const lane: Lane = c.lane ?? 'lane2_portal'
@@ -114,6 +120,7 @@ export async function POST(req: Request) {
       deadline: c.deadline ?? null,
       season: c.season ?? activeSeason,
       source: c.source ?? null,
+      focus_area_id: c.focus_area ? areaIds.get(c.focus_area.trim().toLowerCase()) ?? null : null,
       created_via: 'ingestion' as const,
     }
   })

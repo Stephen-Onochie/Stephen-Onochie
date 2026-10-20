@@ -16,6 +16,7 @@ export interface Filters {
   roleType: RoleType | 'all'
   priority: Priority | 'all'
   referral: ReferralStatus | 'all'
+  area: string | 'all'
   paidOnly: boolean
 }
 
@@ -25,6 +26,7 @@ export const EMPTY_FILTERS: Filters = {
   roleType: 'all',
   priority: 'all',
   referral: 'all',
+  area: 'all',
   paidOnly: false,
 }
 
@@ -66,6 +68,7 @@ export default function FilterBar({
   onSearch,
   view,
   onView,
+  areaOptions,
 }: {
   filters: Filters
   onChange: (f: Filters) => void
@@ -73,6 +76,7 @@ export default function FilterBar({
   onSearch: (s: string) => void
   view: 'board' | 'table'
   onView: (v: 'board' | 'table') => void
+  areaOptions: Record<string, string>
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap mb-4">
@@ -95,6 +99,9 @@ export default function FilterBar({
       <FilterSelect value={filters.roleType} onChange={v => onChange({ ...filters, roleType: v })} options={ROLE_TYPE_LABELS} allLabel="All Roles" />
       <FilterSelect value={filters.priority} onChange={v => onChange({ ...filters, priority: v })} options={PRIORITY_LABELS} allLabel="All Priority" />
       <FilterSelect value={filters.referral} onChange={v => onChange({ ...filters, referral: v })} options={REFERRAL_LABELS} allLabel="All Referral" />
+      {Object.keys(areaOptions).length > 0 && (
+        <FilterSelect value={filters.area} onChange={v => onChange({ ...filters, area: v })} options={areaOptions} allLabel="All Areas" />
+      )}
 
       <button
         onClick={() => onChange({ ...filters, paidOnly: !filters.paidOnly })}

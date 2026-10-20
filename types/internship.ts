@@ -137,6 +137,7 @@ export interface Application {
   work_auth_flag: boolean
   created_via: CreatedVia
   source: string | null
+  focus_area_id: string | null
   created_at: string
   updated_at: string
 }
@@ -245,7 +246,29 @@ export interface Target {
   ats_slug: string | null
   careers_url: string | null
   active: boolean
+  focus_area_id: string | null
+  notes: string | null
   created_at: string
+}
+
+export interface FocusAreaLink {
+  label: string
+  url: string
+}
+
+/** A field being explored (Biotech, Neurotech…). Search terms become LinkedIn
+ *  searches for the ingestion routine; targets/applications can carry its id. */
+export interface FocusArea {
+  id: string
+  user_id: string
+  name: string
+  description: string | null
+  search_terms: string[]
+  links: FocusAreaLink[]
+  active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
 }
 
 /** A classified posting the routine POSTs to /api/internship/ingest. The API
@@ -263,6 +286,8 @@ export interface IngestCandidate {
   work_auth_flag?: boolean
   deadline?: string | null
   source?: string | null
+  /** Focus area name, carried through from the source that found the posting. */
+  focus_area?: string | null
   /** Posting date, used only to order the 50-row cap (freshest first). */
   posted_at?: string | null
 }

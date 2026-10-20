@@ -12,7 +12,10 @@
  *   echo '{"targets":[...]}' | npx tsx scripts/ingest-sources.ts   # + ATS boards
  *
  * The routine first GETs /api/internship/ingest/targets, then pipes that JSON
- * ({ targets: [{ company, ats_platform, ats_slug }] }) into this script's stdin.
+ * ({ targets: [{ company, ats_platform, ats_slug, focus_area }],
+ *    linkedin_searches: [{ url, focus_area }] }) into this script's stdin.
+ * Both come from the tracker's Sources tab; postings they find carry
+ * focus_area so the routine keeps them even outside the default role types.
  */
 
 // ─── Community feeds ─────────────────────────────────────────────────────────
@@ -56,6 +59,8 @@ const LINKEDIN_SEARCHES: string[] = [
   'https://www.linkedin.com/jobs/search/?keywords=electrical%20engineering%20intern&location=Indianapolis%2C%20Indiana%2C%20United%20States&distance=50&f_E=1&f_TPR=r2592000',
 ]
 const LINKEDIN_MAX_PAGES = 5
+// Focus-area searches (from the Sources tab) are broader, so fewer pages each.
+const AREA_LINKEDIN_MAX_PAGES = 2
 const LINKEDIN_PAGE_DELAY_MS = 1500
 
 interface NormalizedPosting {
@@ -65,12 +70,19 @@ interface NormalizedPosting {
   location: string | null
   source: string
   posted_at: string | null
+  focus_area?: string | null
 }
 
 interface Target {
   company: string
   ats_platform: 'greenhouse' | 'lever' | 'ashby'
   ats_slug: string
+  focus_area?: string | null
+}
+
+interface AreaSearch {
+  url: string
+  focus_area: string
 }
 
 const NON_INTERNSHIP = /\b(new ?grad|full[\s-]?time|senior|staff|principal|co[\s-]?op only)\b/i
@@ -295,10 +307,10 @@ function parseLinkedinCards(html: string): NormalizedPosting[] {
   return out
 }
 
-async function fetchLinkedinSearch(searchUrl: string): Promise<NormalizedPosting[]> {
+async function fetchLinkedinSearch(searchUrl: string, maxPages = LINKEDIN_MAX_PAGES): Promise<NormalizedPosting[]> {
   const query = linkedinQuery(searchUrl)
   const out: NormalizedPosting[] = []
-  for (let page = 0; page < LINKEDIN_MAX_PAGES; page++) {
+  for (let page = 0; page < maxPages; page++) {
     query.set('start', String(page * 10))
     if (page > 0) await sleep(LINKEDIN_PAGE_DELAY_MS)
     const res = await fetch(`${LINKEDIN_GUEST_API}?${query}`, {
@@ -349,41 +361,57 @@ async function main() {
     }
   }
 
+  // Optional payload from /api/internship/ingest/targets.
+  const stdin = await readStdin()
+  let targets: Target[] = []
+  let areaSearches: AreaSearch[] = []
+  if (stdin) {
+    try {
+      const parsed = JSON.parse(stdin) as { targets?: Target[]; linkedin_searches?: AreaSearch[] }
+      targets = parsed.targets ?? []
+      areaSearches = parsed.linkedin_searches ?? []
+    } catch {
+      failed.push('stdin (invalid JSON targets payload)')
+    }
+  }
+
   // LinkedIn searches. The same job often appears in several searches (and on
-  // several pages as results shift), so collapse by job URL before emitting.
-  const linkedinSeen = new Set<string>()
-  for (let i = 0; i < LINKEDIN_SEARCHES.length; i++) {
-    const searchUrl = LINKEDIN_SEARCHES[i]
+  // several pages as results shift), so collapse by job URL before emitting;
+  // a focus-area search still tags a job an earlier search already found.
+  const searches: { url: string; focus_area: string | null; pages: number }[] = [
+    ...LINKEDIN_SEARCHES.map(url => ({ url, focus_area: null, pages: LINKEDIN_MAX_PAGES })),
+    ...areaSearches.map(a => ({ url: a.url, focus_area: a.focus_area, pages: AREA_LINKEDIN_MAX_PAGES })),
+  ]
+  const linkedinSeen = new Map<string, NormalizedPosting>()
+  for (let i = 0; i < searches.length; i++) {
+    const search = searches[i]
     try {
       if (i > 0) await sleep(LINKEDIN_PAGE_DELAY_MS)
-      for (const p of await fetchLinkedinSearch(searchUrl)) {
+      for (const p of await fetchLinkedinSearch(search.url, search.pages)) {
         if (!looksLikeInternship(p.role_title)) continue
-        if (linkedinSeen.has(p.job_url!)) continue
-        linkedinSeen.add(p.job_url!)
+        const prior = linkedinSeen.get(p.job_url!)
+        if (prior) {
+          if (!prior.focus_area && search.focus_area) prior.focus_area = search.focus_area
+          continue
+        }
+        if (search.focus_area) p.focus_area = search.focus_area
+        linkedinSeen.set(p.job_url!, p)
         postings.push(p)
       }
     } catch (e) {
-      const kw = new URL(searchUrl).searchParams.get('keywords') ?? searchUrl
+      const kw = new URL(search.url).searchParams.get('keywords') ?? search.url
       failed.push(`board:linkedin "${kw}" (${(e as Error).message})`)
     }
   }
 
-  // ATS targets from stdin, if any.
-  const stdin = await readStdin()
-  if (stdin) {
-    let targets: Target[] = []
+  // ATS targets.
+  for (const t of targets) {
     try {
-      const parsed = JSON.parse(stdin) as { targets?: Target[] }
-      targets = parsed.targets ?? []
-    } catch {
-      failed.push('stdin (invalid JSON targets payload)')
-    }
-    for (const t of targets) {
-      try {
-        postings.push(...(await fetchAts(t)))
-      } catch (e) {
-        failed.push(`ats:${t.ats_platform}:${t.ats_slug} (${(e as Error).message})`)
-      }
+      const found = await fetchAts(t)
+      if (t.focus_area) found.forEach(p => (p.focus_area = t.focus_area))
+      postings.push(...found)
+    } catch (e) {
+      failed.push(`ats:${t.ats_platform}:${t.ats_slug} (${(e as Error).message})`)
     }
   }
 

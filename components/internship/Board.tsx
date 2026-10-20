@@ -14,10 +14,10 @@ import {
 } from '@dnd-kit/core'
 import { Calendar, Flag, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { moveApplicationStage } from '@/lib/internship/supabase'
+import { moveApplicationStage, stageChangePatch } from '@/lib/internship/supabase'
 import type { Application, Stage } from '@/types/internship'
 import { STAGES, STAGE_LABELS } from '@/types/internship'
-import { daysUntil } from '@/lib/internship/dates'
+import { daysUntil, formatShortDate } from '@/lib/internship/dates'
 import { LaneBadge, CityBadge, PriorityDot, ReferralPill } from './ui'
 
 function Card({ app, onOpen, dragging }: { app: Application; onOpen: () => void; dragging?: boolean }) {
@@ -146,9 +146,7 @@ export default function Board({
 
     // Optimistic update.
     const optimistic = applications.map(a =>
-      a.id === app.id
-        ? { ...a, stage: toStage, applied_at: toStage === 'applied' && !a.applied_at ? new Date().toISOString() : a.applied_at }
-        : a
+      a.id === app.id ? { ...a, ...stageChangePatch(a, toStage) } : a
     )
     onChange(optimistic)
 
@@ -223,6 +221,7 @@ function TableView({
             {header('stage', 'Stage')}
             {header('lane', 'Lane')}
             {header('priority', 'Priority')}
+            {header('applied_at', 'Applied')}
             {header('deadline', 'Deadline')}
             <th className="px-3 py-2" />
           </tr>
@@ -245,6 +244,9 @@ function TableView({
               <td className="px-3 py-2.5"><span className="text-[12px]" style={{ color: 'var(--iven-text)' }}>{STAGE_LABELS[a.stage]}</span></td>
               <td className="px-3 py-2.5"><LaneBadge lane={a.lane} /></td>
               <td className="px-3 py-2.5"><PriorityDot priority={a.priority} /></td>
+              <td className="px-3 py-2.5 text-[12px] font-mono whitespace-nowrap" style={{ color: 'var(--iven-muted)' }}>
+                {a.applied_at ? formatShortDate(a.applied_at) : '—'}
+              </td>
               <td className="px-3 py-2.5 text-[12px] font-mono" style={{ color: 'var(--iven-muted)' }}>
                 {a.deadline ? `${daysUntil(a.deadline)}d` : '—'}
               </td>
