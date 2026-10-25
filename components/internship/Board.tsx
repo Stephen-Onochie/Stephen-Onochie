@@ -12,16 +12,19 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import { Calendar, Flag, ExternalLink } from 'lucide-react'
+import { Calendar, Flag, ExternalLink, Radar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { moveApplicationStage, stageChangePatch } from '@/lib/internship/supabase'
 import type { Application, Stage } from '@/types/internship'
 import { STAGES, STAGE_LABELS } from '@/types/internship'
 import { daysUntil, formatShortDate } from '@/lib/internship/dates'
+import { daysSinceScraped, scrapedAgoLabel, EXPIRY_DAYS } from '@/lib/internship/expiry'
 import { LaneBadge, CityBadge, PriorityDot, ReferralPill } from './ui'
 
 function Card({ app, onOpen, dragging }: { app: Application; onOpen: () => void; dragging?: boolean }) {
   const dl = app.deadline ? daysUntil(app.deadline) : null
+  const scraped = daysSinceScraped(app)
+  const expiringSoon = scraped !== null && app.stage === 'wishlist' && !app.expiry_kept && scraped >= EXPIRY_DAYS - 2
   return (
     <div
       onClick={onOpen}
@@ -57,6 +60,18 @@ function Card({ app, onOpen, dragging }: { app: Application; onOpen: () => void;
         >
           <Calendar size={10} />
           {dl < 0 ? `${Math.abs(dl)}d overdue` : `${dl}d left`}
+        </div>
+      )}
+      {scraped !== null && (
+        <div
+          className="flex items-center gap-1 mt-1.5 font-mono text-[10px] font-semibold"
+          style={{ color: expiringSoon ? '#A8743B' : 'var(--iven-muted)' }}
+          title={`Found by the scan on ${formatShortDate(app.scraped_at!)}${
+            app.stage === 'wishlist' && !app.expiry_kept ? ` · expires after ${EXPIRY_DAYS} days unapplied` : ''
+          }`}
+        >
+          <Radar size={10} />
+          {scrapedAgoLabel(scraped)}
         </div>
       )}
     </div>

@@ -100,6 +100,9 @@ export async function POST(req: Request) {
     .eq('user_id', userId)
   const areaIds = new Map((areaRows ?? []).map(a => [String(a.name).toLowerCase(), a.id as string]))
 
+  const scrapedAt = new Date(
+    body.run_at && !isNaN(Date.parse(body.run_at)) ? body.run_at : Date.now()
+  ).toISOString()
   const rows = toInsert.map(c => {
     const city_tag: CityTag = c.city_tag ?? 'other'
     const lane: Lane = c.lane ?? 'lane2_portal'
@@ -122,6 +125,7 @@ export async function POST(req: Request) {
       source: c.source ?? null,
       focus_area_id: c.focus_area ? areaIds.get(c.focus_area.trim().toLowerCase()) ?? null : null,
       created_via: 'ingestion' as const,
+      scraped_at: scrapedAt,
     }
   })
 

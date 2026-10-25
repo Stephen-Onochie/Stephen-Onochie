@@ -138,6 +138,10 @@ export interface Application {
   created_via: CreatedVia
   source: string | null
   focus_area_id: string | null
+  /** When the ingestion scan found the posting; null for manual adds. */
+  scraped_at: string | null
+  /** Restored from Expired by hand, so it no longer auto-expires. */
+  expiry_kept: boolean
   created_at: string
   updated_at: string
 }

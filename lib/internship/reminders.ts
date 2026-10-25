@@ -1,6 +1,7 @@
 import type { Application, Contact, Interview, Task, WeeklyGoal } from '@/types/internship'
 import { currentWeekRange, currentWeekStart, daysUntil, isOverdue } from './dates'
 import { addDaysToDateStr, easternMonday } from '@/lib/dates'
+import { isExpired } from './expiry'
 
 export interface ReminderData {
   applications: Application[]
@@ -186,6 +187,6 @@ export function tractionFlag(data: ReminderData, now = new Date()): boolean {
 /** Stale wishlist cards: in wishlist > 21 days since creation. */
 export function staleWishlist(data: ReminderData, now = new Date()): Application[] {
   return data.applications.filter(
-    a => a.stage === 'wishlist' && daysUntil(a.created_at, now) <= -21
+    a => a.stage === 'wishlist' && !isExpired(a, now) && daysUntil(a.created_at, now) <= -21
   )
 }
