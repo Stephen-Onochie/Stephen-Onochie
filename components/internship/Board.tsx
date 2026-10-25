@@ -12,16 +12,29 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import { Calendar, Flag, ExternalLink } from 'lucide-react'
+import { Calendar, Flag, ExternalLink, Radar } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { moveApplicationStage, stageChangePatch } from '@/lib/internship/supabase'
 import type { Application, Stage } from '@/types/internship'
 import { STAGES, STAGE_LABELS } from '@/types/internship'
 import { daysUntil, formatShortDate } from '@/lib/internship/dates'
+import { daysSinceScraped, scrapedAgoLabel } from '@/lib/internship/expiry'
 import { LaneBadge, CityBadge, PriorityDot, ReferralPill } from './ui'
 
-function Card({ app, onOpen, dragging }: { app: Application; onOpen: () => void; dragging?: boolean }) {
+function Card({
+  app,
+  expiryDays,
+  onOpen,
+  dragging,
+}: {
+  app: Application
+  expiryDays: number
+  onOpen: () => void
+  dragging?: boolean
+}) {
   const dl = app.deadline ? daysUntil(app.deadline) : null
+  const scraped = daysSinceScraped(app)
+  const expiringSoon = scraped !== null && app.stage === 'wishlist' && !app.expiry_kept && scraped >= expiryDays - 2
   return (
     <div
       onClick={onOpen}
@@ -59,15 +72,27 @@ function Card({ app, onOpen, dragging }: { app: Application; onOpen: () => void;
           {dl < 0 ? `${Math.abs(dl)}d overdue` : `${dl}d left`}
         </div>
       )}
+      {scraped !== null && (
+        <div
+          className="flex items-center gap-1 mt-1.5 font-mono text-[10px] font-semibold"
+          style={{ color: expiringSoon ? '#A8743B' : 'var(--iven-muted)' }}
+          title={`Found by the scan on ${formatShortDate(app.scraped_at!)}${
+            app.stage === 'wishlist' && !app.expiry_kept ? ` · expires after ${expiryDays} days unapplied` : ''
+          }`}
+        >
+          <Radar size={10} />
+          {scrapedAgoLabel(scraped)}
+        </div>
+      )}
     </div>
   )
 }
 
-function DraggableCard({ app, onOpen }: { app: Application; onOpen: () => void }) {
+function DraggableCard({ app, expiryDays, onOpen }: { app: Application; expiryDays: number; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: app.id })
   return (
     <div ref={setNodeRef} {...listeners} {...attributes} style={{ opacity: isDragging ? 0.4 : 1 }}>
-      <Card app={app} onOpen={onOpen} />
+      <Card app={app} expiryDays={expiryDays} onOpen={onOpen} />
     </div>
   )
 }
@@ -75,10 +100,12 @@ function DraggableCard({ app, onOpen }: { app: Application; onOpen: () => void }
 function Column({
   stage,
   apps,
+  expiryDays,
   onOpen,
 }: {
   stage: Stage
   apps: Application[]
+  expiryDays: number
   onOpen: (a: Application) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage })
@@ -102,7 +129,7 @@ function Column({
         }}
       >
         {apps.map(a => (
-          <DraggableCard key={a.id} app={a} onOpen={() => onOpen(a)} />
+          <DraggableCard key={a.id} app={a} expiryDays={expiryDays} onOpen={() => onOpen(a)} />
         ))}
       </div>
     </div>
@@ -111,11 +138,13 @@ function Column({
 
 export default function Board({
   applications,
+  expiryDays,
   onChange,
   onOpen,
   view,
 }: {
   applications: Application[]
+  expiryDays: number
   onChange: (apps: Application[]) => void
   onOpen: (a: Application) => void
   view: 'board' | 'table'
@@ -166,10 +195,10 @@ export default function Board({
     <DndContext sensors={sensors} onDragStart={handleStart} onDragEnd={handleEnd}>
       <div className="flex gap-3 overflow-x-auto pb-4">
         {STAGES.map(stage => (
-          <Column key={stage} stage={stage} apps={byStage[stage]} onOpen={onOpen} />
+          <Column key={stage} stage={stage} apps={byStage[stage]} expiryDays={expiryDays} onOpen={onOpen} />
         ))}
       </div>
-      <DragOverlay>{activeApp && <Card app={activeApp} onOpen={() => {}} dragging />}</DragOverlay>
+      <DragOverlay>{activeApp && <Card app={activeApp} expiryDays={expiryDays} onOpen={() => {}} dragging />}</DragOverlay>
     </DndContext>
   )
 }

@@ -30,6 +30,7 @@ export default function SettingsPanel({
   const [emailEnabled, setEmailEnabled] = useState(settings.email_nudges_enabled)
   const [digestEmail, setDigestEmail] = useState(settings.digest_email ?? '')
   const [subscribed, setSubscribed] = useState(settings.email_subscribed)
+  const [expiryDays, setExpiryDays] = useState(String(settings.expiry_days))
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [testState, setTestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [testMsg, setTestMsg] = useState('')
@@ -58,6 +59,18 @@ export default function SettingsPanel({
     setSubscribed(next)
     await updateSettings(supabase, { email_subscribed: next })
     onSettingsChange({ ...settings, email_subscribed: next })
+  }
+
+  async function saveExpiryDays() {
+    const n = Math.round(Number(expiryDays))
+    if (!Number.isFinite(n) || n < 1 || n > 365) {
+      setExpiryDays(String(settings.expiry_days))
+      return
+    }
+    setExpiryDays(String(n))
+    if (n === settings.expiry_days) return
+    await updateSettings(supabase, { expiry_days: n })
+    onSettingsChange({ ...settings, expiry_days: n })
   }
 
   async function sendTest() {
@@ -174,6 +187,29 @@ export default function SettingsPanel({
           <Button variant="ghost" onClick={toggleSubscribed}>
             {subscribed ? 'Unsubscribe' : 'Re-subscribe'}
           </Button>
+        </div>
+      </Section>
+
+      <Section title="Scan Expiry">
+        <div className="flex items-center gap-3">
+          <div className="w-24">
+            <TextInput
+              type="number"
+              min={1}
+              max={365}
+              value={expiryDays}
+              onChange={e => setExpiryDays(e.target.value)}
+              onBlur={saveExpiryDays}
+              onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
+            />
+          </div>
+          <span className="text-[13px]" style={{ color: 'var(--iven-text)' }}>
+            days a scanned posting can sit in Wishlist before it moves to the Expired tab
+          </span>
+        </div>
+        <div className="text-[12px] mt-2" style={{ color: 'var(--iven-muted)' }}>
+          Counted from the day the scan found it. Applies to existing cards right away; applying or restoring keeps a
+          card on the board.
         </div>
       </Section>
 

@@ -50,6 +50,7 @@ import {
 } from '@/types/internship'
 import { formatDateTime, formatShortDate, daysUntil } from '@/lib/internship/dates'
 import { easternDateStr, easternMidnight } from '@/lib/dates'
+import { daysSinceScraped, isExpired } from '@/lib/internship/expiry'
 import { Button, Field, TextInput, TextArea, Select, LaneBadge, Pill } from './ui'
 
 const overlayStyle = {
@@ -87,9 +88,11 @@ export default function ApplicationDetail({
   onChange,
   onDeleted,
   focusAreas,
+  expiryDays,
 }: {
   application: Application | null
   focusAreas: FocusArea[]
+  expiryDays: number
   open: boolean
   onOpenChange: (o: boolean) => void
   onChange: (app: Application) => void
@@ -144,6 +147,12 @@ export default function ApplicationDetail({
                     {daysUntil(local.deadline)}d
                   </Pill>
                 )}
+                {local.scraped_at && (
+                  <Pill>
+                    Scraped {formatShortDate(local.scraped_at)} · {daysSinceScraped(local)}d ago
+                  </Pill>
+                )}
+                {isExpired(local, expiryDays) && <Pill color="#A8743B">Expired</Pill>}
               </div>
               <Dialog.Title
                 className="font-playfair font-bold text-[24px] leading-tight"

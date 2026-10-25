@@ -138,6 +138,10 @@ export interface Application {
   created_via: CreatedVia
   source: string | null
   focus_area_id: string | null
+  /** When the ingestion scan found the posting; null for manual adds. */
+  scraped_at: string | null
+  /** Restored from Expired by hand, so it no longer auto-expires. */
+  expiry_kept: boolean
   created_at: string
   updated_at: string
 }
@@ -219,6 +223,8 @@ export interface InternshipSettings {
   email_nudges_enabled: boolean
   email_subscribed: boolean
   digest_email: string | null
+  /** Days a scraped wishlist card may sit unapplied before it moves to Expired. */
+  expiry_days: number
   created_at: string
   updated_at: string
 }

@@ -68,6 +68,7 @@ export async function GET(request: Request) {
       interviews: (interviews.data as Interview[]) ?? [],
       tasks: (tasks.data as Task[]) ?? [],
       weeklyGoals: (goals.data as WeeklyGoal[]) ?? [],
+      expiryDays: s.expiry_days,
     }, s.user_id)
 
     await resend.emails.send({

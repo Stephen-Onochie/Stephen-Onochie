@@ -36,11 +36,14 @@ import Dashboard from '@/components/internship/Dashboard'
 import ReminderBanners from '@/components/internship/ReminderBanners'
 import SettingsPanel from '@/components/internship/SettingsPanel'
 import SourcesView from '@/components/internship/SourcesView'
+import ExpiredView from '@/components/internship/ExpiredView'
 import { Button } from '@/components/internship/ui'
+import { isExpired, DEFAULT_EXPIRY_DAYS } from '@/lib/internship/expiry'
 
-type Tab = 'board' | 'contacts' | 'interviews' | 'sources' | 'dashboard' | 'settings'
+type Tab = 'board' | 'expired' | 'contacts' | 'interviews' | 'sources' | 'dashboard' | 'settings'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'board', label: 'Board' },
+  { key: 'expired', label: 'Expired' },
   { key: 'contacts', label: 'Contacts' },
   { key: 'interviews', label: 'Interviews' },
   { key: 'sources', label: 'Sources' },
@@ -116,9 +119,18 @@ function InternshipTracker() {
     }
   }, [searchParams])
 
+  const expiryDays = settings?.expiry_days ?? DEFAULT_EXPIRY_DAYS
+  const [active, expired] = useMemo(() => {
+    const now = new Date()
+    const live: Application[] = []
+    const gone: Application[] = []
+    for (const a of applications) (isExpired(a, expiryDays, now) ? gone : live).push(a)
+    return [live, gone]
+  }, [applications, expiryDays])
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return applications.filter(a => {
+    return active.filter(a => {
       if (filters.lane !== 'all' && a.lane !== filters.lane) return false
       if (filters.city !== 'all' && a.city_tag !== filters.city) return false
       if (filters.roleType !== 'all' && a.role_type !== filters.roleType) return false
@@ -129,7 +141,7 @@ function InternshipTracker() {
       if (q && !a.company.toLowerCase().includes(q) && !a.role_title.toLowerCase().includes(q)) return false
       return true
     })
-  }, [applications, filters, search])
+  }, [active, filters, search])
 
   function openApp(a: Application) {
     setDetailApp(a)
@@ -176,6 +188,9 @@ function InternshipTracker() {
             }}
           >
             {t.label}
+            {t.key === 'expired' && expired.length > 0 && (
+              <span className="ml-1.5" style={{ color: 'var(--iven-muted)' }}>{expired.length}</span>
+            )}
           </button>
         ))}
       </div>
@@ -187,11 +202,12 @@ function InternshipTracker() {
           {tab === 'board' && (
             <>
               <ReminderBanners
-                applications={applications}
+                applications={active}
                 contacts={contacts}
                 interviews={interviews}
                 tasks={tasks}
                 weeklyGoals={weeklyGoals}
+                expiryDays={expiryDays}
               />
               <FilterBar
                 filters={filters}
@@ -204,6 +220,7 @@ function InternshipTracker() {
               />
               <Board
                 applications={filtered}
+                expiryDays={expiryDays}
                 onChange={next => {
                   // Board hands back the full (filtered) set with one card moved;
                   // merge those changes into the master list by id.
@@ -215,6 +232,15 @@ function InternshipTracker() {
                 view={view}
               />
             </>
+          )}
+
+          {tab === 'expired' && (
+            <ExpiredView
+              applications={expired}
+              expiryDays={expiryDays}
+              onChange={updated => setApplications(prev => prev.map(a => (a.id === updated.id ? updated : a)))}
+              onOpen={openApp}
+            />
           )}
 
           {tab === 'contacts' && (
@@ -280,6 +306,7 @@ function InternshipTracker() {
       <ApplicationDetail
         application={detailApp}
         focusAreas={focusAreas}
+        expiryDays={expiryDays}
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onChange={patchApp}

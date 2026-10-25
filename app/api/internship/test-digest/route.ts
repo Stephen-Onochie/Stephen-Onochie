@@ -63,6 +63,7 @@ export async function POST() {
     interviews: (interviews.data as Interview[]) ?? [],
     tasks: (tasks.data as Task[]) ?? [],
     weeklyGoals: (goals.data as WeeklyGoal[]) ?? [],
+    expiryDays: (settings as InternshipSettings).expiry_days,
   }, user.id)
 
   const resend = new Resend(apiKey)
