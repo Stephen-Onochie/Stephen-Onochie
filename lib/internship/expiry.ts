@@ -1,7 +1,7 @@
 import { easternDateStr } from '@/lib/dates'
 import type { Application } from '@/types/internship'
 
-export const EXPIRY_DAYS = 7
+export const DEFAULT_EXPIRY_DAYS = 7
 
 /** Eastern calendar days since the scan found this posting; null if never scraped. */
 export function daysSinceScraped(app: Application, now: Date = new Date()): number | null {
@@ -11,11 +11,15 @@ export function daysSinceScraped(app: Application, now: Date = new Date()): numb
   return Math.round((to - from) / 86_400_000)
 }
 
-/** Scraped postings still sitting in wishlist EXPIRY_DAYS after the scan. */
-export function isExpired(app: Application, now: Date = new Date()): boolean {
+/** Scraped postings still sitting in wishlist `expiryDays` after the scan. */
+export function isExpired(
+  app: Application,
+  expiryDays: number = DEFAULT_EXPIRY_DAYS,
+  now: Date = new Date()
+): boolean {
   if (app.stage !== 'wishlist' || app.expiry_kept) return false
   const days = daysSinceScraped(app, now)
-  return days !== null && days >= EXPIRY_DAYS
+  return days !== null && days >= expiryDays
 }
 
 export function scrapedAgoLabel(days: number): string {

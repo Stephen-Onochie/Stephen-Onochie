@@ -24,19 +24,21 @@ export default function ReminderBanners({
   interviews,
   tasks,
   weeklyGoals,
+  expiryDays,
 }: {
   applications: Application[]
   contacts: Contact[]
   interviews: Interview[]
   tasks: Task[]
   weeklyGoals: WeeklyGoal[]
+  expiryDays: number
 }) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem(dismissedKey()) === '1'
   })
 
-  const data: ReminderData = { applications, contacts, interviews, tasks, weeklyGoals }
+  const data: ReminderData = { applications, contacts, interviews, tasks, weeklyGoals, expiryDays }
   const wp = weeklyProgress(data)
   const tw = thisWeek(data)
   const stale = staleWishlist(data)

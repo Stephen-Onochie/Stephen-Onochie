@@ -88,9 +88,11 @@ export default function ApplicationDetail({
   onChange,
   onDeleted,
   focusAreas,
+  expiryDays,
 }: {
   application: Application | null
   focusAreas: FocusArea[]
+  expiryDays: number
   open: boolean
   onOpenChange: (o: boolean) => void
   onChange: (app: Application) => void
@@ -150,7 +152,7 @@ export default function ApplicationDetail({
                     Scraped {formatShortDate(local.scraped_at)} · {daysSinceScraped(local)}d ago
                   </Pill>
                 )}
-                {isExpired(local) && <Pill color="#A8743B">Expired</Pill>}
+                {isExpired(local, expiryDays) && <Pill color="#A8743B">Expired</Pill>}
               </div>
               <Dialog.Title
                 className="font-playfair font-bold text-[24px] leading-tight"

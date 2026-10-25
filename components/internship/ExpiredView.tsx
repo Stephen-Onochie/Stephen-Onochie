@@ -4,16 +4,18 @@ import { ExternalLink, RotateCcw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { updateApplication } from '@/lib/internship/supabase'
 import { formatShortDate } from '@/lib/internship/dates'
-import { daysSinceScraped, EXPIRY_DAYS } from '@/lib/internship/expiry'
+import { daysSinceScraped } from '@/lib/internship/expiry'
 import type { Application } from '@/types/internship'
 import { LaneBadge, CityBadge } from './ui'
 
 export default function ExpiredView({
   applications,
+  expiryDays,
   onChange,
   onOpen,
 }: {
   applications: Application[]
+  expiryDays: number
   onChange: (app: Application) => void
   onOpen: (a: Application) => void
 }) {
@@ -27,9 +29,9 @@ export default function ExpiredView({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-[13px] max-w-[620px]" style={{ color: 'var(--iven-muted)' }}>
-        Postings the scan found that sat in Wishlist for {EXPIRY_DAYS}+ days without an application. They&apos;re
+        Postings the scan found that sat in Wishlist for {expiryDays}+ days without an application. They&apos;re
         hidden from the board and reminders, and staying here keeps the scan from re-adding them. Restore one to put it
-        back on the board for good.
+        back on the board for good. Change the window in Settings.
       </p>
 
       {sorted.length === 0 ? (

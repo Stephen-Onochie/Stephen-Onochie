@@ -223,6 +223,8 @@ export interface InternshipSettings {
   email_nudges_enabled: boolean
   email_subscribed: boolean
   digest_email: string | null
+  /** Days a scraped wishlist card may sit unapplied before it moves to Expired. */
+  expiry_days: number
   created_at: string
   updated_at: string
 }
