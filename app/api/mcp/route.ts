@@ -10,6 +10,8 @@ import {
   adminSearchTasks,
   adminListProjects,
 } from '@/lib/todo/admin'
+import { adminListOutfits, adminListWardrobe } from '@/lib/stylemate/admin'
+import { CATEGORY_VALUES } from '@/lib/stylemate/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -352,6 +354,49 @@ const handler = createMcpHandler(
       async () => {
         try {
           return json(await adminListProjects(createAdminClient()))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    server.registerTool(
+      'stylemate_wardrobe',
+      {
+        title: 'Get StyleMate Wardrobe',
+        description:
+          "List the clothing in Stephen's StyleMate closet with tags (category, colors, material, formality/warmth 1-5, seasons, occasions, comfortable temp range °F, wear history). Standing rules when suggesting outfits: never repeat a T-shirt (is_tee) within one plan; a sweater (is_sweater) is worn alone with no other top or outerwear; every outfit includes exactly one pair of glasses (all eyewear is prescription; sunglasses only for clear daytime outdoor looks). Items on the way from online orders are excluded unless include_incoming is set.",
+        inputSchema: {
+          category: z.enum(CATEGORY_VALUES).optional(),
+          search: z.string().optional().describe('Case-insensitive match on name, type, color, brand, material, tags'),
+          include_incoming: z.boolean().optional().describe('Include ordered items not yet delivered'),
+          include_images: z.boolean().optional().describe('Add a 6-hour signed image URL per item'),
+        },
+      },
+      async filter => {
+        try {
+          return json(await adminListWardrobe(createAdminClient(), filter))
+        } catch (e) {
+          return jsonError(e)
+        }
+      }
+    )
+
+    server.registerTool(
+      'stylemate_outfits',
+      {
+        title: 'Get StyleMate Outfits',
+        description:
+          "Get Stephen's planned StyleMate outfits for a date range (YYYY-MM-DD, Eastern; defaults to today through 7 days out), or set library=true for every saved outfit. Each outfit lists its pieces by wardrobe item id and name.",
+        inputSchema: {
+          from: z.string().optional().describe('YYYY-MM-DD'),
+          to: z.string().optional().describe('YYYY-MM-DD'),
+          library: z.boolean().optional(),
+        },
+      },
+      async filter => {
+        try {
+          return json(await adminListOutfits(createAdminClient(), filter))
         } catch (e) {
           return jsonError(e)
         }
