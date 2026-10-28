@@ -101,6 +101,7 @@ Automated Summer 2027 internship discovery for the Internship Tracker. Split int
 
 - **Client:** `lib/hevy/client.ts` — thin fetch wrapper, reads `HEVY_API_KEY` server-side, never sent to the client. `searchExerciseTemplates` caches the full ~460-template list per warm lambda instance (1hr TTL) since Hevy paginates 10/page with no search endpoint.
 - **Tools:** get/create/update routines, get/create routine folders, get workouts (read-only), search exercise templates.
+- **StyleMate tools (read-only):** `stylemate_wardrobe` (closet with tags + the tee/sweater/glasses rules in its description, optional signed image URLs) and `stylemate_outfits` (planned outfits by date range, or the saved library), via `lib/stylemate/admin.ts` (service-role, scoped to `STYLEMATE_USER_ID`).
 - **Auth:** claude.ai's custom-connector UI only takes a URL, no custom headers, so the shared secret (`MCP_HEVY_SECRET`) is passed as a query param on the connector URL: `https://stephenonochie.com/api/mcp?key=<secret>`. Wrong/missing key → 404 (not 401, to avoid confirming the route exists).
 - Register in claude.ai under Settings → Connectors → Add custom connector with that URL.
 
