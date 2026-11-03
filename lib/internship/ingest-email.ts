@@ -38,6 +38,7 @@ export function buildIngestEmail(summary: IngestResponse, userId: string, runAt:
         ${stat('New matches inserted', String(summary.inserted))}
         ${stat('Duplicates skipped', String(summary.skipped_duplicates))}
         ${stat('Out-of-season skipped', String(summary.skipped_season))}
+        ${stat('Older than a month skipped', String(summary.skipped_stale))}
         ${stat('Lane 1 deadline alerts', String(summary.deadline_alerts))}
         ${summary.capped ? stat('Capped at 50', 'yes') : ''}
       </table>

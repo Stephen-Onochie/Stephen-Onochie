@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { dedupeKeys, computePriority } from '@/lib/internship/ingest'
 import { buildIngestEmail } from '@/lib/internship/ingest-email'
 import { daysUntil } from '@/lib/internship/dates'
+import { isPostingTooOld } from '@/lib/internship/expiry'
 import type {
   IngestRequest,
   IngestResponse,
@@ -52,7 +53,17 @@ export async function POST(req: Request) {
     return false
   })
 
-  // 2) Dedupe — against existing rows AND within the batch.
+  // 2) Freshness guard — only postings from the last month. Undated postings
+  // pass (the source didn't say), and age off later by their scrape date.
+  const now = new Date()
+  let skippedStale = 0
+  const recent = inSeason.filter(c => {
+    if (!isPostingTooOld(c.posted_at, now)) return true
+    skippedStale++
+    return false
+  })
+
+  // 3) Dedupe — against existing rows AND within the batch.
   const { data: existingRows, error: fetchErr } = await supabase
     .from('internship_applications')
     .select('job_url, company, role_title, location')
@@ -74,7 +85,7 @@ export async function POST(req: Request) {
 
   let skippedDuplicates = 0
   const fresh: IngestCandidate[] = []
-  for (const c of inSeason) {
+  for (const c of recent) {
     if (!c.company || !c.role_title) {
       skippedDuplicates++ // malformed candidate; count as skipped rather than insert junk
       continue
@@ -88,12 +99,12 @@ export async function POST(req: Request) {
     fresh.push(c)
   }
 
-  // 3) Cap at 50, freshest posting first.
+  // 4) Cap at 50, freshest posting first.
   fresh.sort((a, b) => (b.posted_at ?? '').localeCompare(a.posted_at ?? ''))
   const capped = fresh.length > INSERT_CAP
   const toInsert = fresh.slice(0, INSERT_CAP)
 
-  // 4) Build rows — compute priority server-side, ignore any sent.
+  // 5) Build rows — compute priority server-side, ignore any sent.
   const { data: areaRows } = await supabase
     .from('internship_focus_areas')
     .select('id, name')
@@ -126,6 +137,7 @@ export async function POST(req: Request) {
       focus_area_id: c.focus_area ? areaIds.get(c.focus_area.trim().toLowerCase()) ?? null : null,
       created_via: 'ingestion' as const,
       scraped_at: scrapedAt,
+      posted_at: c.posted_at && !isNaN(Date.parse(c.posted_at)) ? new Date(c.posted_at).toISOString() : null,
     }
   })
 
@@ -140,7 +152,7 @@ export async function POST(req: Request) {
     inserted = rows.length
   }
 
-  // 5) Deadline alerts — Lane 1 programs with a deadline within 7 days.
+  // 6) Deadline alerts — Lane 1 programs with a deadline within 7 days.
   const { data: lane1Rows } = await supabase
     .from('internship_applications')
     .select('deadline')
@@ -156,6 +168,7 @@ export async function POST(req: Request) {
     inserted,
     skipped_duplicates: skippedDuplicates,
     skipped_season: skippedSeason,
+    skipped_stale: skippedStale,
     capped,
     deadline_alerts: deadlineAlerts,
   }

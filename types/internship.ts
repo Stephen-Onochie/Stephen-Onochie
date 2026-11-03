@@ -140,6 +140,8 @@ export interface Application {
   focus_area_id: string | null
   /** When the ingestion scan found the posting; null for manual adds. */
   scraped_at: string | null
+  /** When the source says the job was posted; null for manual adds and pre-feature scans. */
+  posted_at: string | null
   /** Restored from Expired by hand, so it no longer auto-expires. */
   expiry_kept: boolean
   created_at: string
@@ -294,7 +296,8 @@ export interface IngestCandidate {
   source?: string | null
   /** Focus area name, carried through from the source that found the posting. */
   focus_area?: string | null
-  /** Posting date, used only to order the 50-row cap (freshest first). */
+  /** Posting date: stored on the row, orders the 50-row cap, and anything
+   *  older than MAX_POSTING_AGE_DAYS is skipped. */
   posted_at?: string | null
 }
 
@@ -308,6 +311,7 @@ export interface IngestResponse {
   inserted: number
   skipped_duplicates: number
   skipped_season: number
+  skipped_stale: number
   capped: boolean
   deadline_alerts: number
 }

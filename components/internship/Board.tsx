@@ -18,7 +18,7 @@ import { moveApplicationStage, stageChangePatch } from '@/lib/internship/supabas
 import type { Application, Stage } from '@/types/internship'
 import { STAGES, STAGE_LABELS } from '@/types/internship'
 import { daysUntil, formatShortDate } from '@/lib/internship/dates'
-import { daysSinceScraped, scrapedAgoLabel } from '@/lib/internship/expiry'
+import { daysSinceScraped, scrapedAgoLabel, hoursSincePosted, postedAgoLabel } from '@/lib/internship/expiry'
 import { LaneBadge, CityBadge, PriorityDot, ReferralPill } from './ui'
 
 function Card({
@@ -76,12 +76,12 @@ function Card({
         <div
           className="flex items-center gap-1 mt-1.5 font-mono text-[10px] font-semibold"
           style={{ color: expiringSoon ? '#A8743B' : 'var(--iven-muted)' }}
-          title={`Found by the scan on ${formatShortDate(app.scraped_at!)}${
+          title={`${app.posted_at ? `Posted ${formatShortDate(app.posted_at)} · ` : ''}Found by the scan on ${formatShortDate(app.scraped_at!)}${
             app.stage === 'wishlist' && !app.expiry_kept ? ` · expires after ${expiryDays} days unapplied` : ''
           }`}
         >
           <Radar size={10} />
-          {scrapedAgoLabel(scraped)}
+          {app.posted_at ? postedAgoLabel(hoursSincePosted(app)) : scrapedAgoLabel(scraped)}
         </div>
       )}
     </div>
