@@ -1,7 +1,10 @@
 <h1 align="center">Hi 👋, I'm Stephen Onochie</h1>
 <h3 align="center">Computer Engineering Student at Purdue</h3>
 
-- 🔭 I’m currently working on my **[Portfolio Website](https://github.com/Stephen-Onochie/Stephen-Onochie.github.io)** 🧢👕
+- 🔭 I’m currently working on:
+  - 🧠 **IEEE SMC Neural Interfaces BCI Decoding Competition**
+  - 🤖 **Boiler Robotics Club Raspberry Pi HAT PCB**
+  - 🌐 **[Personal Website](https://stephenonochie.com)**
 
 - 🌱 I’m currently learning about **MCP servers and AI**
 
