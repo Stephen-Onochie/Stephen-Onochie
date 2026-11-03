@@ -52,7 +52,7 @@ const MARKDOWN_FEEDS: { source: string; url: string }[] = [
 // f_TPR=r2592000 posted in the last 30 days · distance=50 miles.
 const LINKEDIN_SEARCHES: string[] = [
   // Stephen's original search (Oct 12, 2026).
-  'https://www.linkedin.com/jobs/search-results/?keywords=computer%20engineer&f_SAL=f_SA_id_226001%3A275001',
+  'https://www.linkedin.com/jobs/search-results/?keywords=computer%20engineer&f_SAL=f_SA_id_226001%3A275001&f_TPR=r2592000',
   // Indianapolis metro — the gap the community feeds don't cover.
   'https://www.linkedin.com/jobs/search/?keywords=computer%20engineering%20intern&location=Indianapolis%2C%20Indiana%2C%20United%20States&distance=50&f_E=1&f_TPR=r2592000',
   'https://www.linkedin.com/jobs/search/?keywords=software%20engineering%20intern&location=Indianapolis%2C%20Indiana%2C%20United%20States&distance=50&f_E=1&f_TPR=r2592000',
@@ -62,6 +62,9 @@ const LINKEDIN_MAX_PAGES = 5
 // Focus-area searches (from the Sources tab) are broader, so fewer pages each.
 const AREA_LINKEDIN_MAX_PAGES = 2
 const LINKEDIN_PAGE_DELAY_MS = 1500
+// Matches MAX_POSTING_AGE_DAYS in lib/internship/expiry.ts (the ingest API
+// enforces it too); dropping here just keeps the routine's batch small.
+const MAX_POSTING_AGE_DAYS = 30
 
 interface NormalizedPosting {
   company: string
@@ -195,7 +198,8 @@ async function fetchGreenhouse(slug: string, company: string): Promise<Normalize
       job_url: j.absolute_url ? String(j.absolute_url) : null,
       location: (j.location as { name?: string } | undefined)?.name ?? null,
       source: `ats:greenhouse:${slug}`,
-      posted_at: toIso(j.updated_at ?? null),
+      // updated_at bumps on any edit; first_published is when the job went live.
+      posted_at: toIso(j.first_published ?? j.updated_at ?? null),
     }))
     .filter(p => looksLikeInternship(p.role_title))
 }
@@ -415,8 +419,15 @@ async function main() {
     }
   }
 
+  const cutoff = Date.now() - MAX_POSTING_AGE_DAYS * 86_400_000
+  const recent = postings.filter(p => !p.posted_at || Date.parse(p.posted_at) >= cutoff)
+
   process.stdout.write(
-    JSON.stringify({ postings, failed_sources: failed, count: postings.length }, null, 2)
+    JSON.stringify(
+      { postings: recent, failed_sources: failed, count: recent.length, skipped_stale: postings.length - recent.length },
+      null,
+      2
+    )
   )
   process.stdout.write('\n')
 }

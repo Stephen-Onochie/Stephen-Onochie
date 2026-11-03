@@ -38,7 +38,7 @@ import SettingsPanel from '@/components/internship/SettingsPanel'
 import SourcesView from '@/components/internship/SourcesView'
 import ExpiredView from '@/components/internship/ExpiredView'
 import { Button } from '@/components/internship/ui'
-import { isExpired, DEFAULT_EXPIRY_DAYS } from '@/lib/internship/expiry'
+import { isExpired, inPostedWindow, DEFAULT_EXPIRY_DAYS } from '@/lib/internship/expiry'
 
 type Tab = 'board' | 'expired' | 'contacts' | 'interviews' | 'sources' | 'dashboard' | 'settings'
 const TABS: { key: Tab; label: string }[] = [
@@ -130,6 +130,7 @@ function InternshipTracker() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
+    const now = new Date()
     return active.filter(a => {
       if (filters.lane !== 'all' && a.lane !== filters.lane) return false
       if (filters.city !== 'all' && a.city_tag !== filters.city) return false
@@ -137,6 +138,7 @@ function InternshipTracker() {
       if (filters.priority !== 'all' && a.priority !== filters.priority) return false
       if (filters.referral !== 'all' && a.referral_status !== filters.referral) return false
       if (filters.area !== 'all' && a.focus_area_id !== filters.area) return false
+      if (!inPostedWindow(a, filters.posted, now)) return false
       if (filters.paidOnly && a.is_paid_confirmed) return false
       if (q && !a.company.toLowerCase().includes(q) && !a.role_title.toLowerCase().includes(q)) return false
       return true

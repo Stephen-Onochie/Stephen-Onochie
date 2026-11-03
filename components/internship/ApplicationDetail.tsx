@@ -147,6 +147,7 @@ export default function ApplicationDetail({
                     {daysUntil(local.deadline)}d
                   </Pill>
                 )}
+                {local.posted_at && <Pill>Posted {formatShortDate(local.posted_at)}</Pill>}
                 {local.scraped_at && (
                   <Pill>
                     Scraped {formatShortDate(local.scraped_at)} · {daysSinceScraped(local)}d ago

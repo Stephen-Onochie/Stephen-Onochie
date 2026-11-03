@@ -2,6 +2,7 @@
 
 import { Search, LayoutGrid, List } from 'lucide-react'
 import type { Lane, CityTag, RoleType, Priority, ReferralStatus } from '@/types/internship'
+import { POSTED_WINDOW_LABELS, type PostedWindow } from '@/lib/internship/expiry'
 import {
   LANE_LABELS,
   CITY_LABELS,
@@ -17,6 +18,7 @@ export interface Filters {
   priority: Priority | 'all'
   referral: ReferralStatus | 'all'
   area: string | 'all'
+  posted: PostedWindow
   paidOnly: boolean
 }
 
@@ -27,6 +29,7 @@ export const EMPTY_FILTERS: Filters = {
   priority: 'all',
   referral: 'all',
   area: 'all',
+  posted: 'all',
   paidOnly: false,
 }
 
@@ -147,6 +150,7 @@ export default function FilterBar({
       <RoleSelect filters={filters} onChange={onChange} areaOptions={areaOptions} />
       <FilterSelect value={filters.priority} onChange={v => onChange({ ...filters, priority: v })} options={PRIORITY_LABELS} allLabel="All Priority" />
       <FilterSelect value={filters.referral} onChange={v => onChange({ ...filters, referral: v })} options={REFERRAL_LABELS} allLabel="All Referral" />
+      <FilterSelect value={filters.posted} onChange={v => onChange({ ...filters, posted: v })} options={POSTED_WINDOW_LABELS} allLabel="Posted Anytime" />
 
       <button
         onClick={() => onChange({ ...filters, paidOnly: !filters.paidOnly })}
