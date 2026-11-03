@@ -35,8 +35,8 @@ Created via the `/schedule` skill as a remote cloud routine:
 - **Routine ID:** `trig_0179ApZ9ED79xq4yntWe8hkY`
   (manage: https://claude.ai/code/routines/trig_0179ApZ9ED79xq4yntWe8hkY)
 - **Repo:** `Stephen-Onochie`
-- **Cron:** `0 12,22 * * *` (UTC) = **08:00 / 18:00 EDT** (07:00 / 17:00 once Indiana
-  switches to EST — fixed-offset UTC cron).
+- **Cron:** `CRON_TZ=America/Indianapolis 0 8,18 * * *` = **08:00 / 18:00 Indiana**
+  year-round (DST-proof).
 - **Model:** `claude-sonnet-4-6`.
 - The API URLs and `INGEST_SECRET` are baked into the prompt (cloud routines have no
   separate secret store — the prompt carries them). Network access is open by default;
@@ -49,7 +49,7 @@ Created via the `/schedule` skill as a remote cloud routine:
 ### Daily proof-of-life email
 The ingest API sends a personal-website-branded email (to `internship_settings.digest_email`)
 whenever the routine posts with `first_run=true`. The routine sets `first_run=true` only on
-the day's first scan (12:00 UTC / 08:00 Indiana), so exactly one email arrives per day showing
+the day's first scan (08:00 Indiana), so exactly one email arrives per day showing
 the run's counts. Reuses `RESEND_API_KEY` + `INTERNSHIP_DIGEST_FROM` (already in prod). Builder:
 `lib/internship/ingest-email.ts`. The send is best-effort and never fails ingestion.
 
@@ -63,7 +63,8 @@ main list (not off-season / new-grad), and update the constants if needed.
 
 ## Routine prompt (paste verbatim, filling in INGEST_SECRET)
 
-The routine was created from the web UI, so agents can't edit it: paste changes at
+The routine was created from the web UI, so agents can't edit it (`update_trigger` refuses
+routines an agent didn't create): paste changes at
 https://claude.ai/code/routines/trig_0179ApZ9ED79xq4yntWe8hkY.
 
 ```
@@ -81,7 +82,7 @@ Steps:
    (If tsx is unavailable, first run: npm i -D tsx --no-save) This prints { postings: [...], failed_sources: [...] } covering the vanshb03 community JSON feed, the sndsh404 README markdown feed, the LinkedIn searches (built-in plus the focus-area ones from step 1), and each ATS target's public board. Postings found through a focus area carry a focus_area field.
 3. From postings, keep only those that are: an internship, for Summer 2027, and classifiable as one of [swe, embedded, backend, robotics, ml, hardware, product]. EXCEPTION: a posting that carries a focus_area, or plainly fits one of the focus_areas from step 1, is kept if it is an engineering, technical or research internship in that field even when none of those role types fits; use role_type 'other' for those. Drop everything else. Do NOT drop by location or pay. LinkedIn postings (source board:linkedin) usually don't name a season: treat them as Summer 2027 unless the title names a different term (Fall, Spring, Winter, 2026, co-op only).
 4. For each kept posting set: company, role_title, job_url, location, city_tag (indy/chicago/austin/remote/other), lane (lane1_program/lane2_portal/lane3_startup), role_type, season='summer_2027', is_paid_confirmed (true only if the posting states paid), work_auth_flag (true if it requires US citizenship/clearance), deadline (only if a hard close is stated), source (carry through the source field from the normalized posting), posted_at (carry through the posting's posted_at exactly as given, or omit when it is null; the API skips anything posted over 30 days ago and the board filters on it), and focus_area (carry it through when the posting has one; otherwise set it to the matching focus_areas name if the posting clearly belongs to one, else omit). Lane rules: lane1_program if it matches an underclassman program (Salesforce Futureforce, Amazon, Microsoft Explore, Google STEP, NVIDIA Ignite, Meta University, Two Sigma, Duolingo, Pinterest Engage, UberSTAR); else ats:* sources -> lane3_startup, community feed:* and job-board board:* sources -> lane2_portal. city_tag: indy includes Indianapolis/Carmel/Fishers/Zionsville/Columbus IN metro; remote = US-remote; any other US -> other.
-5. Determine first_run: run `date -u +%H` to get the current UTC hour. If the UTC hour is 12 (this is the day's first scan, 08:00 Indiana), set first_run=true; otherwise set first_run=false. The API sends a daily proof-of-life email only when first_run=true, so it must be true on exactly one run per day (the 12:00 UTC run).
+5. Determine first_run: run `TZ=America/Indianapolis date +%H` to get the current Indiana hour. If it is 08 (the day's first scan), set first_run=true; otherwise set first_run=false. The API sends a daily proof-of-life email only when first_run=true, so it must be true on exactly one run per day (the 08:00 Indiana run).
 6. POST the batch to ${INGEST_API_URL} with the bearer header and JSON body { run_at: <current ISO timestamp>, first_run: <from step 5>, candidates: [...] }. Do NOT send priority; the API computes it.
 7. Read the API JSON response and report: inserted, skipped_duplicates, skipped_season, skipped_stale, capped, deadline_alerts, and whether first_run was true (so the proof-of-life email fired). Also list any failed_sources from step 2. Do not commit or push anything.
 ```
