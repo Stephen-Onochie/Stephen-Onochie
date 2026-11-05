@@ -6,35 +6,32 @@ import IvenModule from '@/components/iven/IvenModule'
 import { Check, Loader2, ExternalLink } from 'lucide-react'
 import { fetchPublicViewSettings, updatePublicViewSettings } from '@/lib/public-view/supabase'
 import type { PublicViewSettings } from '@/types/public-view'
+import ProjectsEditor from '@/components/public-view/ProjectsEditor'
 
 type SaveState = 'idle' | 'saving' | 'saved'
+type Tab = 'settings' | 'projects'
 
 export default function PublicViewPage() {
   const supabase = createClient()
   const [settings, setSettings] = useState<PublicViewSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [tab, setTab] = useState<Tab>('projects')
 
   // Local form fields
   const [resumeUrl, setResumeUrl] = useState('')
-  const [resumeHeading, setResumeHeading] = useState('')
-  const [resumeBlurb, setResumeBlurb] = useState('')
   const [showReading, setShowReading] = useState(true)
   const [showWatching, setShowWatching] = useState(true)
   const [githubUrl, setGithubUrl] = useState('')
   const [linkedinUrl, setLinkedinUrl] = useState('')
-  const [instagramUrl, setInstagramUrl] = useState('')
 
   const hydrate = useCallback((s: PublicViewSettings) => {
     setSettings(s)
     setResumeUrl(s.resume_url)
-    setResumeHeading(s.resume_heading)
-    setResumeBlurb(s.resume_blurb)
     setShowReading(s.show_currently_reading)
     setShowWatching(s.show_currently_watching)
     setGithubUrl(s.github_url)
     setLinkedinUrl(s.linkedin_url)
-    setInstagramUrl(s.instagram_url)
   }, [])
 
   useEffect(() => {
@@ -48,13 +45,10 @@ export default function PublicViewPage() {
     setSaveState('saving')
     const patch = {
       resume_url: resumeUrl.trim(),
-      resume_heading: resumeHeading.trim(),
-      resume_blurb: resumeBlurb.trim(),
       show_currently_reading: showReading,
       show_currently_watching: showWatching,
       github_url: githubUrl.trim(),
       linkedin_url: linkedinUrl.trim(),
-      instagram_url: instagramUrl.trim(),
     }
     await updatePublicViewSettings(supabase, patch)
     setSettings({ ...settings, ...patch })
@@ -79,25 +73,40 @@ export default function PublicViewPage() {
       }
     >
       <p className="text-[13px] mb-6 max-w-[620px]" style={{ color: 'var(--iven-muted)' }}>
-        These settings control what appears on your public portfolio at
-        stephenonochie.com. Changes go live on the next page load.
+        Controls what appears on your public portfolio at stephenonochie.com. Homepage copy
+        (hero, Now strip, silicon track, experience) lives in lib/portfolio/content.ts.
       </p>
 
-      {loading ? (
+      <div className="flex gap-1 mb-6" role="tablist">
+        {(['projects', 'settings'] as const).map(t => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className="font-mono text-[11px] uppercase tracking-[1px] px-3.5 py-2 rounded"
+            style={
+              tab === t
+                ? { background: 'var(--iven-text)', color: 'var(--iven-bg)' }
+                : { border: '1px solid var(--iven-grid)', color: 'var(--iven-muted)' }
+            }
+          >
+            {t === 'projects' ? 'Projects' : 'Site settings'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'projects' ? (
+        <ProjectsEditor supabase={supabase} />
+      ) : loading ? (
         <div className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--iven-muted)' }}>
           <Loader2 size={14} className="animate-spin" /> Loading…
         </div>
       ) : (
         <div className="flex flex-col gap-6 max-w-[620px]">
-          <Section title="Resume">
-            <FieldRow label="Resume link URL">
+          <Section title="Résumé">
+            <FieldRow label="Résumé link (header, hero and contact buttons)">
               <Input value={resumeUrl} onChange={setResumeUrl} placeholder="https://…" />
-            </FieldRow>
-            <FieldRow label="Section heading">
-              <Input value={resumeHeading} onChange={setResumeHeading} placeholder="Resume" />
-            </FieldRow>
-            <FieldRow label="Section blurb">
-              <Textarea value={resumeBlurb} onChange={setResumeBlurb} />
             </FieldRow>
           </Section>
 
@@ -130,9 +139,6 @@ export default function PublicViewPage() {
             </FieldRow>
             <FieldRow label="LinkedIn">
               <Input value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/in/…" />
-            </FieldRow>
-            <FieldRow label="Instagram">
-              <Input value={instagramUrl} onChange={setInstagramUrl} placeholder="https://instagram.com/…" />
             </FieldRow>
           </Section>
 
@@ -206,22 +212,6 @@ function Input({
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       className="w-full text-[13px] px-3 py-2 rounded outline-none"
-      style={{
-        background: 'var(--iven-bg)',
-        border: '1px solid var(--iven-grid)',
-        color: 'var(--iven-text)',
-      }}
-    />
-  )
-}
-
-function Textarea({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <textarea
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      rows={3}
-      className="w-full text-[13px] px-3 py-2 rounded outline-none resize-y"
       style={{
         background: 'var(--iven-bg)',
         border: '1px solid var(--iven-grid)',

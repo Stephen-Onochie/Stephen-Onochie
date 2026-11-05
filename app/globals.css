@@ -48,21 +48,95 @@ html {
   --iven-grid: #2E261C;
 }
 
-@keyframes portfolio-ticker {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+/* Public portfolio theme. Tokens sit on html:has(.pf) as well as .pf so the
+   overscroll area matches the page; .pf alone covers browsers without :has.
+   Light is the base; the OS preference picks dark unless the visitor toggled
+   (data-pf-theme on <html>, set before paint by PortfolioShell). */
+.pf,
+html:has(.pf) {
+  --pf-bg: #F5F0E8;
+  --pf-band: #ECE5D6;
+  --pf-card: #EDE6D8;
+  --pf-media: #2C1F0E;
+  --pf-media-line: rgba(201, 168, 76, 0.16);
+  --pf-media-text: #D9BC67;
+  --pf-line: #D3C5AE;
+  --pf-card-line: #CDBB98;
+  --pf-text: #2C1F0E;
+  --pf-muted: #5E4E3A;
+  --pf-faint: #7A6447;
+  --pf-accent: #C9A84C;
+  --pf-accent-text: #85651A;
+  --pf-on-accent: #241A0C;
+  --pf-chip: #2C1F0E;
+  --pf-chip-text: #F5F0E8;
+  --pf-strip: #2C1F0E;
+  --pf-strip-text: #F5F0E8;
+  --pf-strip-faint: #C9B48C;
+  --pf-strip-line: #4A3A24;
+  --pf-contact: #2C1F0E;
+  --pf-contact-text: #F5F0E8;
+  --pf-contact-muted: #D8CBB4;
+  --pf-contact-line: #6B5638;
+  color-scheme: light;
 }
 
-.portfolio-ticker {
-  animation: portfolio-ticker 40s linear infinite;
+@media (prefers-color-scheme: dark) {
+  html:not([data-pf-theme='light']):has(.pf),
+  html:not([data-pf-theme='light']) .pf {
+    --pf-bg: #15110D; --pf-band: #211A14; --pf-card: #241C15; --pf-media: #15110D;
+    --pf-media-line: rgba(201, 168, 76, 0.09); --pf-media-text: #B39B5E; --pf-line: #3A3027;
+    --pf-card-line: #6E5A33; --pf-text: #F2EADB; --pf-muted: #BDAE96; --pf-faint: #9A8A72;
+    --pf-accent: #C9A84C; --pf-accent-text: #D9BC67; --pf-on-accent: #1A140D; --pf-chip: #E2CB86;
+    --pf-chip-text: #1A140D; --pf-strip: #0F0C09; --pf-strip-text: #F2EADB; --pf-strip-faint: #B39B5E;
+    --pf-strip-line: #2E261F; --pf-contact: #15110D; --pf-contact-text: #F2EADB;
+    --pf-contact-muted: #BDAE96; --pf-contact-line: #4A3D2E;
+    color-scheme: dark;
+  }
+  html:not([data-pf-theme='light']) .pf-when-light { display: none; }
+  html:not([data-pf-theme='light']) .pf-when-dark { display: inline-flex; }
 }
 
-.portfolio-ticker:hover {
-  animation-play-state: paused;
+html[data-pf-theme='dark']:has(.pf),
+html[data-pf-theme='dark'] .pf {
+  --pf-bg: #15110D; --pf-band: #211A14; --pf-card: #241C15; --pf-media: #15110D;
+  --pf-media-line: rgba(201, 168, 76, 0.09); --pf-media-text: #B39B5E; --pf-line: #3A3027;
+  --pf-card-line: #6E5A33; --pf-text: #F2EADB; --pf-muted: #BDAE96; --pf-faint: #9A8A72;
+  --pf-accent: #C9A84C; --pf-accent-text: #D9BC67; --pf-on-accent: #1A140D; --pf-chip: #E2CB86;
+  --pf-chip-text: #1A140D; --pf-strip: #0F0C09; --pf-strip-text: #F2EADB; --pf-strip-faint: #B39B5E;
+  --pf-strip-line: #2E261F; --pf-contact: #15110D; --pf-contact-text: #F2EADB;
+  --pf-contact-muted: #BDAE96; --pf-contact-line: #4A3D2E;
+  color-scheme: dark;
+}
+
+html:has(.pf),
+html:has(.pf) body {
+  background-color: var(--pf-bg);
+}
+
+/* Theme toggle label: shows the theme you'd switch TO. */
+.pf-when-dark { display: none; }
+.pf-when-light { display: inline-flex; }
+html[data-pf-theme='dark'] .pf-when-light { display: none; }
+html[data-pf-theme='dark'] .pf-when-dark { display: inline-flex; }
+
+.pf-blueprint {
+  background-color: var(--pf-media);
+  background-image:
+    linear-gradient(var(--pf-media-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pf-media-line) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-position: -1px -1px;
+}
+
+.pf-prose > * + * { margin-top: 1.1em; }
+.pf-prose h2 + *, .pf-prose h3 + * { margin-top: 0.6em; }
+.pf-prose h2 { margin-top: 2.2em; }
+.pf-prose h3 { margin-top: 1.6em; }
+.pf-prose > :first-child { margin-top: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.pf) { scroll-behavior: auto; }
 }
 
 /* Standing Timer event toast — slides in from the top-right edge. */

@@ -22,6 +22,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.stephenonochie.com'),
   title: 'Stephen Onochie',
   description: 'Computer Engineering student at Purdue. Engineer and founder of SBS Digital LLC.',
   manifest: '/manifest.json',
@@ -50,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}>
       <body className="font-inter antialiased">
         {children}
         <SiteAnalytics />

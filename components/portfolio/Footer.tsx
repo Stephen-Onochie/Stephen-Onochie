@@ -1,31 +1,20 @@
-'use client'
-
-import { usePublicSettings } from './PublicSettingsProvider'
+import Link from 'next/link'
+import { CONTAINER } from './ui'
 
 export default function Footer() {
-  const { githubUrl } = usePublicSettings()
   return (
-    <footer className="border-t border-grid">
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-grid">
-        <p className="px-6 py-5 font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted">
+    <footer className="border-t border-pf-contact-line">
+      <div
+        className={`${CONTAINER} py-6 flex flex-wrap items-center justify-between gap-3 font-mono text-[10.5px] uppercase tracking-[0.2em] text-pf-contact-muted`}
+      >
+        <p>
           © {new Date().getFullYear()} Stephen Onochie
+          <span aria-hidden="true"> · </span>
+          <Link href="/login" data-track="footer-signin" className="hover:text-pf-contact-text transition-colors">
+            Sign in
+          </Link>
         </p>
-        <a
-          href="mailto:stephenconochie@gmail.com"
-          data-track="footer-email"
-          className="px-6 py-5 font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted hover:text-gold transition-colors duration-200 text-center md:text-left"
-        >
-          stephenconochie@gmail.com
-        </a>
-        <a
-          href={githubUrl}
-          data-track="footer-github"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-6 py-5 font-mono text-[10px] uppercase tracking-[0.2em] text-textMuted hover:text-gold transition-colors duration-200 text-center md:text-right"
-        >
-          GitHub →
-        </a>
+        <p>Built with Next.js · Deployed on Vercel</p>
       </div>
     </footer>
   )
