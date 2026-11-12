@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildDigest } from '@/lib/internship/digest'
+import { fetchApplications } from '@/lib/internship/supabase'
 import type {
-  Application,
   Contact,
   Interview,
   Task,
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     if (!to) continue
 
     const [apps, contacts, interviews, tasks, goals] = await Promise.all([
-      supabase.from('internship_applications').select('*').eq('user_id', s.user_id),
+      fetchApplications(supabase, s.user_id),
       supabase.from('internship_contacts').select('*').eq('user_id', s.user_id),
       supabase.from('internship_interviews').select('*').eq('user_id', s.user_id),
       supabase.from('internship_tasks').select('*').eq('user_id', s.user_id),
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     ])
 
     const digest = buildDigest({
-      applications: (apps.data as Application[]) ?? [],
+      applications: apps,
       contacts: (contacts.data as Contact[]) ?? [],
       interviews: (interviews.data as Interview[]) ?? [],
       tasks: (tasks.data as Task[]) ?? [],

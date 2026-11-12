@@ -26,14 +26,25 @@ async function requireUserId(supabase: SupabaseClient): Promise<string> {
 }
 
 // ── Applications ────────────────────────────────────────────────────────────
-export async function fetchApplications(supabase: SupabaseClient): Promise<Application[]> {
-  const { data, error } = await supabase
-    .from('internship_applications')
-    .select('*')
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return (data as Application[]) ?? []
+// PostgREST caps each response at 1000 rows, and scanned wishlist rows alone
+// outnumber that, so page until a short page comes back.
+const APP_PAGE = 1000
+
+export async function fetchApplications(supabase: SupabaseClient, userId?: string): Promise<Application[]> {
+  const all: Application[] = []
+  for (let from = 0; ; from += APP_PAGE) {
+    let q = supabase.from('internship_applications').select('*')
+    if (userId) q = q.eq('user_id', userId)
+    const { data, error } = await q
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, from + APP_PAGE - 1)
+    if (error) throw error
+    const page = (data as Application[]) ?? []
+    all.push(...page)
+    if (page.length < APP_PAGE) return all
+  }
 }
 
 export async function createApplication(

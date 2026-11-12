@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase/server'
 import { buildDigest } from '@/lib/internship/digest'
+import { fetchApplications } from '@/lib/internship/supabase'
 import type {
-  Application,
   Contact,
   Interview,
   Task,
@@ -50,7 +50,7 @@ export async function POST() {
   const from = process.env.INTERNSHIP_DIGEST_FROM ?? 'Internship Tracker <onboarding@resend.dev>'
 
   const [apps, contacts, interviews, tasks, goals] = await Promise.all([
-    supabase.from('internship_applications').select('*').eq('user_id', user.id),
+    fetchApplications(supabase, user.id),
     supabase.from('internship_contacts').select('*').eq('user_id', user.id),
     supabase.from('internship_interviews').select('*').eq('user_id', user.id),
     supabase.from('internship_tasks').select('*').eq('user_id', user.id),
@@ -58,7 +58,7 @@ export async function POST() {
   ])
 
   const digest = buildDigest({
-    applications: (apps.data as Application[]) ?? [],
+    applications: apps,
     contacts: (contacts.data as Contact[]) ?? [],
     interviews: (interviews.data as Interview[]) ?? [],
     tasks: (tasks.data as Task[]) ?? [],
