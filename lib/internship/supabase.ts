@@ -79,7 +79,7 @@ export async function updateApplication(
   if (error) throw error
 }
 
-const APPLIED_OR_LATER: Stage[] = ['applied', 'oa', 'interview', 'offer']
+export const APPLIED_OR_LATER: Stage[] = ['applied', 'oa', 'interview', 'offer']
 
 /** Stage patch that also stamps applied_at the first time a card reaches
  *  applied or beyond (a card can jump straight from wishlist to OA). */

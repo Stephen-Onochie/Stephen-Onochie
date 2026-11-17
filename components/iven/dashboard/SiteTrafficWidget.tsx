@@ -80,7 +80,7 @@ export default function SiteTrafficWidget() {
         </>
       )}
 
-      <Link href="/apps/analytics" className="font-mono text-[9px] tracking-[1.5px] uppercase mt-3 self-end" style={{ color: 'var(--iven-muted)' }}>
+      <Link href="/apps/site-settings?tab=analytics" className="font-mono text-[9px] tracking-[1.5px] uppercase mt-3 self-end" style={{ color: 'var(--iven-muted)' }}>
         Open analytics →
       </Link>
     </div>

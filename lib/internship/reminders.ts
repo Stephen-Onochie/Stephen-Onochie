@@ -1,6 +1,6 @@
 import type { Application, Contact, Interview, Task, WeeklyGoal } from '@/types/internship'
 import { currentWeekRange, currentWeekStart, daysUntil, isOverdue } from './dates'
-import { addDaysToDateStr, easternMonday } from '@/lib/dates'
+import { addDaysToDateStr, easternDateStr, easternMonday } from '@/lib/dates'
 import { isExpired, DEFAULT_EXPIRY_DAYS } from './expiry'
 
 export interface ReminderData {
@@ -36,6 +36,28 @@ export function weeklyProgress(data: ReminderData, now = new Date()): WeeklyProg
   const goal = data.weeklyGoals.find(g => g.week_start === weekStart)
   const actual = appliedCountsByWeek(data.applications).get(weekStart) ?? 0
   return { weekStart, target: goal?.target_apps ?? DEFAULT_WEEKLY_TARGET, actual }
+}
+
+export interface ApplyPace {
+  today: number
+  week: number
+  weekTarget: number
+}
+
+/** Header tracker: applications stamped applied today and this week (Eastern). */
+export function applyPace(applications: Application[], weeklyGoals: WeeklyGoal[], now = new Date()): ApplyPace {
+  const today = easternDateStr(now)
+  const weekStart = currentWeekStart(now)
+  let todayCount = 0
+  let weekCount = 0
+  for (const a of applications) {
+    if (!a.applied_at) continue
+    const d = new Date(a.applied_at)
+    if (easternDateStr(d) === today) todayCount++
+    if (easternMonday(d) === weekStart) weekCount++
+  }
+  const goal = weeklyGoals.find(g => g.week_start === weekStart)
+  return { today: todayCount, week: weekCount, weekTarget: goal?.target_apps ?? DEFAULT_WEEKLY_TARGET }
 }
 
 export interface WeekBucket {

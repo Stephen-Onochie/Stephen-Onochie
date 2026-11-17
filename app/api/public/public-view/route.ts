@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { PUBLIC_VIEW_DEFAULTS, type PublicViewData } from '@/types/public-view'
+import { PUBLIC_VIEW_DEFAULTS, RESUME_PATH, type PublicViewData } from '@/types/public-view'
 
 // Always read live: the owner can change public settings at any time and the row
 // is tiny, so per-request is correct. A statically-cached segment would pin a
@@ -32,7 +32,7 @@ export async function GET() {
   if (error || !data) return NextResponse.json(PUBLIC_VIEW_DEFAULTS)
 
   const out: PublicViewData = {
-    resumeUrl: data.resume_url,
+    resumeUrl: RESUME_PATH,
     resumeHeading: data.resume_heading,
     resumeBlurb: data.resume_blurb,
     showCurrentlyReading: data.show_currently_reading,

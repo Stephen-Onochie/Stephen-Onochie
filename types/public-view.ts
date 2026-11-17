@@ -6,6 +6,10 @@ export interface PublicViewSettings {
   resume_url: string
   resume_heading: string
   resume_blurb: string
+  resume_file_path: string | null
+  resume_file_name: string | null
+  resume_file_size: number | null
+  resume_uploaded_at: string | null
   show_currently_reading: boolean
   show_currently_watching: boolean
   github_url: string
@@ -29,8 +33,13 @@ export interface PublicViewData {
 
 // Defaults reproduce the previously-hardcoded public site, used as the fallback
 // while the live values load (and if the row doesn't exist yet).
+// Every résumé button points at /resume, which serves the uploaded PDF (or
+// redirects to the external link until one is uploaded).
+export const RESUME_PATH = '/resume'
+export const FALLBACK_RESUME_URL = 'https://drive.google.com/file/d/1wwWW8jbMPgyqH5YyqObefPECvoomPn7N/view?usp=sharing'
+
 export const PUBLIC_VIEW_DEFAULTS: PublicViewData = {
-  resumeUrl: 'https://drive.google.com/file/d/1wwWW8jbMPgyqH5YyqObefPECvoomPn7N/view?usp=sharing',
+  resumeUrl: RESUME_PATH,
   resumeHeading: 'Resume',
   resumeBlurb: 'Download a PDF overview of engineering experience, projects, and leadership.',
   showCurrentlyReading: true,

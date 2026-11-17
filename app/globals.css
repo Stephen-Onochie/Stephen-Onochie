@@ -190,3 +190,55 @@ html[data-pf-theme='dark'] .pf-when-dark { display: inline-flex; }
 .iven-no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Internship apply tracker + celebration */
+@keyframes iven-count-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.45); color: var(--iven-accent); }
+  100% { transform: scale(1); }
+}
+.iven-count-pop {
+  display: inline-block;
+  animation: iven-count-pop 650ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes iven-tracker-glow {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--iven-accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+.iven-tracker-glow {
+  animation: iven-tracker-glow 900ms ease-out;
+}
+@keyframes iven-celebrate-card {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
+  22% { transform: translate(-50%, -50%) scale(1); }
+  82% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -54%) scale(0.96); }
+}
+.iven-celebrate-card {
+  animation: iven-celebrate-card 2600ms ease-out forwards;
+}
+@keyframes iven-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+.iven-check-ring {
+  stroke-dasharray: 152;
+  stroke-dashoffset: 152;
+  animation: iven-check-draw 520ms 120ms ease-out forwards;
+}
+.iven-check-mark {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: iven-check-draw 300ms 560ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .iven-count-pop,
+  .iven-tracker-glow {
+    animation: none;
+  }
+  .iven-check-ring,
+  .iven-check-mark {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

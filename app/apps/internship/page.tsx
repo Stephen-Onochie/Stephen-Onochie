@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import IvenModule from '@/components/iven/IvenModule'
@@ -14,6 +14,7 @@ import {
   fetchSettings,
   fetchFocusAreas,
   fetchTargets,
+  APPLIED_OR_LATER,
 } from '@/lib/internship/supabase'
 import type {
   Application,
@@ -24,6 +25,7 @@ import type {
   InternshipSettings,
   FocusArea,
   Target,
+  Stage,
 } from '@/types/internship'
 import Board from '@/components/internship/Board'
 import FilterBar, { EMPTY_FILTERS, type Filters } from '@/components/internship/FilterBar'
@@ -38,6 +40,9 @@ import SettingsPanel from '@/components/internship/SettingsPanel'
 import SourcesView from '@/components/internship/SourcesView'
 import ExpiredView from '@/components/internship/ExpiredView'
 import { Button } from '@/components/internship/ui'
+import ApplyTracker from '@/components/internship/ApplyTracker'
+import ApplyCelebration, { type CelebrationEvent } from '@/components/internship/ApplyCelebration'
+import { applyPace } from '@/lib/internship/reminders'
 import { isExpired, inPostedWindow, DEFAULT_EXPIRY_DAYS } from '@/lib/internship/expiry'
 
 type Tab = 'board' | 'expired' | 'contacts' | 'interviews' | 'sources' | 'dashboard' | 'settings'
@@ -119,6 +124,31 @@ function InternshipTracker() {
     }
   }, [searchParams])
 
+  const pace = useMemo(() => applyPace(applications, weeklyGoals), [applications, weeklyGoals])
+  const [celebration, setCelebration] = useState<CelebrationEvent | null>(null)
+  const [bumpKey, setBumpKey] = useState(0)
+  const clearCelebration = useCallback(() => setCelebration(null), [])
+
+  // Celebrate every card that newly becomes an application, however it got
+  // there: dragged on the board, stage changed in the detail panel, Applied On
+  // filled in, or quick-added straight into Applied.
+  const snapshotRef = useRef<Map<string, { stage: Stage; applied: boolean }> | null>(null)
+  useEffect(() => {
+    if (loading) return
+    const prev = snapshotRef.current
+    snapshotRef.current = new Map(applications.map(a => [a.id, { stage: a.stage, applied: !!a.applied_at }]))
+    if (!prev) return
+    const fresh = applications.find(a => {
+      if (!APPLIED_OR_LATER.includes(a.stage)) return false
+      const before = prev.get(a.id)
+      if (!before) return true
+      return before.stage === 'wishlist' || (!before.applied && !!a.applied_at)
+    })
+    if (!fresh) return
+    setBumpKey(k => k + 1)
+    setCelebration({ key: Date.now(), company: fresh.company, role: fresh.role_title, pace })
+  }, [applications, loading, pace])
+
   const expiryDays = settings?.expiry_days ?? DEFAULT_EXPIRY_DAYS
   const [active, expired] = useMemo(() => {
     const now = new Date()
@@ -165,16 +195,19 @@ function InternshipTracker() {
       index={11}
       title="Internship Tracker"
       right={
-        <Button
-          onClick={() => {
-            setQuickAddUrl(undefined)
-            setQuickAddOpen(true)
-          }}
-        >
-          <span className="flex items-center gap-1.5">
-            <Plus size={13} /> Add Application
-          </span>
-        </Button>
+        <div className="flex items-center gap-3">
+          {!loading && <ApplyTracker pace={pace} bumpKey={bumpKey} />}
+          <Button
+            onClick={() => {
+              setQuickAddUrl(undefined)
+              setQuickAddOpen(true)
+            }}
+          >
+            <span className="flex items-center gap-1.5">
+              <Plus size={13} /> Add Application
+            </span>
+          </Button>
+        </div>
       }
     >
       {/* Internal tab bar */}
@@ -297,6 +330,8 @@ function InternshipTracker() {
           )}
         </>
       )}
+
+      <ApplyCelebration event={celebration} onDone={clearCelebration} />
 
       {/* Dialogs */}
       <QuickAddDialog
