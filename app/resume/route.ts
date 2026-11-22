@@ -4,6 +4,9 @@ import { PDF_MIME, RESUME_DOWNLOAD_NAME, SITE_FILES_BUCKET } from '@/lib/site-se
 import { FALLBACK_RESUME_URL } from '@/types/public-view'
 
 export const dynamic = 'force-dynamic'
+// force-dynamic alone doesn't stop Next's Data Cache from replaying supabase-js
+// fetches, which kept serving the old PDF after a new upload.
+export const fetchCache = 'force-no-store'
 
 // stephenonochie.com/resume: the uploaded résumé PDF, opened inline in the
 // browser's viewer. Before any upload exists it falls back to the external
@@ -27,7 +30,7 @@ export async function GET() {
           'Content-Type': PDF_MIME,
           'Content-Length': String(file.size),
           'Content-Disposition': `inline; filename="${RESUME_DOWNLOAD_NAME}"`,
-          'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
+          'Cache-Control': 'no-store',
           'X-Robots-Tag': 'noindex',
         },
       })
