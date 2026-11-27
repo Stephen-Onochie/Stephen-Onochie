@@ -13,7 +13,8 @@
  *
  * The routine first GETs /api/internship/ingest/targets, then pipes that JSON
  * ({ targets: [{ company, ats_platform, ats_slug, focus_area }],
- *    linkedin_searches: [{ url, focus_area }] }) into this script's stdin.
+ *    linkedin_searches: [{ url, focus_area }],
+ *    github_feeds: [{ url, focus_area, match_terms }] }) into this script's stdin.
  * Both come from the tracker's Sources tab; postings they find carry
  * focus_area so the routine keeps them even outside the default role types.
  */
@@ -86,6 +87,15 @@ interface Target {
 interface AreaSearch {
   url: string
   focus_area: string
+}
+
+/** A GitHub list repo (or one markdown file in it) linked on a focus area in
+ *  the Sources tab. Rows are kept only when the title (or a Field/Category
+ *  cell) contains one of match_terms, so a broad repo stays on-topic. */
+interface GithubFeed {
+  url: string
+  focus_area: string
+  match_terms: string[]
 }
 
 const NON_INTERNSHIP = /\b(new ?grad|full[\s-]?time|senior|staff|principal|co[\s-]?op only)\b/i
@@ -184,6 +194,168 @@ function normalizeMarkdown(md: string, source: string): NormalizedPosting[] {
     })
   }
   return out
+}
+
+// ─── GitHub list repos linked on a focus area ───────────────────────────────
+// Every community list publishes a markdown table, but the columns differ by
+// repo, so the header row is read to find Company / Role / Location / Posted /
+// Apply. Handles **[Name](url)** cells, ↳ continuation rows, markdown and
+// <a href> apply links, and "Nov 27" / "3d" / "46h" / ISO posted dates.
+
+/** github.com/owner/repo[/blob/ref/path] → raw URLs to try, best first. */
+export function githubRawUrls(raw: string): string[] {
+  let u: URL
+  try {
+    u = new URL(raw.trim())
+  } catch {
+    return []
+  }
+  const host = u.hostname.replace(/^www\./, '')
+  const seg = u.pathname.split('/').filter(Boolean)
+  if (host === 'raw.githubusercontent.com') return [u.toString()]
+  if (host !== 'github.com' || seg.length < 2) return []
+  const [owner, repo] = seg
+  if (seg[2] === 'blob' && seg.length >= 5) {
+    return [`https://raw.githubusercontent.com/${owner}/${repo}/${seg[3]}/${seg.slice(4).join('/')}`]
+  }
+  return ['HEAD', 'main', 'master', 'dev'].map(
+    ref => `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/README.md`
+  )
+}
+
+/** Visible text of a markdown/HTML table cell. */
+function cellText(cell: string): string {
+  return decodeEntities(
+    cell
+      .replace(/&nbsp;/g, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/[*_`]/g, '')
+      .replace(/\\([()|\[\]])/g, '$1')
+  )
+    .split(/🛂|🆕|🔥|🏛/).join('')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** All http(s) links in a cell: markdown targets and <a href> values. */
+function cellLinks(cell: string): string[] {
+  const out: string[] = []
+  for (const re of [/\]\((https?:\/\/[^)\s]+)\)/g, /href="(https?:\/\/[^"]+)"/g]) {
+    let m: RegExpExecArray | null
+    while ((m = re.exec(cell))) out.push(m[1])
+  }
+  return out.map(decodeEntities)
+}
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+/** "Nov 27" | "3d" | "46h" | "2w" | "2026-11-27" | "today" → ISO, else null. */
+export function parsePostedCell(text: string, now = new Date()): string | null {
+  const t = text.trim().toLowerCase()
+  if (!t) return null
+  if (t === 'today' || t === 'new') return now.toISOString()
+  const rel = t.match(/^(\d+)\s*(m|min|h|hr|d|w|mo)s?\b/)
+  if (rel) {
+    const n = Number(rel[1])
+    const unitMs = { m: 60e3, min: 60e3, h: 36e5, hr: 36e5, d: 864e5, w: 6048e5, mo: 2592e6 }[rel[2] as 'm']
+    return new Date(now.getTime() - n * unitMs).toISOString()
+  }
+  const md = t.match(/^([a-z]{3})[a-z]*\.?\s+(\d{1,2})(?:,?\s*(\d{4}))?$/)
+  if (md && MONTHS.includes(md[1])) {
+    const year = md[3] ? Number(md[3]) : now.getUTCFullYear()
+    const d = new Date(Date.UTC(year, MONTHS.indexOf(md[1]), Number(md[2]), 12))
+    // No year given and the date lands in the future → it was last year.
+    if (!md[3] && d.getTime() > now.getTime() + 2 * 864e5) d.setUTCFullYear(year - 1)
+    return d.toISOString()
+  }
+  const iso = Date.parse(text)
+  return isNaN(iso) ? null : new Date(iso).toISOString()
+}
+
+function termRegex(terms: string[]): RegExp | null {
+  const clean = terms
+    .map(t => t.trim())
+    .filter(t => t && !/^https?:\/\//i.test(t))
+    .map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+'))
+  return clean.length ? new RegExp(`\\b(${clean.join('|')})\\b`, 'i') : null
+}
+
+export function normalizeGithubTables(md: string, source: string, matchTerms: string[]): NormalizedPosting[] {
+  const match = termRegex(matchTerms)
+  const out: NormalizedPosting[] = []
+  let cols: Record<'company' | 'role' | 'location' | 'posted' | 'apply' | 'field', number> | null = null
+  let lastCompany = ''
+  for (const line of md.split('\n')) {
+    if (!line.trim().startsWith('|')) {
+      cols = null
+      continue
+    }
+    const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map(c => c.trim())
+    const lower = cells.map(c => cellText(c).toLowerCase())
+    const roleIdx = lower.findIndex(c => /^(role|job title|position|title|internship)$/.test(c))
+    if (lower.includes('company') && roleIdx >= 0) {
+      const find = (re: RegExp) => lower.findIndex(c => re.test(c))
+      cols = {
+        company: lower.indexOf('company'),
+        role: roleIdx,
+        location: find(/^location/),
+        posted: find(/^(date posted|posted|added|date|age)$/),
+        apply: find(/^(apply|link|application)$/),
+        field: find(/^(field|category|area)$/),
+      }
+      continue
+    }
+    if (!cols || cells.every(c => /^:?-+:?$/.test(c) || c === '')) continue
+
+    const companyRaw = cellText(cells[cols.company] ?? '')
+    const company = companyRaw === '↳' || companyRaw === '' ? lastCompany : companyRaw
+    if (!company) continue
+    lastCompany = company
+    const role_title = cellText(cells[cols.role] ?? '')
+    if (!role_title || !looksLikeInternship(role_title)) continue
+    const field = cols.field >= 0 ? cellText(cells[cols.field] ?? '') : ''
+    if (match && !match.test(role_title) && !match.test(field)) continue
+
+    const applyLinks = cols.apply >= 0 ? cellLinks(cells[cols.apply] ?? '') : []
+    const job_url = applyLinks[0] ?? cellLinks(cells[cols.role] ?? '')[0] ?? null
+    out.push({
+      company,
+      role_title,
+      job_url,
+      location: cols.location >= 0 ? cellText(cells[cols.location] ?? '') || null : null,
+      source,
+      posted_at: cols.posted >= 0 ? parsePostedCell(cellText(cells[cols.posted] ?? '')) : null,
+    })
+  }
+  return out
+}
+
+async function fetchGithubFeed(feed: GithubFeed): Promise<NormalizedPosting[]> {
+  const urls = githubRawUrls(feed.url)
+  if (!urls.length) throw new Error('not a GitHub repo URL')
+  const seg = new URL(feed.url).pathname.split('/').filter(Boolean)
+  const source = `feed:gh:${seg[0]}/${seg[1]}`
+  let lastErr: Error = new Error('no README found')
+  for (const url of urls) {
+    try {
+      const md = await fetchText(url)
+      const rows = normalizeGithubTables(md, source, feed.match_terms)
+      // One job can sit in several tables of the same README.
+      const seen = new Set<string>()
+      return rows
+        .filter(p => {
+          const k = p.job_url ?? `${p.company}|${p.role_title}|${p.location}`
+          if (seen.has(k)) return false
+          seen.add(k)
+          return true
+        })
+        .map(p => ({ ...p, focus_area: feed.focus_area }))
+    } catch (e) {
+      lastErr = e as Error
+    }
+  }
+  throw lastErr
 }
 
 // ─── ATS boards ──────────────────────────────────────────────────────────────
@@ -369,11 +541,17 @@ async function main() {
   const stdin = await readStdin()
   let targets: Target[] = []
   let areaSearches: AreaSearch[] = []
+  let githubFeeds: GithubFeed[] = []
   if (stdin) {
     try {
-      const parsed = JSON.parse(stdin) as { targets?: Target[]; linkedin_searches?: AreaSearch[] }
+      const parsed = JSON.parse(stdin) as {
+        targets?: Target[]
+        linkedin_searches?: AreaSearch[]
+        github_feeds?: GithubFeed[]
+      }
       targets = parsed.targets ?? []
       areaSearches = parsed.linkedin_searches ?? []
+      githubFeeds = parsed.github_feeds ?? []
     } catch {
       failed.push('stdin (invalid JSON targets payload)')
     }
@@ -408,6 +586,15 @@ async function main() {
     }
   }
 
+  // GitHub list repos linked on focus areas (Sources tab → Boards & links).
+  for (const feed of githubFeeds) {
+    try {
+      postings.push(...(await fetchGithubFeed(feed)))
+    } catch (e) {
+      failed.push(`github ${feed.url} (${(e as Error).message})`)
+    }
+  }
+
   // ATS targets.
   for (const t of targets) {
     try {
@@ -432,7 +619,10 @@ async function main() {
   process.stdout.write('\n')
 }
 
-main().catch(e => {
-  console.error(e)
-  process.exit(1)
-})
+// Run only as a script, so the parsers can be imported by tests.
+if (process.argv[1] && /ingest-sources\.ts$/.test(process.argv[1])) {
+  main().catch(e => {
+    console.error(e)
+    process.exit(1)
+  })
+}

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { linkedinSearchUrl, MAX_AREA_LINKEDIN_SEARCHES } from '@/lib/internship/sources'
+import { linkedinSearchUrl, isGithubRepoUrl, MAX_AREA_LINKEDIN_SEARCHES } from '@/lib/internship/sources'
 
 export const dynamic = 'force-dynamic'
 
 // Returns what the ingestion routine should poll beyond the hardcoded feeds:
 // active ATS targets (company + platform + slug, tagged with their focus area)
-// and LinkedIn searches built from active focus areas' search terms, plus the
+// LinkedIn searches built from active focus areas' search terms, GitHub list
+// repos linked on those areas, plus the
 // areas themselves so the routine knows which postings to keep. Same bearer
 // auth as the ingest endpoint.
 export async function GET(req: Request) {
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
       .not('ats_slug', 'is', null),
     supabase
       .from('internship_focus_areas')
-      .select('id, name, description, search_terms, active')
+      .select('id, name, description, search_terms, links, active')
       .eq('user_id', userId)
       .order('sort_order', { ascending: true }),
   ])
@@ -68,9 +69,23 @@ export async function GET(req: Request) {
     }
   }
 
+  // GitHub list repos pasted into an area's "Boards & links". The script reads
+  // their README tables and keeps rows matching the area's search terms.
+  const github_feeds = activeAreas.flatMap(a =>
+    ((a.links as { url?: string }[] | null) ?? [])
+      .map(l => l?.url ?? '')
+      .filter(isGithubRepoUrl)
+      .map(url => ({
+        url,
+        focus_area: a.name as string,
+        match_terms: (a.search_terms as string[]) ?? [],
+      }))
+  )
+
   return NextResponse.json({
     targets,
     linkedin_searches,
+    github_feeds,
     focus_areas: activeAreas.map(a => ({ name: a.name, description: a.description })),
   })
 }

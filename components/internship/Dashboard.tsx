@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Calendar, AlertCircle, CalendarClock, CheckSquare, TrendingDown } from 'lucide-react'
-import type { Application, Contact, Interview, Task, WeeklyGoal } from '@/types/internship'
+import type { Application, Contact, FocusArea, Interview, Task, WeeklyGoal } from '@/types/internship'
 import {
   LANE_LABELS,
   CITY_LABELS,
@@ -16,6 +16,9 @@ import {
   distribution,
   tractionFlag,
   weeklyHistory,
+  allTimeTotals,
+  pipelineOf,
+  CORE_PIPELINE,
   type ReminderData,
   type WeeklyHistory,
 } from '@/lib/internship/reminders'
@@ -28,10 +31,12 @@ export default function Dashboard({
   interviews,
   tasks,
   weeklyGoals,
+  focusAreas,
   onOpenApp,
   onOpenContact,
 }: {
   applications: Application[]
+  focusAreas: FocusArea[]
   contacts: Contact[]
   interviews: Interview[]
   tasks: Task[]
@@ -39,10 +44,31 @@ export default function Dashboard({
   onOpenApp: (a: Application) => void
   onOpenContact: (c: Contact) => void
 }) {
-  const data: ReminderData = useMemo(
-    () => ({ applications, contacts, interviews, tasks, weeklyGoals }),
-    [applications, contacts, interviews, tasks, weeklyGoals]
+  // 'all' | CORE_PIPELINE | a focus-area id. Every number below follows it.
+  const [pipeline, setPipeline] = useState<string>('all')
+  const pipelineName = (key: string) =>
+    key === CORE_PIPELINE ? 'Core engineering' : focusAreas.find(f => f.id === key)?.name ?? 'Unknown'
+
+  const scoped = useMemo(
+    () => (pipeline === 'all' ? applications : applications.filter(a => pipelineOf(a) === pipeline)),
+    [applications, pipeline]
   )
+  const data: ReminderData = useMemo(
+    () => ({ applications: scoped, contacts, interviews, tasks, weeklyGoals }),
+    [scoped, contacts, interviews, tasks, weeklyGoals]
+  )
+
+  const totals = allTimeTotals(scoped)
+  // One row per pipeline that has any card, core first, then areas in order.
+  const pipelineRows = useMemo(() => {
+    const keys = [CORE_PIPELINE, ...focusAreas.map(f => f.id)]
+    return keys
+      .map(key => {
+        const apps = applications.filter(a => pipelineOf(a) === key)
+        return { key, tracked: apps.length, ...allTimeTotals(apps) }
+      })
+      .filter(r => r.tracked > 0)
+  }, [applications, focusAreas])
 
   const wp = weeklyProgress(data)
   const fn = funnel(data)
@@ -53,6 +79,81 @@ export default function Dashboard({
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] font-semibold tracking-[2px] uppercase mr-1" style={{ color: 'var(--iven-muted)' }}>
+          Pipeline
+        </span>
+        {['all', ...pipelineRows.map(r => r.key)].map(key => (
+          <button
+            key={key}
+            onClick={() => setPipeline(key)}
+            className="rounded-full px-3 py-1 text-[12px] font-medium"
+            style={{
+              background: pipeline === key ? 'var(--iven-accent)' : 'var(--iven-surface)',
+              color: pipeline === key ? '#2C1F0E' : 'var(--iven-text)',
+              border: '1px solid var(--iven-grid)',
+            }}
+          >
+            {key === 'all' ? 'All pipelines' : pipelineName(key)}
+          </button>
+        ))}
+      </div>
+
+      <Panel title={pipeline === 'all' ? 'All-Time Totals' : `All-Time Totals · ${pipelineName(pipeline)}`}>
+        <div className="flex flex-wrap gap-x-10 gap-y-4">
+          <BigStat label="Applications sent" value={totals.sent} />
+          <BigStat label="Waiting to hear" value={totals.waiting} />
+          <BigStat label="Reached OA" value={totals.reachedOA} />
+          <BigStat label="Reached interview" value={totals.reachedInterview} />
+          <BigStat label="Offers" value={totals.offers} />
+          <BigStat label="Rejections" value={totals.rejected} />
+          <BigStat label="Response rate" value={`${totals.responseRate}%`} />
+        </div>
+        <div className="font-mono text-[10px] mt-3" style={{ color: 'var(--iven-muted)' }}>
+          Every card that ever left Wishlist, with no date window. Response rate = OA or later, or a rejection, out of
+          applications sent.
+        </div>
+      </Panel>
+
+      {pipelineRows.length > 1 && (
+        <Panel title="Results By Pipeline">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]" style={{ color: 'var(--iven-text)' }}>
+              <thead>
+                <tr className="font-mono text-[9px] uppercase tracking-[1px]" style={{ color: 'var(--iven-muted)' }}>
+                  {['Pipeline', 'Tracked', 'Sent', 'OA+', 'Interview+', 'Offers', 'Response', 'Interview rate'].map((h, i) => (
+                    <th key={h} className={`pb-2 font-semibold ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pipelineRows.map(r => (
+                  <tr
+                    key={r.key}
+                    onClick={() => setPipeline(r.key)}
+                    className="cursor-pointer"
+                    style={{ borderTop: '1px solid var(--iven-grid)', fontWeight: pipeline === r.key ? 600 : 400 }}
+                  >
+                    <td className="py-1.5 text-left">{pipelineName(r.key)}</td>
+                    <td className="py-1.5 text-right font-mono" style={{ color: 'var(--iven-muted)' }}>{r.tracked}</td>
+                    <td className="py-1.5 text-right font-mono">{r.sent}</td>
+                    <td className="py-1.5 text-right font-mono">{r.reachedOA}</td>
+                    <td className="py-1.5 text-right font-mono">{r.reachedInterview}</td>
+                    <td className="py-1.5 text-right font-mono">{r.offers}</td>
+                    <td className="py-1.5 text-right font-mono">{r.sent ? `${r.responseRate}%` : '—'}</td>
+                    <td className="py-1.5 text-right font-mono">{r.sent ? `${r.interviewRate}%` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="font-mono text-[10px] mt-3" style={{ color: 'var(--iven-muted)' }}>
+            Pipeline = the card&apos;s focus area (Sources tab). Cards with none count as Core engineering. Click a row to
+            filter the whole dashboard.
+          </div>
+        </Panel>
+      )}
+
       {traction && (
         <Banner color="#A8743B" icon={<TrendingDown size={16} />}>
           Low interview traction this late in the cycle. The fix is resume framing + Lane 3 outreach,
@@ -332,6 +433,17 @@ function WeeklyChart({ history }: { history: WeeklyHistory }) {
         Counted from each card&apos;s applied date (set automatically when it leaves Wishlist, editable in
         the card). Dashed line = weekly target.
         {history.undated > 0 && ` ${history.undated} applied card${history.undated === 1 ? ' has' : 's have'} no applied date and aren't counted.`}
+      </div>
+    </div>
+  )
+}
+
+function BigStat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div>
+      <div className="font-playfair font-bold text-[32px] leading-none" style={{ color: 'var(--iven-text)' }}>{value}</div>
+      <div className="font-mono text-[9px] font-semibold tracking-[1px] uppercase mt-1.5" style={{ color: 'var(--iven-muted)' }}>
+        {label}
       </div>
     </div>
   )

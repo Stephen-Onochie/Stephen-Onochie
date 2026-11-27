@@ -57,3 +57,15 @@ export function linkedinSearchUrl(term: string): string {
 export function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s.trim())
 }
+
+/** github.com/owner/repo (optionally /blob/ref/path.md) — a community list repo
+ *  the ingestion script can read as a feed. */
+export function isGithubRepoUrl(raw: string): boolean {
+  try {
+    const u = new URL(raw.trim())
+    const seg = u.pathname.split('/').filter(Boolean)
+    return u.hostname.replace(/^www\./, '') === 'github.com' && seg.length >= 2
+  } catch {
+    return false
+  }
+}

@@ -315,6 +315,7 @@ function InternshipTracker() {
               interviews={interviews}
               tasks={tasks}
               weeklyGoals={weeklyGoals}
+              focusAreas={focusAreas}
               onOpenApp={openApp}
               onOpenContact={openContact}
             />

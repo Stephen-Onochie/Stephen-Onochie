@@ -142,6 +142,46 @@ export function funnel(data: ReminderData): FunnelStats {
   }
 }
 
+export interface AllTimeTotals {
+  /** Every application that ever left Wishlist (closed ones too, if they had an applied date). */
+  sent: number
+  /** Still sitting in Applied with no answer yet. */
+  waiting: number
+  reachedOA: number
+  reachedInterview: number
+  offers: number
+  rejected: number
+  /** Share of sent applications that got any answer: an OA or later, or a rejection. */
+  responseRate: number
+  /** Share of sent applications that reached an interview or offer. */
+  interviewRate: number
+}
+
+/** Lifetime numbers — no week, month or posted-date window. */
+export function allTimeTotals(applications: Application[]): AllTimeTotals {
+  const f = funnel({ applications, contacts: [], interviews: [], tasks: [], weeklyGoals: [] })
+  const rejected = applications.filter(
+    a => a.stage === 'closed' && a.applied_at && a.closed_reason === 'rejected'
+  ).length
+  const pct = (n: number) => (f.reachedApplied ? Math.round((n / f.reachedApplied) * 100) : 0)
+  return {
+    sent: f.reachedApplied,
+    waiting: f.applied,
+    reachedOA: f.reachedOA,
+    reachedInterview: f.reachedInterview,
+    offers: f.reachedOffer,
+    rejected,
+    responseRate: pct(f.reachedOA + rejected),
+    interviewRate: pct(f.reachedInterview),
+  }
+}
+
+/** Pipeline key for an application: its focus area id, or 'core' for none. */
+export const CORE_PIPELINE = 'core'
+export function pipelineOf(a: Application): string {
+  return a.focus_area_id ?? CORE_PIPELINE
+}
+
 export interface ThisWeek {
   deadlines: Application[] // Lane 1 deadlines within 14 days
   overdueContacts: Contact[] // overdue next-actions
